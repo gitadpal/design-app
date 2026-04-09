@@ -5,10 +5,10 @@ import { Badge } from './ui/badge';
 import { Progress } from './ui/progress';
 import { Skeleton } from './ui/skeleton';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
-  Clock, 
-  Coins, 
-  TrendingUp, 
+import {
+  Clock,
+  Coins,
+  TrendingUp,
   Star,
   Users,
   ChevronRight,
@@ -22,7 +22,8 @@ import {
   Zap,
   Info,
   CalendarDays,
-  Shield
+  Shield,
+  Nfc
 } from 'lucide-react';
 import { toast } from 'sonner@2.0.3';
 import iphoneBackImg from 'figma:asset/771d461e7de4d0c40d4ef5fcc5c59768d30ec60e.png';
@@ -30,8 +31,8 @@ import { EinkCasePrompt } from './EinkCasePrompt';
 import { WalletConnectPrompt } from './WalletConnectPrompt';
 
 interface AdCampaignsProps {
-  view: 'main' | 'campaign-detail' | 'bonus-rewards' | 'active-commitment' | 'participation-history';
-  setView: (view: 'main' | 'campaign-detail' | 'bonus-rewards' | 'active-commitment' | 'participation-history') => void;
+  view: 'main' | 'campaign-detail' | 'cast-preview' | 'bonus-rewards' | 'active-commitment' | 'participation-history';
+  setView: (view: 'main' | 'campaign-detail' | 'cast-preview' | 'bonus-rewards' | 'active-commitment' | 'participation-history') => void;
   selectedCampaignId: number | null;
   setSelectedCampaignId: (id: number | null) => void;
   activeCommitment: any;
@@ -61,6 +62,7 @@ export function AdCampaigns({
   const [isFastForwarding, setIsFastForwarding] = useState(false);
   const [showEinkPrompt, setShowEinkPrompt] = useState(false);
   const [showWalletPrompt, setShowWalletPrompt] = useState(false);
+  const [isNfcWriting, setIsNfcWriting] = useState(false);
   const tokenBalance = 1247.50;
 
   // Simulate initial loading
@@ -616,16 +618,7 @@ export function AdCampaigns({
   // Campaign Detail View
   if (view === 'campaign-detail' && selectedCampaign) {
     const handleStartCampaign = () => {
-      setActiveCommitment({
-        campaignId: selectedCampaign.id,
-        title: selectedCampaign.title,
-        reward: selectedCampaign.reward,
-        duration: selectedCampaign.duration,
-        startTime: Date.now(),
-        image: selectedCampaign.image
-      });
-      toast.success('Campaign started! Display locked.');
-      setView('main');
+      setView('cast-preview');
     };
 
     const daysLeft = Math.max(0, Math.ceil((new Date(selectedCampaign.endDate).getTime() - new Date('2026-03-10').getTime()) / (1000 * 60 * 60 * 24)));
@@ -892,8 +885,8 @@ export function AdCampaigns({
                   : handleStartCampaign
               }
             >
-              <Coins className="w-6 h-6 mr-2" />
-              Start Earning {selectedCampaign.reward} {selectedCampaign.tokenSymbol} Now
+              <Nfc className="w-6 h-6 mr-2" />
+              Cast this ad and start earning
             </Button>
           </motion.div>
 
@@ -959,6 +952,177 @@ export function AdCampaigns({
         onClose={() => setShowWalletPrompt(false)}
         onGoToWallet={onGoToWallet}
       />
+      </>
+    );
+  }
+
+  // Cast Preview View
+  if (view === 'cast-preview' && selectedCampaign) {
+    const handleCastToScreen = async () => {
+      setIsNfcWriting(true);
+      await new Promise(resolve => setTimeout(resolve, 2500));
+      setIsNfcWriting(false);
+      setActiveCommitment({
+        campaignId: selectedCampaign.id,
+        title: selectedCampaign.title,
+        reward: selectedCampaign.reward,
+        duration: selectedCampaign.duration,
+        startTime: Date.now(),
+        image: selectedCampaign.image
+      });
+      toast.success('Ad cast! Campaign is now in progress.');
+      setView('main');
+    };
+
+    return (
+      <>
+        <div className="min-h-screen bg-gray-50 pb-8">
+          {/* Header */}
+          <div className="bg-white border-b sticky top-0 z-20">
+            <div className="flex items-center justify-between px-4 py-3">
+              <button
+                onClick={() => setView('campaign-detail')}
+                className="flex items-center gap-2 text-blue-600"
+              >
+                <ChevronRight className="w-5 h-5 rotate-180" />
+                <span className="text-sm">Back</span>
+              </button>
+              <h2 className="text-lg">Cast Preview</h2>
+              <div className="w-16" />
+            </div>
+          </div>
+
+          {/* Campaign Image */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.92 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+            className="flex justify-center pt-8 px-6"
+          >
+            <div className="relative">
+              {/* Outer glow */}
+              <div
+                className="absolute inset-0 rounded-2xl blur-2xl opacity-40"
+                style={{ background: 'linear-gradient(135deg, #00FFC2, #BC13FE)', transform: 'scale(1.08)' }}
+              />
+              {/* Prism border */}
+              <div
+                className="relative rounded-2xl p-[2px]"
+                style={{ background: 'linear-gradient(135deg, #00FFC2, #BC13FE)' }}
+              >
+                <img
+                  src={selectedCampaign.image}
+                  alt={selectedCampaign.title}
+                  className="w-[200px] h-[298px] object-cover rounded-2xl block"
+                  style={{ filter: 'contrast(1.04) brightness(0.98)' }}
+                />
+                {/* E-ink grain overlay */}
+                <div
+                  className="absolute inset-0 rounded-2xl pointer-events-none"
+                  style={{ background: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.85\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\' opacity=\'0.035\'/%3E%3C/svg%3E")', opacity: 0.5 }}
+                />
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Campaign title */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, delay: 0.2 }}
+            className="text-center mt-8 px-6"
+          >
+            <h1 className="text-xl font-bold text-gray-900">{selectedCampaign.title}</h1>
+          </motion.div>
+
+          {/* Confirm details */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, delay: 0.3 }}
+            className="mx-6 mt-6 grid grid-cols-2 gap-3"
+          >
+            <div className="rounded-xl p-4 border border-gray-100 bg-white text-center shadow-sm">
+              <Clock className="w-5 h-5 mx-auto mb-1.5 text-blue-500" />
+              <div className="text-[10px] uppercase tracking-wider text-gray-400 mb-1">Duration</div>
+              <div className="text-lg font-bold text-gray-900">{selectedCampaign.duration}<span className="text-sm text-gray-400 ml-0.5">h</span></div>
+            </div>
+            <div className="rounded-xl p-4 border border-gray-100 bg-white text-center shadow-sm">
+              <Coins className="w-5 h-5 mx-auto mb-1.5 text-emerald-500" />
+              <div className="text-[10px] uppercase tracking-wider text-gray-400 mb-1">Reward</div>
+              <div className="text-lg font-bold text-gray-900">
+                {selectedCampaign.reward}
+                <span className="text-sm ml-1 text-emerald-600">{selectedCampaign.tokenSymbol}</span>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Cast to Screen button */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, delay: 0.4 }}
+            className="mx-6 mt-8"
+          >
+            <button
+              onClick={handleCastToScreen}
+              className="w-full h-14 rounded-xl font-bold text-base flex items-center justify-center gap-2.5 transition-all active:scale-95"
+              style={{ background: 'linear-gradient(135deg, #00FFC2, #00d9a8)', color: '#0a0a0a', boxShadow: '0 0 32px rgba(0,255,194,0.35)' }}
+            >
+              <Nfc className="w-5 h-5" />
+              Cast to Screen
+            </button>
+            <p className="text-center text-xs text-gray-400 mt-3">
+              Your e-ink display will show this ad for {selectedCampaign.duration}h
+            </p>
+          </motion.div>
+        </div>
+
+        {/* iOS-style NFC writing sheet */}
+        {isNfcWriting && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="fixed inset-0 z-50 flex items-end justify-center"
+            style={{ background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(6px)' }}
+          >
+            <motion.div
+              initial={{ y: 120, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.38, ease: [0.16, 1, 0.3, 1] }}
+              className="w-full max-w-md rounded-t-3xl px-8 py-10 text-center"
+              style={{ background: '#1c1c1e', borderTop: '1px solid rgba(255,255,255,0.12)' }}
+            >
+              {/* Animated NFC rings */}
+              <div className="relative w-28 h-28 mx-auto mb-6">
+                {[0, 1, 2].map(i => (
+                  <motion.div
+                    key={i}
+                    className="absolute inset-0 rounded-full border-2"
+                    style={{ borderColor: '#00FFC2' }}
+                    animate={{ scale: [1, 1.6 + i * 0.3], opacity: [0.7, 0] }}
+                    transition={{ duration: 1.6, delay: i * 0.4, repeat: Infinity, ease: 'easeOut' }}
+                  />
+                ))}
+                <div
+                  className="absolute inset-0 rounded-full flex items-center justify-center"
+                  style={{ background: 'rgba(0,255,194,0.12)', border: '2px solid rgba(0,255,194,0.4)' }}
+                >
+                  <Nfc className="w-10 h-10" style={{ color: '#00FFC2' }} />
+                </div>
+              </div>
+              <h3 className="text-xl font-semibold text-white mb-2">Ready to Write NFC</h3>
+              <p className="text-sm text-gray-400 leading-relaxed">
+                Hold your phone close to the<br />E-ink case to cast the ad
+              </p>
+              <div className="mt-6 flex items-center justify-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-[#00FFC2] animate-bounce" style={{ animationDelay: '0ms' }} />
+                <div className="w-1.5 h-1.5 rounded-full bg-[#00FFC2] animate-bounce" style={{ animationDelay: '150ms' }} />
+                <div className="w-1.5 h-1.5 rounded-full bg-[#00FFC2] animate-bounce" style={{ animationDelay: '300ms' }} />
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
       </>
     );
   }

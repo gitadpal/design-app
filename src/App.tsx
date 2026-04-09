@@ -12,7 +12,7 @@ import {
 import { Toaster } from './components/ui/sonner';
 
 type TabValue = 'ads' | 'cast' | 'assets' | 'settings';
-type AdView = 'main' | 'campaign-detail' | 'bonus-rewards' | 'active-commitment' | 'participation-history';
+type AdView = 'main' | 'campaign-detail' | 'cast-preview' | 'bonus-rewards' | 'active-commitment' | 'participation-history';
 type SettingsView = 'main' | 'currency' | 'language' | 'network' | 'recovery' | 'device-info' | 'tos' | 'privacy';
 
 export default function App() {
@@ -23,6 +23,9 @@ export default function App() {
   const [selectedCampaignId, setSelectedCampaignId] = useState<number | null>(null);
   const [activeCommitment, setActiveCommitment] = useState<any>(null);
   
+  // Assets state
+  const [assetsView, setAssetsView] = useState<'main' | 'all-assets' | 'all-activity'>('main');
+
   // Cast state
   const [currentDisplay, setCurrentDisplay] = useState<any>(null);
 
@@ -41,7 +44,11 @@ export default function App() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-cyan-50 flex flex-col max-w-md mx-auto">
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto pb-20">
+      <main className={`flex-1 overflow-y-auto ${
+        (activeTab === 'ads' && adView !== 'main') || (activeTab === 'settings' && settingsView !== 'main') || (activeTab === 'assets' && assetsView !== 'main')
+          ? ''
+          : 'pb-20'
+      }`}>
         {activeTab === 'ads' && (
           <AdCampaigns
             view={adView}
@@ -67,6 +74,8 @@ export default function App() {
           <Assets
             walletConnected={walletConnected}
             setWalletConnected={setWalletConnected}
+            view={assetsView}
+            setView={setAssetsView}
           />
         )}
         {activeTab === 'settings' && (
@@ -86,7 +95,11 @@ export default function App() {
       </main>
 
       {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 max-w-md mx-auto shadow-lg">
+      <nav className={`fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 max-w-md mx-auto shadow-lg transition-transform duration-200 ${
+        (activeTab === 'ads' && adView !== 'main') || (activeTab === 'settings' && settingsView !== 'main') || (activeTab === 'assets' && assetsView !== 'main')
+          ? 'translate-y-full'
+          : ''
+      }`}>
         <div className="grid grid-cols-4 gap-1 p-2">
           <button
             onClick={() => {
@@ -116,7 +129,7 @@ export default function App() {
           </button>
 
           <button
-            onClick={() => setActiveTab('assets')}
+            onClick={() => { setActiveTab('assets'); setAssetsView('main'); }}
             className={`flex flex-col items-center justify-center py-2.5 px-2 rounded-xl transition-all duration-200 ${
               activeTab === 'assets'
                 ? 'gradient-wallet text-white shadow-lg scale-105'

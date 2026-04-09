@@ -44,10 +44,11 @@ import { toast } from 'sonner@2.0.3';
 interface AssetsProps {
   walletConnected: boolean;
   setWalletConnected: (connected: boolean) => void;
+  view: 'main' | 'all-assets' | 'all-activity';
+  setView: (view: 'main' | 'all-assets' | 'all-activity') => void;
 }
 
-export function Assets({ walletConnected, setWalletConnected }: AssetsProps) {
-  const [view, setView] = useState<'main' | 'all-assets' | 'all-activity'>('main');
+export function Assets({ walletConnected, setWalletConnected, view, setView }: AssetsProps) {
   const [isReceiveOpen, setIsReceiveOpen] = useState(false);
   const [isSendOpen, setIsSendOpen] = useState(false);
   const [isSelectingToken, setIsSelectingToken] = useState(false);

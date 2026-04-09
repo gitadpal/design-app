@@ -739,20 +739,20 @@ export function Settings({ view, setView, currency, setCurrency, language, setLa
           className="flex items-center justify-between px-4 py-3 cursor-pointer active:bg-gray-50 border-b"
           onClick={() => setView('tos')}
         >
-          <span>Terms of Service</span>
+          <Label className="cursor-pointer">Terms of Service</Label>
           <ChevronRight className="w-4 h-4 text-gray-400" />
         </div>
 
-        <div 
+        <div
           className="flex items-center justify-between px-4 py-3 cursor-pointer active:bg-gray-50 border-b"
           onClick={() => setView('privacy')}
         >
-          <span>Privacy Policy</span>
+          <Label className="cursor-pointer">Privacy Policy</Label>
           <ChevronRight className="w-4 h-4 text-gray-400" />
         </div>
 
         <div className="flex items-center justify-between px-4 py-3">
-          <span>Version</span>
+          <Label>Version</Label>
           <span className="text-sm text-gray-500">1.0.0</span>
         </div>
       </div>
