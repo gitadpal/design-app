@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { AdCampaigns } from './components/AdCampaigns';
 import { ImageCasting } from './components/ImageCasting';
 import { Assets } from './components/Assets';
@@ -15,14 +15,40 @@ type TabValue = 'ads' | 'cast' | 'assets' | 'settings';
 type AdView = 'main' | 'campaign-detail' | 'cast-preview' | 'bonus-rewards' | 'active-commitment' | 'participation-history';
 type SettingsView = 'main' | 'currency' | 'language' | 'network' | 'recovery' | 'device-info' | 'tos' | 'privacy';
 
+const DESIGN_WIDTH = 448;
+
+function useResponsiveScale(containerRef: React.RefObject<HTMLDivElement | null>) {
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const update = () => {
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const scale = vw / DESIGN_WIDTH;
+      el.style.transform = `scale(${scale})`;
+      el.style.transformOrigin = 'top left';
+      el.style.width = `${DESIGN_WIDTH}px`;
+      el.style.height = `${vh / scale}px`;
+    };
+
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, [containerRef]);
+}
+
 export default function App() {
+  const rootRef = useRef<HTMLDivElement>(null);
+  useResponsiveScale(rootRef);
+
   const [activeTab, setActiveTab] = useState<TabValue>('ads');
-  
+
   // Ad Campaigns state
   const [adView, setAdView] = useState<AdView>('main');
   const [selectedCampaignId, setSelectedCampaignId] = useState<number | null>(null);
   const [activeCommitment, setActiveCommitment] = useState<any>(null);
-  
+
   // Assets state
   const [assetsView, setAssetsView] = useState<'main' | 'all-assets' | 'all-activity'>('main');
 
@@ -42,7 +68,7 @@ export default function App() {
   const [network, setNetwork] = useState('ethereum');
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-cyan-50 flex flex-col max-w-md mx-auto">
+    <div ref={rootRef} className="bg-gradient-to-br from-purple-50 via-blue-50 to-cyan-50 flex flex-col overflow-hidden relative">
       {/* Main Content */}
       <main className={`flex-1 overflow-y-auto ${
         (activeTab === 'ads' && adView !== 'main') || (activeTab === 'settings' && settingsView !== 'main') || (activeTab === 'assets' && assetsView !== 'main')

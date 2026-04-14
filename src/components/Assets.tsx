@@ -126,13 +126,13 @@ export function Assets({ walletConnected, setWalletConnected, view, setView }: A
       category: 'defi',
       lastChanged: 4
     },
-    { 
-      symbol: 'UNI', 
-      name: 'Uniswap', 
-      balance: 180.00, 
-      value: 1260.00, 
-      change: 2.3,
-      color: 'text-fuchsia-600',
+    {
+      symbol: 'ARB',
+      name: 'Arbitrum',
+      balance: 420.00,
+      value: 1386.00,
+      change: 3.1,
+      color: 'text-cyan-600',
       category: 'defi',
       lastChanged: 6
     },
@@ -142,9 +142,9 @@ export function Assets({ walletConnected, setWalletConnected, view, setView }: A
     {
       id: 1,
       type: 'earn',
-      title: 'Binance - Trade BTC, ETH, SOL',
+      title: 'Binance Launchpool — SXT',
       subtitle: 'Campaign completed',
-      amount: '+85',
+      amount: '+110',
       timestamp: '2 hours ago',
     },
     {
@@ -166,7 +166,7 @@ export function Assets({ walletConnected, setWalletConnected, view, setView }: A
     {
       id: 4,
       type: 'earn',
-      title: 'Uniswap V4 - Swap Any Token',
+      title: 'Base — Onchain Summer 2026',
       subtitle: 'Campaign completed',
       amount: '+95',
       timestamp: '2 days ago',
@@ -174,9 +174,9 @@ export function Assets({ walletConnected, setWalletConnected, view, setView }: A
     {
       id: 5,
       type: 'earn',
-      title: 'OpenSea - Mint & Trade NFTs',
+      title: 'Arbitrum — The Scaling Layer',
       subtitle: 'Campaign completed',
-      amount: '+120',
+      amount: '+90',
       timestamp: '3 days ago',
     },
     {
@@ -190,9 +190,9 @@ export function Assets({ walletConnected, setWalletConnected, view, setView }: A
     {
       id: 7,
       type: 'earn',
-      title: 'TradingView Crypto Charts',
+      title: 'Ethena — The Internet Bond',
       subtitle: 'Campaign completed',
-      amount: '+70',
+      amount: '+100',
       timestamp: '5 days ago',
     },
     {
