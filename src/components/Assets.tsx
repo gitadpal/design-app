@@ -26,7 +26,7 @@ import {
   AlertDialogTitle,
 } from './ui/alert-dialog';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
+import {
   ArrowUpRight,
   ArrowDownLeft,
   Copy,
@@ -36,19 +36,23 @@ import {
   X,
   Wallet,
   TrendingUp,
-  RefreshCw,
-  Check
+  Check,
+  LogOut
 } from 'lucide-react';
 import { toast } from 'sonner@2.0.3';
+import { usePrivy, useWallets } from '../auth';
+import { PullToRefresh } from './PullToRefresh';
 
 interface AssetsProps {
-  walletConnected: boolean;
-  setWalletConnected: (connected: boolean) => void;
   view: 'main' | 'all-assets' | 'all-activity';
   setView: (view: 'main' | 'all-assets' | 'all-activity') => void;
 }
 
-export function Assets({ walletConnected, setWalletConnected, view, setView }: AssetsProps) {
+export function Assets({ view, setView }: AssetsProps) {
+  const { login, logout } = usePrivy();
+  const { activeWallet } = useWallets();
+  const walletConnected = !!activeWallet;
+  const [showDisconnectConfirm, setShowDisconnectConfirm] = useState(false);
   const [isReceiveOpen, setIsReceiveOpen] = useState(false);
   const [isSendOpen, setIsSendOpen] = useState(false);
   const [isSelectingToken, setIsSelectingToken] = useState(false);
@@ -60,8 +64,10 @@ export function Assets({ walletConnected, setWalletConnected, view, setView }: A
   const [showSendConfirm, setShowSendConfirm] = useState(false);
   
   const tokenBalance = 1247.50;
-  const walletAddress = '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2';
-  const shortAddress = '0x742d...4B5C';
+  const walletAddress = activeWallet?.address ?? '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb2';
+  const shortAddress = walletAddress
+    ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`
+    : '';
   
   const tokens = [
     { 
@@ -408,26 +414,33 @@ export function Assets({ walletConnected, setWalletConnected, view, setView }: A
         exit={{ opacity: 0, x: -20 }}
         transition={{ duration: 0.2 }}
       >
-        <div className="bg-white border-b sticky top-0 z-10">
+        <div className="bg-white border-b border-[#E0E0E0] sticky top-0 z-10">
           <div className="flex items-center justify-between px-4 py-3">
-            <button 
+            <button
               onClick={() => setView('main')}
-              className="flex items-center gap-2 text-blue-600"
+              className="flex items-center gap-1 text-sm font-medium transition-colors hover:opacity-80"
+              style={{ color: '#BC13FE' }}
             >
               <ChevronRight className="w-5 h-5 rotate-180" />
               <span>Back</span>
             </button>
-            <h2 className="text-lg">All Assets</h2>
+            <h2 className="text-base font-semibold tracking-tight text-[#1A1A1A]">All Assets</h2>
             <div className="w-12"></div>
           </div>
         </div>
 
         <div className="px-4 py-4">
-          <Card className="mb-4">
+          <Card className="mb-4 border-[#E0E0E0]">
             <CardContent className="p-6 text-center">
-              <div className="text-sm text-gray-600 mb-1">Total Portfolio Value</div>
-              <div className="text-3xl mb-2">${totalBalance.toFixed(2)}</div>
-              <Badge variant="secondary" className="text-green-600">
+              <div className="section-header mb-2">Total Portfolio Value</div>
+              <div className="text-3xl font-semibold tracking-tight text-[#1A1A1A] mb-2">
+                ${totalBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </div>
+              <Badge
+                variant="secondary"
+                className="border-0"
+                style={{ background: 'rgba(0,255,194,0.12)', color: '#0a8a6b' }}
+              >
                 +5.2% this week
               </Badge>
             </CardContent>
@@ -467,16 +480,17 @@ export function Assets({ walletConnected, setWalletConnected, view, setView }: A
         exit={{ opacity: 0, x: -20 }}
         transition={{ duration: 0.2 }}
       >
-        <div className="bg-white border-b sticky top-0 z-10">
+        <div className="bg-white border-b border-[#E0E0E0] sticky top-0 z-10">
           <div className="flex items-center justify-between px-4 py-3">
-            <button 
+            <button
               onClick={() => setView('main')}
-              className="flex items-center gap-2 text-blue-600"
+              className="flex items-center gap-1 text-sm font-medium transition-colors hover:opacity-80"
+              style={{ color: '#BC13FE' }}
             >
               <ChevronRight className="w-5 h-5 rotate-180" />
               <span>Back</span>
             </button>
-            <h2 className="text-lg">Activity History</h2>
+            <h2 className="text-base font-semibold tracking-tight text-[#1A1A1A]">Activity History</h2>
             <div className="w-12"></div>
           </div>
         </div>
@@ -540,7 +554,10 @@ export function Assets({ walletConnected, setWalletConnected, view, setView }: A
   // Wallet not connected state
   if (!walletConnected) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center px-6 pb-24 bg-gradient-to-b from-gray-50 to-white">
+      <div
+        className="flex flex-col items-center justify-center px-6 bg-white"
+        style={{ minHeight: 'max(100vh, 100%)' }}
+      >
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
@@ -559,19 +576,19 @@ export function Assets({ walletConnected, setWalletConnected, view, setView }: A
           </div>
 
           <div className="space-y-2">
-            <h2 className="text-xl font-semibold text-gray-900">No Wallet Connected</h2>
+            <h2 className="text-xl font-semibold tracking-tight text-[#1A1A1A]">No Wallet Connected</h2>
             <p className="text-sm text-gray-500 leading-relaxed">
               Connect your wallet to view balances, send tokens, and receive campaign rewards.
             </p>
           </div>
 
-          <Button
-            className="w-full h-12 text-base gradient-earn text-white shadow-lg"
-            onClick={() => setWalletConnected(true)}
+          <button
+            className="w-full h-12 rounded-xl text-base font-semibold flex items-center justify-center transition-all active:scale-[0.98] shadow-md hover:shadow-lg text-white bg-[#1A1A1A] hover:bg-[#2C2C2C]"
+            onClick={() => login()}
           >
             <Wallet className="w-5 h-5 mr-2" />
             Connect Wallet
-          </Button>
+          </button>
 
           <p className="text-xs text-gray-400">
             Your embedded AdPal wallet — no seed phrase required for setup.
@@ -584,46 +601,46 @@ export function Assets({ walletConnected, setWalletConnected, view, setView }: A
   // Main View
   return (
     <>
-      <motion.div 
+      <PullToRefresh onRefresh={handleRefresh}>
+      <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         className="pb-6"
       >
         {/* Wallet Balance Header */}
-        <div className="gradient-wallet text-white p-6 mb-4 rounded-b-3xl shadow-lg">
-          <div className="flex items-center justify-between mb-1">
-            <div className="text-sm opacity-90">Total Balance</div>
-            <button 
-              onClick={handleRefresh}
-              disabled={isRefreshing}
-              className="p-1 hover:bg-white/10 rounded-full transition-colors"
+        <div className="px-4 pt-5 pb-4 mb-2">
+          <div className="flex items-center justify-between mb-1.5">
+            <div className="section-header">Total Balance</div>
+            <button
+              onClick={() => setShowDisconnectConfirm(true)}
+              className="p-1.5 -mr-1.5 hover:bg-gray-100 rounded-full transition-colors"
+              aria-label="Disconnect wallet"
             >
-              <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              <LogOut className="w-4 h-4 text-gray-400" />
             </button>
           </div>
-          <div className="text-4xl mb-4">${totalBalance.toFixed(2)}</div>
-          
-          <div className="flex items-center justify-between mb-4">
-            <div className="text-sm opacity-90">Wallet Address</div>
-            <button 
-              onClick={handleCopyAddress}
-              className="flex items-center gap-1 text-sm opacity-90 hover:opacity-100"
-            >
-              <span>{shortAddress}</span>
-              <Copy className="w-4 h-4" />
-            </button>
+          <div className="text-4xl font-semibold tracking-tight text-[#1A1A1A] mb-3">
+            ${totalBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
 
+          <button
+            onClick={handleCopyAddress}
+            className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-[#1A1A1A] transition-colors mb-5"
+          >
+            <span className="font-mono">{shortAddress}</span>
+            <Copy className="w-3 h-3" />
+          </button>
+
           <div className="grid grid-cols-2 gap-3">
-            <button 
-              className="w-full h-11 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-xl transition-all hover:scale-105 active:scale-95 flex items-center justify-center"
+            <button
+              className="w-full h-11 rounded-xl transition-all active:scale-95 flex items-center justify-center text-sm font-semibold text-[#1A1A1A] border border-[#E0E0E0] bg-white hover:border-[#1A1A1A]/30 hover:shadow-sm"
               onClick={() => setIsReceiveOpen(true)}
             >
               <ArrowDownLeft className="w-4 h-4 mr-2" />
               Receive
             </button>
-            <button 
-              className="w-full h-11 bg-white text-purple-600 hover:shadow-xl rounded-xl transition-all hover:scale-105 active:scale-95 flex items-center justify-center"
+            <button
+              className="w-full h-11 rounded-xl transition-all active:scale-95 flex items-center justify-center text-sm font-semibold text-white bg-[#1A1A1A] hover:bg-[#2C2C2C] shadow-md hover:shadow-lg"
               onClick={() => setIsSendOpen(true)}
             >
               <ArrowUpRight className="w-4 h-4 mr-2" />
@@ -635,9 +652,10 @@ export function Assets({ walletConnected, setWalletConnected, view, setView }: A
       {/* Token List */}
       <div className="px-4 mb-6">
         <div className="flex items-center justify-between mb-3">
-          <h3>Assets</h3>
-          <button 
-            className="flex items-center gap-1 text-sm text-blue-600"
+          <h3 className="font-semibold tracking-tight text-[#1A1A1A]">Assets</h3>
+          <button
+            className="flex items-center gap-1 text-sm font-medium transition-colors hover:opacity-80"
+            style={{ color: '#BC13FE' }}
             onClick={() => setView('all-assets')}
           >
             <span>View All</span>
@@ -659,7 +677,7 @@ export function Assets({ walletConnected, setWalletConnected, view, setView }: A
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
               >
-                <Card className="hover:shadow-lg transition-all hover:scale-[1.02] border-l-4 border-l-cyan-500">
+                <Card className="border-[#E0E0E0] hover:border-[#1A1A1A]/20 hover:shadow-sm transition-all">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
@@ -695,9 +713,10 @@ export function Assets({ walletConnected, setWalletConnected, view, setView }: A
       {/* Recent Activity */}
       <div className="px-4">
         <div className="flex items-center justify-between mb-3">
-          <h3>Recent Activity</h3>
-          <button 
-            className="flex items-center gap-1 text-sm text-blue-600"
+          <h3 className="font-semibold tracking-tight text-[#1A1A1A]">Recent Activity</h3>
+          <button
+            className="flex items-center gap-1 text-sm font-medium transition-colors hover:opacity-80"
+            style={{ color: '#BC13FE' }}
             onClick={() => setView('all-activity')}
           >
             <span>View All</span>
@@ -755,6 +774,7 @@ export function Assets({ walletConnected, setWalletConnected, view, setView }: A
         )}
       </div>
       </motion.div>
+      </PullToRefresh>
 
       {/* Receive Drawer */}
       <Drawer open={isReceiveOpen} onOpenChange={setIsReceiveOpen}>
@@ -865,7 +885,7 @@ export function Assets({ walletConnected, setWalletConnected, view, setView }: A
                         
                         return (
                           <>
-                            <div className="text-2xl text-blue-600">
+                            <div className="text-2xl font-semibold tracking-tight text-[#1A1A1A]">
                               {token.category === 'nft' ? token.balance : token.balance.toFixed(2)} {token.symbol}
                             </div>
                             <div className="text-xs text-gray-500 mt-0.5">≈ ${token.value.toFixed(2)}</div>
@@ -902,7 +922,8 @@ export function Assets({ walletConnected, setWalletConnected, view, setView }: A
                             setAmount(token.balance.toString());
                           }
                         }}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-blue-600"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold hover:opacity-80 transition-opacity"
+                        style={{ color: '#BC13FE' }}
                       >
                         MAX
                       </button>
@@ -937,9 +958,10 @@ export function Assets({ walletConnected, setWalletConnected, view, setView }: A
               {/* Token Selection View */}
               <div className="px-4 pb-4">
                 <div className="flex items-center mb-4">
-                  <button 
+                  <button
                     onClick={() => setIsSelectingToken(false)}
-                    className="flex items-center gap-2 text-blue-600"
+                    className="flex items-center gap-1 text-sm font-medium transition-colors hover:opacity-80"
+                    style={{ color: '#BC13FE' }}
                   >
                     <ChevronRight className="w-5 h-5 rotate-180" />
                     <span>Back</span>
@@ -984,7 +1006,7 @@ export function Assets({ walletConnected, setWalletConnected, view, setView }: A
                               <div className="text-sm text-gray-500">${token.value.toFixed(2)}</div>
                             </div>
                             {selectedToken === token.symbol && (
-                              <Check className="w-5 h-5 text-blue-600" />
+                              <Check className="w-5 h-5" style={{ color: '#BC13FE' }} />
                             )}
                           </div>
                         </div>
@@ -1017,6 +1039,30 @@ export function Assets({ walletConnected, setWalletConnected, view, setView }: A
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleSendConfirm}>
               Confirm Send
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Disconnect Wallet Confirmation */}
+      <AlertDialog open={showDisconnectConfirm} onOpenChange={setShowDisconnectConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Disconnect wallet?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You'll need to sign in again to view balances or join campaigns. Your tokens stay safe — nothing is transferred.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                logout();
+                setShowDisconnectConfirm(false);
+                toast.success('Wallet disconnected');
+              }}
+            >
+              Disconnect
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

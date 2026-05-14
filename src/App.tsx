@@ -58,9 +58,6 @@ export default function App() {
   // Device state
   const [einkCaseAttached, setEinkCaseAttached] = useState(false);
 
-  // Wallet state
-  const [walletConnected, setWalletConnected] = useState(false);
-
   // Settings state
   const [settingsView, setSettingsView] = useState<SettingsView>('main');
   const [currency, setCurrency] = useState('USD');
@@ -84,7 +81,6 @@ export default function App() {
             activeCommitment={activeCommitment}
             setActiveCommitment={setActiveCommitment}
             einkCaseAttached={einkCaseAttached}
-            walletConnected={walletConnected}
             onGoToWallet={() => setActiveTab('assets')}
           />
         )}
@@ -94,12 +90,14 @@ export default function App() {
             currentDisplay={currentDisplay}
             setCurrentDisplay={setCurrentDisplay}
             einkCaseAttached={einkCaseAttached}
+            onViewActiveStatus={() => {
+              setActiveTab('ads');
+              setAdView('active-commitment');
+            }}
           />
         )}
         {activeTab === 'assets' && (
           <Assets
-            walletConnected={walletConnected}
-            setWalletConnected={setWalletConnected}
             view={assetsView}
             setView={setAssetsView}
           />
@@ -120,68 +118,151 @@ export default function App() {
         )}
       </main>
 
-      {/* Bottom Navigation */}
-      <nav className={`fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 max-w-md mx-auto shadow-lg transition-transform duration-200 ${
-        (activeTab === 'ads' && adView !== 'main') || (activeTab === 'settings' && settingsView !== 'main') || (activeTab === 'assets' && assetsView !== 'main')
-          ? 'translate-y-full'
-          : ''
-      }`}>
-        <div className="grid grid-cols-4 gap-1 p-2">
-          <button
-            onClick={() => {
-              setActiveTab('ads');
-              setAdView('main');
-            }}
-            className={`flex flex-col items-center justify-center py-2.5 px-2 rounded-xl transition-all duration-200 ${
-              activeTab === 'ads'
-                ? 'gradient-earn text-white shadow-lg scale-105'
-                : 'text-gray-500 hover:bg-gray-50 active:scale-95'
-            }`}
-          >
-            <Coins className="w-5 h-5" />
-            <span className="tab-label mt-1">Earnings</span>
-          </button>
+      {/* Bottom Navigation — liquid glass with the active tab's accent spreading across it */}
+      {(() => {
+        // Soft fingertip-ink fade — strong at the center, feathered at the edges so the ridge field reads like a pressed print.
+        const fingerprintMask =
+          'radial-gradient(closest-side, black 35%, rgba(0,0,0,0.6) 70%, transparent 100%)';
 
-          <button
-            onClick={() => setActiveTab('cast')}
-            className={`flex flex-col items-center justify-center py-2.5 px-2 rounded-xl transition-all duration-200 ${
-              activeTab === 'cast'
-                ? 'gradient-cast text-white shadow-lg scale-105'
-                : 'text-gray-500 hover:bg-gray-50 active:scale-95'
+        // Each tab is a different "finger pressed at a different angle":
+        //   - different ellipse aspect (finger shape)
+        //   - different off-center pad (where the finger pressed hardest)
+        //   - different rotation (angle of impression)
+        //   - slightly different ridge spacing (whose finger)
+        const tabAccents: Record<TabValue, {
+          color: string;
+          pos: string;
+          inactiveText: string;
+          rotate: number;
+          haloStyle: (c: string) => Record<string, string>;
+        }> = {
+          ads: {
+            color: '#22c55e',
+            pos: '12.5%',
+            inactiveText: 'text-emerald-400',
+            rotate: 14,
+            haloStyle: (c) => ({
+              background:
+                `radial-gradient(ellipse 62% 78% at 48% 52%, ${c}e6 0%, ${c}66 55%, transparent 92%)`,
+              maskImage: fingerprintMask,
+              WebkitMaskImage: fingerprintMask,
+            }),
+          },
+          cast: {
+            color: '#f43f5e',
+            pos: '37.5%',
+            inactiveText: 'text-rose-400',
+            rotate: -22,
+            haloStyle: (c) => ({
+              background:
+                `radial-gradient(ellipse 72% 58% at 42% 60%, ${c}e6 0%, ${c}66 55%, transparent 92%)`,
+              maskImage: fingerprintMask,
+              WebkitMaskImage: fingerprintMask,
+            }),
+          },
+          assets: {
+            color: '#BC13FE',
+            pos: '62.5%',
+            inactiveText: 'text-fuchsia-400',
+            rotate: 32,
+            haloStyle: (c) => ({
+              background:
+                `radial-gradient(ellipse 54% 82% at 56% 46%, ${c}e6 0%, ${c}66 55%, transparent 92%)`,
+              maskImage: fingerprintMask,
+              WebkitMaskImage: fingerprintMask,
+            }),
+          },
+          settings: {
+            color: '#06b6d4',
+            pos: '87.5%',
+            inactiveText: 'text-cyan-300',
+            rotate: -6,
+            haloStyle: (c) => ({
+              background:
+                `radial-gradient(ellipse 68% 70% at 46% 54%, ${c}e6 0%, ${c}66 55%, transparent 92%)`,
+              maskImage: fingerprintMask,
+              WebkitMaskImage: fingerprintMask,
+            }),
+          },
+        };
+        const accent = tabAccents[activeTab];
+        return (
+          <nav
+            className={`fixed bottom-0 left-0 right-0 max-w-md mx-auto transition-transform duration-200 ${
+              (activeTab === 'ads' && adView !== 'main') || (activeTab === 'settings' && settingsView !== 'main') || (activeTab === 'assets' && assetsView !== 'main')
+                ? 'translate-y-full'
+                : ''
             }`}
           >
-            <Frame className="w-5 h-5" />
-            <span className="tab-label mt-1">Cast</span>
-          </button>
-
-          <button
-            onClick={() => { setActiveTab('assets'); setAssetsView('main'); }}
-            className={`flex flex-col items-center justify-center py-2.5 px-2 rounded-xl transition-all duration-200 ${
-              activeTab === 'assets'
-                ? 'gradient-wallet text-white shadow-lg scale-105'
-                : 'text-gray-500 hover:bg-gray-50 active:scale-95'
-            }`}
-          >
-            <Wallet className="w-5 h-5" />
-            <span className="tab-label mt-1">Assets</span>
-          </button>
-
-          <button
-            onClick={() => {
-              setActiveTab('settings');
-              setSettingsView('main');
-            }}
-            className={`flex flex-col items-center justify-center py-2.5 px-2 rounded-xl transition-all duration-200 ${
-              activeTab === 'settings'
-                ? 'gradient-settings text-gray-800 shadow-lg scale-105'
-                : 'text-gray-500 hover:bg-gray-50 active:scale-95'
-            }`}
-          >
-            <SettingsIcon className="w-5 h-5" />
-            <span className="tab-label mt-1">Settings</span>
-          </button>
-        </div>
-      </nav>
+            {/* Edge-less glass layer — fades into the page above so there's no visible top boundary */}
+            <div
+              aria-hidden="true"
+              className="absolute inset-0 -top-10 pointer-events-none"
+              style={{
+                background:
+                  `radial-gradient(140% 200% at ${accent.pos} 100%, ${accent.color}1c 0%, ${accent.color}08 28%, transparent 65%), ` +
+                  'linear-gradient(to bottom, transparent 0%, rgba(20,20,28,0.04) 38%, rgba(20,20,28,0.10) 100%)',
+                WebkitBackdropFilter: 'blur(18px) saturate(1.5)',
+                backdropFilter: 'blur(18px) saturate(1.5)',
+                maskImage: 'linear-gradient(to bottom, transparent 0%, black 38%, black 100%)',
+                WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 38%, black 100%)',
+                transition: 'background 400ms ease',
+              }}
+            />
+            <div className="relative grid grid-cols-4 p-2">
+              {([
+                { tab: 'ads' as TabValue,      Icon: Coins,        label: 'Earnings', onSelect: () => { setActiveTab('ads'); setAdView('main'); } },
+                { tab: 'cast' as TabValue,     Icon: Frame,        label: 'Cast',     onSelect: () => setActiveTab('cast') },
+                { tab: 'assets' as TabValue,   Icon: Wallet,       label: 'Assets',   onSelect: () => { setActiveTab('assets'); setAssetsView('main'); } },
+                { tab: 'settings' as TabValue, Icon: SettingsIcon, label: 'Settings', onSelect: () => { setActiveTab('settings'); setSettingsView('main'); } },
+              ]).map(({ tab, Icon, label, onSelect }) => {
+                const isActive = activeTab === tab;
+                const itemAccent = tabAccents[tab];
+                return (
+                  <button
+                    key={tab}
+                    onClick={onSelect}
+                    className={`relative flex flex-col items-center justify-center py-2.5 px-2 transition-all duration-300 active:scale-[0.96] focus:outline-none ${
+                      isActive ? 'text-white' : 'text-gray-400/70 hover:text-gray-200'
+                    }`}
+                    style={
+                      isActive
+                        ? { filter: `drop-shadow(0 0 10px ${itemAccent.color}cc)` }
+                        : undefined
+                    }
+                  >
+                    {/* Per-tab signature halo — each tab has its own visual treatment */}
+                    {isActive && (
+                      <span
+                        aria-hidden="true"
+                        className="absolute -inset-y-1 inset-x-0 pointer-events-none"
+                        style={{
+                          ...itemAccent.haloStyle(itemAccent.color),
+                          transform: `rotate(${itemAccent.rotate}deg)`,
+                        }}
+                      />
+                    )}
+                    <Icon
+                      className="relative w-5 h-5 transition-all duration-300"
+                      strokeWidth={isActive ? 2.5 : 1.8}
+                    />
+                    <span className={`relative tab-label mt-1 transition-opacity duration-300 ${isActive ? 'opacity-100 font-medium' : 'opacity-100'}`}>
+                      {label}
+                    </span>
+                    {isActive && (
+                      <span
+                        aria-hidden="true"
+                        className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full"
+                        style={{ background: itemAccent.color, boxShadow: `0 0 8px ${itemAccent.color}` }}
+                      />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </nav>
+        );
+      })()}
 
       <Toaster />
     </div>
