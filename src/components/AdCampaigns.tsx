@@ -19,6 +19,7 @@ import {
   ExternalLink,
   RefreshCw,
   Sparkles,
+
   Zap,
   Info,
   CalendarDays,
@@ -29,6 +30,9 @@ import { toast } from 'sonner@2.0.3';
 import iphoneBackImg from 'figma:asset/771d461e7de4d0c40d4ef5fcc5c59768d30ec60e.png';
 import { EinkCasePrompt } from './EinkCasePrompt';
 import { WalletConnectPrompt } from './WalletConnectPrompt';
+import { PullToRefresh } from './PullToRefresh';
+import { useWallets } from '../auth';
+import { FaceIdPrompt } from './FaceIdPrompt';
 
 interface AdCampaignsProps {
   view: 'main' | 'campaign-detail' | 'cast-preview' | 'bonus-rewards' | 'active-commitment' | 'participation-history';
@@ -38,7 +42,6 @@ interface AdCampaignsProps {
   activeCommitment: any;
   setActiveCommitment: (commitment: any) => void;
   einkCaseAttached: boolean;
-  walletConnected: boolean;
   onGoToWallet: () => void;
 }
 
@@ -50,9 +53,11 @@ export function AdCampaigns({
   activeCommitment,
   setActiveCommitment,
   einkCaseAttached,
-  walletConnected,
   onGoToWallet,
 }: AdCampaignsProps) {
+  const { activeWallet } = useWallets();
+  const walletConnected = !!activeWallet;
+  const [showFaceId, setShowFaceId] = useState(false);
   const [bonusPoints, setBonusPoints] = useState(350);
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
   const [isLoading, setIsLoading] = useState(true);
@@ -74,9 +79,9 @@ export function AdCampaigns({
     }
   }, [view]);
 
-  // Timer for active commitment
+  // Timer for active commitment — runs whenever a commitment exists so the main view banner stays live
   useEffect(() => {
-    if (view === 'active-commitment' && activeCommitment && !isFastForwarding) {
+    if (activeCommitment && !isFastForwarding) {
       const updateTimer = () => {
         const elapsed = Date.now() - activeCommitment.startTime;
         const totalDuration = activeCommitment.duration * 60 * 60 * 1000; // hours to ms
@@ -266,6 +271,63 @@ export function AdCampaigns({
       networkColor: '#627EEA',
       networkIcon: '◆',
     },
+    {
+      id: 5,
+      title: 'Kraken — Win a Whole Bitcoin',
+      description: 'Trade, earn, and stake on the most trusted US exchange',
+      reward: 75,
+      duration: 5,
+      poolRemaining: 38,
+      completions: 982,
+      rating: 4.6,
+      image: 'https://i0.wp.com/blog.kraken.com/wp-content/uploads/2025/11/USTradeLottery_3070x1400.png?fit=3070%2C1400&ssl=1',
+      category: 'Exchange',
+      startDate: '2026-04-10',
+      endDate: '2026-04-24',
+      tokenSymbol: 'BTC',
+      tokenColor: 'from-orange-400 to-yellow-500',
+      network: 'Bitcoin',
+      networkColor: '#F7931A',
+      networkIcon: '₿',
+    },
+    {
+      id: 6,
+      title: 'Aave — GHO, the DeFi Dollar',
+      description: 'Borrow, lend, and mint GHO — the decentralized stablecoin native to Aave',
+      reward: 80,
+      duration: 4,
+      poolRemaining: 58,
+      completions: 1421,
+      rating: 4.7,
+      image: 'https://aave.com/images/blog/2025-recap-15.png',
+      category: 'DeFi',
+      startDate: '2026-04-08',
+      endDate: '2026-04-22',
+      tokenSymbol: 'AAVE',
+      tokenColor: 'from-pink-400 to-purple-500',
+      network: 'Ethereum',
+      networkColor: '#B6509E',
+      networkIcon: '◆',
+    },
+    {
+      id: 7,
+      title: 'OKX Wallet — One Wallet, Every Chain',
+      description: 'Self-custody across 80+ networks. Trade, swap, and stake in one place',
+      reward: 70,
+      duration: 5,
+      poolRemaining: 76,
+      completions: 2104,
+      rating: 4.8,
+      image: 'https://web3.okx.com/cdn/oksupport/common/Wallet_Hero_Static_Desktop.9f14eec5060dd3.webp',
+      category: 'Wallet',
+      startDate: '2026-04-12',
+      endDate: '2026-04-26',
+      tokenSymbol: 'OKB',
+      tokenColor: 'from-gray-700 to-black',
+      network: 'Multi-chain',
+      networkColor: '#000000',
+      networkIcon: '⬢',
+    },
   ];
 
   const bonusTasks = [
@@ -371,16 +433,17 @@ export function AdCampaigns({
 
     return (
       <div className="min-h-screen bg-gray-50">
-        <div className="bg-white border-b sticky top-0 z-10">
+        <div className="bg-white border-b border-[#E0E0E0] sticky top-0 z-10">
           <div className="flex items-center justify-between px-4 py-3">
-            <button 
+            <button
               onClick={() => setView('main')}
-              className="flex items-center gap-2 text-blue-600"
+              className="flex items-center gap-1 text-sm font-medium transition-colors hover:opacity-80"
+              style={{ color: '#BC13FE' }}
             >
               <ChevronRight className="w-5 h-5 rotate-180" />
               <span>Back</span>
             </button>
-            <h2 className="text-lg">Campaign History</h2>
+            <h2 className="text-base font-semibold tracking-tight text-[#1A1A1A]">Campaign History</h2>
             <div className="w-12"></div>
           </div>
         </div>
@@ -388,10 +451,11 @@ export function AdCampaigns({
         <div className="px-4 py-4">
           {/* Sorting Controls */}
           <div className="flex items-center justify-between mb-3">
-            <h3>Completed Campaigns</h3>
+            <h3 className="font-semibold tracking-tight text-[#1A1A1A]">Completed Campaigns</h3>
             <button
               onClick={() => setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')}
-              className="flex items-center gap-1 text-sm text-blue-600"
+              className="flex items-center gap-1 text-sm font-medium transition-colors hover:opacity-80"
+              style={{ color: '#BC13FE' }}
             >
               <span>{sortOrder === 'desc' ? 'Newest First' : 'Oldest First'}</span>
               <ChevronRight className={`w-4 h-4 transition-transform ${sortOrder === 'asc' ? 'rotate-90' : '-rotate-90'}`} />
@@ -458,158 +522,220 @@ export function AdCampaigns({
     const isComplete = progress >= 100;
 
     return (
-      <div className="min-h-screen bg-gray-50 pb-6">
-        {/* Header */}
-        <div className="bg-white border-b sticky top-0 z-10">
-          <div className="flex items-center justify-between px-4 py-3">
-            <button 
-              onClick={() => setView('main')}
-              className="flex items-center gap-2 text-blue-600"
-            >
-              <ChevronRight className="w-5 h-5 rotate-180" />
-              <span>Back</span>
-            </button>
-            <h2 className="text-lg">Campaign Status</h2>
-            <div className="w-12"></div>
-          </div>
-        </div>
-
-        {/* Campaign Image */}
-        <div className="relative w-full aspect-[4/3] bg-gray-200">
-          <img 
-            src={activeCommitment.image} 
-            alt={activeCommitment.title}
-            className="w-full h-full object-cover"
+      <div
+        className="relative pb-8 bg-[#0a0a0a] overflow-hidden"
+        style={{ minHeight: 'max(100vh, 100%)' }}
+      >
+        {/* Blurred campaign image backdrop */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <img
+            src={activeCommitment.image}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover scale-125"
+            style={{ filter: 'blur(48px) saturate(1.5) brightness(0.55)' }}
           />
-          {isComplete && (
-            <div className="absolute inset-0 bg-gradient-to-t from-green-900/80 via-green-900/40 to-transparent flex items-center justify-center">
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ type: "spring", duration: 0.6 }}
-                className="text-white text-center"
-              >
-                <CheckCircle2 className="w-16 h-16 mx-auto mb-2" />
-                <div className="text-2xl">Complete!</div>
-              </motion.div>
-            </div>
-          )}
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                'linear-gradient(to bottom, rgba(10,10,10,0.55) 0%, rgba(10,10,10,0.25) 30%, rgba(10,10,10,0.45) 70%, rgba(10,10,10,0.85) 100%)',
+            }}
+          />
+          <div
+            className="absolute inset-0 opacity-25 mix-blend-overlay"
+            style={{
+              background:
+                'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'3\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\' opacity=\'0.5\'/%3E%3C/svg%3E")',
+            }}
+          />
         </div>
 
-        <div className="px-4 mt-4 space-y-4">
-          {/* Campaign Info */}
-          <div>
-            <h2 className="mb-1">{activeCommitment.title}</h2>
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <Badge className="gradient-earn text-white border-0">
-                <Timer className="w-3 h-3 mr-1" />
-                Active Campaign
-              </Badge>
+        {/* Foreground */}
+        <div className="relative z-[1]">
+          {/* Transparent glass header */}
+          <div className="sticky top-0 z-20 backdrop-blur-md bg-black/20 border-b border-white/10">
+            <div className="flex items-center justify-between px-4 py-3">
+              <button
+                onClick={() => setView('main')}
+                className="flex items-center gap-1 text-white"
+              >
+                <ChevronRight className="w-5 h-5 rotate-180" />
+                <span className="text-sm">Back</span>
+              </button>
+              <h2 className="text-base font-semibold text-white">Campaign Status</h2>
+              <div className="w-16" />
             </div>
           </div>
 
-          {/* Progress Card */}
-          <Card className={isComplete ? "gradient-success" : "gradient-earn"}>
-            <CardContent className="p-4 text-white">
-              <div className="flex items-center justify-between mb-3">
-                <div>
-                  <div className="text-sm opacity-90 mb-1">
-                    {isComplete ? 'Completed!' : 'Time Remaining'}
+          {/* Featured campaign image with prism border */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.92 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+            className="flex justify-center pt-6 px-4"
+          >
+            <div className="relative w-full max-w-[280px]">
+              <div
+                className="absolute inset-0 rounded-2xl blur-2xl opacity-50"
+                style={{
+                  background: isComplete
+                    ? 'linear-gradient(135deg, #00FFC2, #00d9a8)'
+                    : 'linear-gradient(135deg, #00FFC2, #BC13FE)',
+                  transform: 'scale(1.06)',
+                }}
+              />
+              <div
+                className="relative rounded-2xl p-[2px]"
+                style={{
+                  background: isComplete
+                    ? 'linear-gradient(135deg, #00FFC2, #00d9a8)'
+                    : 'linear-gradient(135deg, #00FFC2, #BC13FE)',
+                }}
+              >
+                <img
+                  src={activeCommitment.image}
+                  alt={activeCommitment.title}
+                  className="w-full aspect-[100/149] object-cover rounded-2xl block"
+                  style={{ filter: 'contrast(1.04) brightness(0.98)' }}
+                />
+                {isComplete && (
+                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-t from-emerald-900/70 via-emerald-900/20 to-transparent flex items-center justify-center">
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: 'spring', duration: 0.6 }}
+                      className="text-center"
+                    >
+                      <CheckCircle2 className="w-14 h-14 mx-auto mb-1.5" style={{ color: '#00FFC2' }} />
+                      <div className="text-xl font-bold text-white drop-shadow-sm">Complete!</div>
+                    </motion.div>
                   </div>
-                  <div className="text-2xl">
-                    {isComplete ? '0h 0m 0s' : formatTime(timeRemaining)}
-                  </div>
+                )}
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Title + status badge */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, delay: 0.2 }}
+            className="text-center mt-5 px-6"
+          >
+            <h1 className="text-xl font-bold text-white drop-shadow-sm mb-2">{activeCommitment.title}</h1>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-white/15 bg-white/10 backdrop-blur-md text-xs text-white/85">
+              <Timer className="w-3.5 h-3.5" style={{ color: isComplete ? '#00FFC2' : '#00FFC2' }} />
+              {isComplete ? 'Ready to Claim' : 'Active Campaign'}
+            </div>
+          </motion.div>
+
+          {/* Progress card (glass) */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, delay: 0.3 }}
+            className="mx-6 mt-5 rounded-xl p-4 border border-white/15 bg-white/10 backdrop-blur-md"
+          >
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <div className="text-[10px] uppercase tracking-wider text-white/50 mb-1">
+                  {isComplete ? 'Completed' : 'Time Remaining'}
                 </div>
-                <div className="text-right">
-                  <div className="text-sm opacity-90 mb-1">Reward</div>
-                  <div className="text-2xl flex items-center gap-1">
-                    <Coins className="w-6 h-6" />
-                    {activeCommitment.reward}
-                  </div>
+                <div className="text-2xl font-bold text-white">
+                  {isComplete ? '0h 0m 0s' : formatTime(timeRemaining)}
                 </div>
               </div>
-              
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="opacity-90">Progress</span>
-                  <span>{progress.toFixed(1)}%</span>
-                </div>
-                <Progress value={progress} className="h-2 bg-white/20" />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Stats Grid */}
-          <div className="grid grid-cols-2 gap-3">
-            <Card>
-              <CardContent className="p-4 text-center">
-                <Clock className="w-5 h-5 text-blue-500 mx-auto mb-2" />
-                <div className="text-lg mb-0.5">{activeCommitment.duration}h</div>
-                <div className="text-xs text-gray-500">Total Duration</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4 text-center">
-                <TrendingUp className="w-5 h-5 text-green-500 mx-auto mb-2" />
-                <div className="text-lg mb-0.5">{(progress).toFixed(0)}%</div>
-                <div className="text-xs text-gray-500">Complete</div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Info Banner */}
-          <Card className="bg-blue-50 border-blue-200">
-            <CardContent className="p-4">
-              <div className="flex items-start gap-3">
-                <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                <div className="text-sm text-blue-900 space-y-1">
-                  {isComplete ? (
-                    <>
-                      <p>✓ Campaign completed successfully!</p>
-                      <p>✓ Claim your tokens to receive the reward</p>
-                      <p>✓ Tokens will be added to your wallet</p>
-                    </>
-                  ) : (
-                    <>
-                      <p>• Keep your screen displaying the campaign</p>
-                      <p>• You can use fast-forward to test completion</p>
-                      <p>• Claim tokens after completion to receive reward</p>
-                    </>
-                  )}
+              <div className="text-right">
+                <div className="text-[10px] uppercase tracking-wider text-white/50 mb-1">Reward</div>
+                <div className="text-2xl font-bold flex items-center gap-1 justify-end" style={{ color: '#00FFC2' }}>
+                  <Coins className="w-5 h-5" />
+                  {activeCommitment.reward}
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
 
-          {/* Action Buttons */}
-          {isComplete ? (
-            <Button 
-              className="w-full h-12 gradient-success text-white"
-              onClick={handleClaimTokens}
-            >
-              <Coins className="w-5 h-5 mr-2" />
-              Claim {activeCommitment.reward} Tokens
-            </Button>
-          ) : (
-            <Button 
-              className="w-full h-12"
-              variant="outline"
-              onClick={handleFastForward}
-              disabled={isFastForwarding}
-            >
-              {isFastForwarding ? (
-                <>
-                  <RefreshCw className="w-5 h-5 mr-2 animate-spin" />
-                  Fast Forwarding...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-5 h-5 mr-2" />
-                  Fast Forward (Demo)
-                </>
-              )}
-            </Button>
-          )}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-white/60">Progress</span>
+                <span className="text-white font-semibold">{progress.toFixed(1)}%</span>
+              </div>
+              <div className="h-2 rounded-full bg-white/10 overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all"
+                  style={{
+                    width: `${progress}%`,
+                    background: isComplete
+                      ? 'linear-gradient(90deg, #00FFC2, #00d9a8)'
+                      : 'linear-gradient(90deg, #00FFC2, #BC13FE)',
+                  }}
+                />
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Info banner (glass) */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, delay: 0.4 }}
+            className="mx-6 mt-3 rounded-xl p-4 border border-white/15 bg-white/[0.06] backdrop-blur-md"
+          >
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: '#00FFC2' }} />
+              <div className="text-sm text-white/85 space-y-1">
+                {isComplete ? (
+                  <>
+                    <p>Campaign completed successfully</p>
+                    <p>Claim your tokens to receive the reward</p>
+                    <p>Tokens will be added to your wallet</p>
+                  </>
+                ) : (
+                  <>
+                    <p>Keep your screen displaying the campaign</p>
+                    <p>You can use fast-forward to test completion</p>
+                    <p>Claim tokens after completion to receive reward</p>
+                  </>
+                )}
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Action button */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, delay: 0.45 }}
+            className="mx-6 mt-6"
+          >
+            {isComplete ? (
+              <button
+                onClick={handleClaimTokens}
+                className="w-full h-14 rounded-xl font-bold text-base flex items-center justify-center gap-2.5 transition-all active:scale-95"
+                style={{ background: 'linear-gradient(135deg, #00FFC2, #00d9a8)', color: '#0a0a0a', boxShadow: '0 0 32px rgba(0,255,194,0.35)' }}
+              >
+                <Coins className="w-5 h-5" />
+                Claim {activeCommitment.reward} Tokens
+              </button>
+            ) : (
+              <button
+                onClick={handleFastForward}
+                disabled={isFastForwarding}
+                className="w-full h-14 rounded-xl font-semibold text-base flex items-center justify-center gap-2.5 transition-all active:scale-95 border border-white/20 bg-white/5 hover:bg-white/10 backdrop-blur-md text-white disabled:opacity-60"
+              >
+                {isFastForwarding ? (
+                  <>
+                    <RefreshCw className="w-5 h-5 animate-spin" />
+                    Fast Forwarding...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-5 h-5" style={{ color: '#00FFC2' }} />
+                    Fast Forward (Demo)
+                  </>
+                )}
+              </button>
+            )}
+          </motion.div>
         </div>
       </div>
     );
@@ -626,24 +752,52 @@ export function AdCampaigns({
 
     return (
       <>
-      <div className="min-h-screen bg-gray-50 pb-6">
-        {/* Header with Back Button */}
-        <div className="bg-white border-b sticky top-0 z-20">
+      <div
+        className="relative bg-[#0a0a0a] pb-6 overflow-hidden"
+        style={{ minHeight: 'max(100vh, 100%)' }}
+      >
+        {/* Blurred campaign image backdrop (TikTok-style) */}
+        <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
+          <img
+            src={selectedCampaign.image}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover scale-125"
+            style={{ filter: 'blur(48px) saturate(1.5) brightness(0.55)' }}
+          />
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                'linear-gradient(to bottom, rgba(10,10,10,0.55) 0%, rgba(10,10,10,0.25) 30%, rgba(10,10,10,0.45) 70%, rgba(10,10,10,0.85) 100%)',
+            }}
+          />
+          <div
+            className="absolute inset-0 opacity-25 mix-blend-overlay"
+            style={{
+              background:
+                'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'3\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\' opacity=\'0.5\'/%3E%3C/svg%3E")',
+            }}
+          />
+        </div>
+
+        <div className="relative z-[1]">
+        {/* Header with Back Button — translucent over the blurred backdrop */}
+        <div className="sticky top-0 z-20 backdrop-blur-md bg-black/20 border-b border-white/10">
           <div className="flex items-center justify-between px-4 py-3">
-            <button 
+            <button
               onClick={() => setView('main')}
-              className="flex items-center gap-2 text-blue-600"
+              className="flex items-center gap-1 text-white"
             >
               <ChevronRight className="w-5 h-5 rotate-180" />
-              <span>Back</span>
+              <span className="text-sm">Back</span>
             </button>
-            <h2 className="text-lg">Campaign Details</h2>
+            <h2 className="text-base font-semibold text-white">Campaign Details</h2>
             <div className="w-12"></div>
           </div>
         </div>
 
         {/* Hero Section */}
-        <div className="relative overflow-hidden bg-gradient-to-br from-purple-50 via-blue-50 to-pink-50">
+        <div className="relative overflow-hidden">
           {/* Ambient Glow Effects */}
           <div className="absolute top-0 right-0 w-64 h-64 bg-purple-300 rounded-full opacity-20 blur-3xl"></div>
           <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-300 rounded-full opacity-20 blur-3xl"></div>
@@ -721,11 +875,11 @@ export function AdCampaigns({
               {selectedCampaign.title}
             </motion.h1>
             
-            <motion.p 
+            <motion.p
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.3 }}
-              className="text-gray-600 text-sm leading-relaxed max-w-[65%] mt-1"
+              className="text-white/70 text-sm leading-relaxed max-w-[65%] mt-1"
             >
               {selectedCampaign.description}
             </motion.p>
@@ -897,14 +1051,14 @@ export function AdCampaigns({
             transition={{ duration: 0.4, delay: 0.75 }}
             className="flex items-center justify-center gap-1.5 mt-2.5"
           >
-            <CalendarDays className="w-3 h-3 text-gray-400" />
-            <span className="text-[11px] text-gray-400">
+            <CalendarDays className="w-3 h-3 text-white/50" />
+            <span className="text-[11px] text-white/50">
               {daysLeft > 0 ? (
                 <>
-                  Campaign ends {new Date(selectedCampaign.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} · <span className="text-orange-500 font-semibold">{daysLeft} days left</span>
+                  Campaign ends {new Date(selectedCampaign.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} · <span className="text-orange-400 font-semibold">{daysLeft} days left</span>
                 </>
               ) : (
-                <span className="text-red-500 font-semibold">Campaign ended</span>
+                <span className="text-red-400 font-semibold">Campaign ended</span>
               )}
             </span>
           </motion.div>
@@ -945,6 +1099,7 @@ export function AdCampaigns({
             </div>
           </div>
         </motion.div>
+        </div>
       </div>
       <EinkCasePrompt open={showEinkPrompt} onClose={() => setShowEinkPrompt(false)} />
       <WalletConnectPrompt
@@ -958,7 +1113,12 @@ export function AdCampaigns({
 
   // Cast Preview View
   if (view === 'cast-preview' && selectedCampaign) {
-    const handleCastToScreen = async () => {
+    const handleCastToScreen = () => {
+      setShowFaceId(true);
+    };
+
+    const handleFaceIdConfirm = async () => {
+      setShowFaceId(false);
       setIsNfcWriting(true);
       await new Promise(resolve => setTimeout(resolve, 2500));
       setIsNfcWriting(false);
@@ -976,18 +1136,47 @@ export function AdCampaigns({
 
     return (
       <>
-        <div className="min-h-screen bg-gray-50 pb-8">
+        <div
+          className="relative pb-8 bg-[#0a0a0a] overflow-hidden"
+          style={{ minHeight: 'max(100vh, 100%)' }}
+        >
+          {/* Blurred campaign image backdrop (TikTok-style) */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            <img
+              src={selectedCampaign.image}
+              alt=""
+              className="absolute inset-0 w-full h-full object-cover scale-125"
+              style={{ filter: 'blur(48px) saturate(1.5) brightness(0.55)' }}
+            />
+            <div
+              className="absolute inset-0"
+              style={{
+                background:
+                  'linear-gradient(to bottom, rgba(10,10,10,0.55) 0%, rgba(10,10,10,0.25) 30%, rgba(10,10,10,0.45) 70%, rgba(10,10,10,0.85) 100%)',
+              }}
+            />
+            <div
+              className="absolute inset-0 opacity-25 mix-blend-overlay"
+              style={{
+                background:
+                  'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'3\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\' opacity=\'0.5\'/%3E%3C/svg%3E")',
+              }}
+            />
+          </div>
+
+          {/* Foreground content */}
+          <div className="relative z-[1]">
           {/* Header */}
-          <div className="bg-white border-b sticky top-0 z-20">
+          <div className="sticky top-0 z-20 backdrop-blur-md bg-black/20 border-b border-white/10">
             <div className="flex items-center justify-between px-4 py-3">
               <button
                 onClick={() => setView('campaign-detail')}
-                className="flex items-center gap-2 text-blue-600"
+                className="flex items-center gap-1 text-white"
               >
                 <ChevronRight className="w-5 h-5 rotate-180" />
                 <span className="text-sm">Back</span>
               </button>
-              <h2 className="text-lg">Cast Preview</h2>
+              <h2 className="text-base font-semibold text-white">Cast Preview</h2>
               <div className="w-16" />
             </div>
           </div>
@@ -997,13 +1186,13 @@ export function AdCampaigns({
             initial={{ opacity: 0, scale: 0.92 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-            className="flex justify-center pt-8 px-6"
+            className="flex justify-center pt-6 px-4"
           >
-            <div className="relative">
+            <div className="relative w-full max-w-[340px]">
               {/* Outer glow */}
               <div
-                className="absolute inset-0 rounded-2xl blur-2xl opacity-40"
-                style={{ background: 'linear-gradient(135deg, #00FFC2, #BC13FE)', transform: 'scale(1.08)' }}
+                className="absolute inset-0 rounded-2xl blur-2xl opacity-50"
+                style={{ background: 'linear-gradient(135deg, #00FFC2, #BC13FE)', transform: 'scale(1.06)' }}
               />
               {/* Prism border */}
               <div
@@ -1013,7 +1202,7 @@ export function AdCampaigns({
                 <img
                   src={selectedCampaign.image}
                   alt={selectedCampaign.title}
-                  className="w-[200px] h-[298px] object-cover rounded-2xl block"
+                  className="w-full aspect-[100/149] object-cover rounded-2xl block"
                   style={{ filter: 'contrast(1.04) brightness(0.98)' }}
                 />
                 {/* E-ink grain overlay */}
@@ -1030,9 +1219,9 @@ export function AdCampaigns({
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.45, delay: 0.2 }}
-            className="text-center mt-8 px-6"
+            className="text-center mt-5 px-6"
           >
-            <h1 className="text-xl font-bold text-gray-900">{selectedCampaign.title}</h1>
+            <h1 className="text-xl font-bold text-white drop-shadow-sm">{selectedCampaign.title}</h1>
           </motion.div>
 
           {/* Confirm details */}
@@ -1040,19 +1229,19 @@ export function AdCampaigns({
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.45, delay: 0.3 }}
-            className="mx-6 mt-6 grid grid-cols-2 gap-3"
+            className="mx-6 mt-5 grid grid-cols-2 gap-3"
           >
-            <div className="rounded-xl p-4 border border-gray-100 bg-white text-center shadow-sm">
-              <Clock className="w-5 h-5 mx-auto mb-1.5 text-blue-500" />
-              <div className="text-[10px] uppercase tracking-wider text-gray-400 mb-1">Duration</div>
-              <div className="text-lg font-bold text-gray-900">{selectedCampaign.duration}<span className="text-sm text-gray-400 ml-0.5">h</span></div>
+            <div className="rounded-xl p-4 border border-white/15 bg-white/10 backdrop-blur-md text-center">
+              <Clock className="w-5 h-5 mx-auto mb-1.5 text-white/80" />
+              <div className="text-[10px] uppercase tracking-wider text-white/50 mb-1">Duration</div>
+              <div className="text-lg font-bold text-white">{selectedCampaign.duration}<span className="text-sm text-white/50 ml-0.5">h</span></div>
             </div>
-            <div className="rounded-xl p-4 border border-gray-100 bg-white text-center shadow-sm">
-              <Coins className="w-5 h-5 mx-auto mb-1.5 text-emerald-500" />
-              <div className="text-[10px] uppercase tracking-wider text-gray-400 mb-1">Reward</div>
-              <div className="text-lg font-bold text-gray-900">
+            <div className="rounded-xl p-4 border border-white/15 bg-white/10 backdrop-blur-md text-center">
+              <Coins className="w-5 h-5 mx-auto mb-1.5 text-[#00FFC2]" />
+              <div className="text-[10px] uppercase tracking-wider text-white/50 mb-1">Reward</div>
+              <div className="text-lg font-bold text-white">
                 {selectedCampaign.reward}
-                <span className="text-sm ml-1 text-emerald-600">{selectedCampaign.tokenSymbol}</span>
+                <span className="text-sm ml-1 text-[#00FFC2]">{selectedCampaign.tokenSymbol}</span>
               </div>
             </div>
           </motion.div>
@@ -1062,7 +1251,7 @@ export function AdCampaigns({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.45, delay: 0.4 }}
-            className="mx-6 mt-8"
+            className="mx-6 mt-7"
           >
             <button
               onClick={handleCastToScreen}
@@ -1072,11 +1261,21 @@ export function AdCampaigns({
               <Nfc className="w-5 h-5" />
               Cast to Screen
             </button>
-            <p className="text-center text-xs text-gray-400 mt-3">
+            <p className="text-center text-xs text-white/50 mt-3">
               Your e-ink display will show this ad for {selectedCampaign.duration}h
             </p>
           </motion.div>
+          </div>
         </div>
+
+        {/* Simulated Face ID confirmation */}
+        <FaceIdPrompt
+          open={showFaceId}
+          title="Confirm Cast"
+          subtitle={`Sign to lock in "${selectedCampaign.title}" for ${selectedCampaign.duration}h`}
+          onConfirm={handleFaceIdConfirm}
+          onCancel={() => setShowFaceId(false)}
+        />
 
         {/* iOS-style NFC writing sheet */}
         {isNfcWriting && (
@@ -1131,16 +1330,17 @@ export function AdCampaigns({
   if (view === 'bonus-rewards') {
     return (
       <div className="min-h-screen bg-gray-50">
-        <div className="bg-white border-b sticky top-0">
+        <div className="bg-white border-b border-[#E0E0E0] sticky top-0 z-10">
           <div className="flex items-center justify-between px-4 py-3">
-            <button 
+            <button
               onClick={() => setView('main')}
-              className="flex items-center gap-2 text-blue-600"
+              className="flex items-center gap-1 text-sm font-medium transition-colors hover:opacity-80"
+              style={{ color: '#BC13FE' }}
             >
               <ChevronRight className="w-5 h-5 rotate-180" />
               <span>Back</span>
             </button>
-            <h2 className="text-lg">Bonus Rewards</h2>
+            <h2 className="text-base font-semibold tracking-tight text-[#1A1A1A]">Bonus Rewards</h2>
             <div className="w-12"></div>
           </div>
         </div>
@@ -1207,22 +1407,12 @@ export function AdCampaigns({
 
   // Main Ads View
   return (
-    <motion.div 
+    <PullToRefresh onRefresh={handleRefresh}>
+    <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="pb-6"
+      className="pt-4 pb-6"
     >
-      {/* Refresh Button */}
-      <div className="px-4 pt-4 pb-2 flex justify-end">
-        <button 
-          onClick={handleRefresh}
-          disabled={isRefreshing}
-          className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-        >
-          <RefreshCw className={`w-4 h-4 text-gray-600 ${isRefreshing ? 'animate-spin' : ''}`} />
-        </button>
-      </div>
-
       {/* Earning Stats */}
       <div className="px-4 mb-4">
         <div className="grid grid-cols-3 gap-3">
@@ -1262,21 +1452,35 @@ export function AdCampaigns({
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.3 }}
           >
-            <Card className="gradient-earn overflow-hidden shadow-lg border-0">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3 mb-2">
-                  <Timer className="w-5 h-5 text-white animate-pulse" />
-                  <div>
-                    <div className="text-sm text-white">Active Campaign</div>
-                    <div className="text-xs text-white/90">{activeCommitment.title}</div>
+            <Card
+              className="gradient-earn text-white shadow-lg border-0 cursor-pointer transition-all hover:shadow-xl active:scale-[0.99]"
+              onClick={() => setView('active-commitment')}
+            >
+              <CardContent className="p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="min-w-0">
+                    <div className="text-sm opacity-90 mb-1">Active Campaign</div>
+                    <div className="text-lg truncate">{activeCommitment.title}</div>
+                  </div>
+                  <div className="text-right flex-shrink-0 ml-3">
+                    <div className="flex items-center gap-1 justify-end mb-1">
+                      <Coins className="w-5 h-5" />
+                      <span className="text-lg">{activeCommitment.reward}</span>
+                    </div>
+                    <div className="text-xs opacity-75">tokens</div>
                   </div>
                 </div>
-                <button 
-                  className="w-full h-9 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-lg transition-all hover:scale-105 active:scale-95 text-sm text-white"
-                  onClick={() => setView('active-commitment')}
-                >
-                  View Status
-                </button>
+                <div>
+                  <div className="flex items-center justify-between text-sm mb-2">
+                    <span className="opacity-90">Time Remaining</span>
+                    <span>{formatTime(timeRemaining)}</span>
+                  </div>
+                  <Progress value={progress} className="h-2 bg-white/20" />
+                </div>
+                <div className="flex items-center gap-2 text-sm opacity-90">
+                  <AlertCircle className="w-4 h-4" />
+                  <span>Display locked until campaign completes</span>
+                </div>
               </CardContent>
             </Card>
           </motion.div>
@@ -1290,16 +1494,17 @@ export function AdCampaigns({
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
       >
-        <button 
-          className="w-full text-left gradient-secondary rounded-lg px-3 py-2 hover:shadow-lg transition-all active:scale-[0.99]"
+        <button
+          className="w-full text-left rounded-lg px-3 py-2.5 transition-all active:scale-[0.99] text-[#1A1A1A] border"
+          style={{ background: 'rgba(0,255,194,0.10)', borderColor: 'rgba(0,255,194,0.35)' }}
           onClick={() => setView('bonus-rewards')}
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Gift className="w-3.5 h-3.5 text-white" />
-              <span className="text-xs text-white">Bonus Rewards Available</span>
+              <Gift className="w-3.5 h-3.5" style={{ color: '#0a8a6b' }} />
+              <span className="text-xs font-semibold">Bonus Rewards Available</span>
             </div>
-            <ChevronRight className="w-3.5 h-3.5 text-white/80" />
+            <ChevronRight className="w-3.5 h-3.5 text-[#1A1A1A]/60" />
           </div>
         </button>
       </motion.div>
@@ -1307,7 +1512,7 @@ export function AdCampaigns({
       {/* Campaign List */}
       <div className="px-4">
         <div className="flex items-center justify-between mb-3">
-          <h3>Available Campaigns</h3>
+          <h3 className="font-semibold tracking-tight text-[#1A1A1A]">Available Campaigns</h3>
           <Badge variant="outline">{einkCaseAttached ? campaigns.length : 2} active</Badge>
         </div>
 
@@ -1332,10 +1537,10 @@ export function AdCampaigns({
                 transition={{ delay: index * 0.1 }}
               >
                 <Card
-                  className={`overflow-hidden transition-all border-l-4 border-l-purple-500 ${
+                  className={`overflow-hidden border-[#E0E0E0] transition-all ${
                     locked
                       ? 'opacity-60 cursor-pointer'
-                      : 'cursor-pointer hover:shadow-xl hover:scale-[1.02]'
+                      : 'cursor-pointer hover:border-[#1A1A1A]/20 hover:shadow-sm'
                   }`}
                   onClick={() => {
                     if (locked) {
@@ -1422,5 +1627,6 @@ export function AdCampaigns({
 
       <EinkCasePrompt open={showEinkPrompt} onClose={() => setShowEinkPrompt(false)} />
     </motion.div>
+    </PullToRefresh>
   );
 }

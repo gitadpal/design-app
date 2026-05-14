@@ -1,23 +1,27 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Input } from './ui/input';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { Progress } from './ui/progress';
-import { 
-  Cast, 
-  Camera, 
+import {
+  Cast,
+  Camera,
   Upload,
   Clock,
   Coins,
   AlertCircle,
-  Heart,
   Sparkles,
   TrendingUp,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Frame,
+  ChevronLeft,
+  Nfc,
 } from 'lucide-react';
 import { toast } from 'sonner@2.0.3';
+import { FaceIdPrompt } from './FaceIdPrompt';
 import { EinkCasePrompt } from './EinkCasePrompt';
 
 interface CastProps {
@@ -25,6 +29,7 @@ interface CastProps {
   currentDisplay: any;
   setCurrentDisplay: (display: any) => void;
   einkCaseAttached: boolean;
+  onViewActiveStatus?: () => void;
 }
 
 const recentImages = [
@@ -81,11 +86,38 @@ const galleryCollections = [
   },
 ];
 
-export function ImageCasting({ activeCommitment, currentDisplay, setCurrentDisplay, einkCaseAttached }: CastProps) {
+export function ImageCasting({ activeCommitment, currentDisplay, setCurrentDisplay, einkCaseAttached, onViewActiveStatus }: CastProps) {
+  const [showFaceId, setShowFaceId] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
   const [progress, setProgress] = useState<number>(0);
-  const [savedImages, setSavedImages] = useState<string[]>([]);
   const [showEinkPrompt, setShowEinkPrompt] = useState(false);
+  const [previewImage, setPreviewImage] = useState<any>(null);
+  const [isNfcWriting, setIsNfcWriting] = useState(false);
+  const [centerImageUrl, setCenterImageUrl] = useState<string>(
+    galleryCollections[0]?.images[0]?.url ?? ''
+  );
+  const rootRef = useRef<HTMLDivElement | null>(null);
+
+  // Track which gallery image is centered in the viewport — drives the fluid backdrop.
+  useEffect(() => {
+    const node = rootRef.current;
+    if (!node) return;
+    const scrollRoot = (node.closest('main') as Element | null) ?? null;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            const url = (entry.target as HTMLElement).dataset.galleryImage;
+            if (url) setCenterImageUrl(url);
+          }
+        }
+      },
+      { root: scrollRoot, rootMargin: '-45% 0px -45% 0px', threshold: 0 }
+    );
+    const targets = node.querySelectorAll<HTMLElement>('[data-gallery-image]');
+    targets.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     if (activeCommitment) {
@@ -121,8 +153,26 @@ export function ImageCasting({ activeCommitment, currentDisplay, setCurrentDispl
       toast.error('Cannot switch - active campaign in progress');
       return;
     }
-    setCurrentDisplay({ type: 'image', data: image });
+    setPreviewImage(image);
+  };
+
+  const handleConfirmCast = () => {
+    if (!previewImage) return;
+    setShowFaceId(true);
+  };
+
+  const handleFaceIdConfirm = async () => {
+    if (!previewImage) {
+      setShowFaceId(false);
+      return;
+    }
+    setShowFaceId(false);
+    setIsNfcWriting(true);
+    await new Promise(resolve => setTimeout(resolve, 2500));
+    setIsNfcWriting(false);
+    setCurrentDisplay({ type: 'image', data: previewImage });
     toast.success('Image cast to display!');
+    setPreviewImage(null);
   };
 
   const handleUploadPhoto = () => {
@@ -137,22 +187,56 @@ export function ImageCasting({ activeCommitment, currentDisplay, setCurrentDispl
     toast.info('Photo upload feature');
   };
 
-  const toggleSaveImage = (imageId: string) => {
-    if (savedImages.includes(imageId)) {
-      setSavedImages(savedImages.filter(id => id !== imageId));
-      toast.success('Removed from favorites');
-    } else {
-      setSavedImages([...savedImages, imageId]);
-      toast.success('Added to favorites');
-    }
-  };
-
   return (
-    <div className="pb-6">
+    <div ref={rootRef} className="relative pb-28 min-h-screen">
+      {/* Fluid blurred backdrop — image driven by whichever gallery card is centered in the viewport */}
+      <div className="fixed inset-0 overflow-hidden bg-[#0a0a0a] pointer-events-none">
+        <AnimatePresence>
+          <motion.div
+            key={centerImageUrl}
+            initial={{ opacity: 0, scale: 1.15 }}
+            animate={{ opacity: 1, scale: 1.25 }}
+            exit={{ opacity: 0, scale: 1.3 }}
+            transition={{ duration: 1.1, ease: [0.16, 1, 0.3, 1] }}
+            className="absolute inset-0"
+          >
+            <ImageWithFallback
+              src={centerImageUrl}
+              alt=""
+              className="absolute inset-0 w-full h-full object-cover"
+              style={{ filter: 'blur(48px) saturate(1.5) brightness(0.55)' }}
+            />
+          </motion.div>
+        </AnimatePresence>
+        {/* Vertical vignette for legibility */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              'linear-gradient(to bottom, rgba(10,10,10,0.55) 0%, rgba(10,10,10,0.25) 30%, rgba(10,10,10,0.45) 70%, rgba(10,10,10,0.85) 100%)',
+          }}
+        />
+        {/* Subtle grain — brand "Matte Obsidian" texture */}
+        <div
+          className="absolute inset-0 opacity-25 mix-blend-overlay"
+          style={{
+            background:
+              'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'3\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\' opacity=\'0.5\'/%3E%3C/svg%3E")',
+          }}
+        />
+      </div>
+
+      {/* Foreground content sits above the backdrop (DOM order — no z so the fixed bottom nav can still paint on top) */}
+      <div className="relative">
       {/* Active Commitment Banner */}
       {activeCommitment && (
         <div className="px-4 pt-4 mb-4">
-          <Card className="gradient-earn text-white shadow-lg border-0">
+          <Card
+            className={`gradient-earn text-white shadow-lg border-0 transition-all ${
+              onViewActiveStatus ? 'cursor-pointer hover:shadow-xl active:scale-[0.99]' : ''
+            }`}
+            onClick={onViewActiveStatus}
+          >
             <CardContent className="p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <div>
@@ -185,13 +269,13 @@ export function ImageCasting({ activeCommitment, currentDisplay, setCurrentDispl
 
       {/* Quick Actions */}
       <div className="px-4 mt-4 mb-6">
-        <h3 className="mb-3">Quick Cast</h3>
+        <h3 className="mb-3 text-white font-semibold tracking-tight">Quick Cast</h3>
         <div className="grid grid-cols-2 gap-3">
           <button
-            className={`h-24 flex flex-col items-center justify-center gap-2 rounded-xl transition-all ${
+            className={`h-24 flex flex-col items-center justify-center gap-2 rounded-xl transition-all backdrop-blur-sm ${
               activeCommitment || !einkCaseAttached
-                ? 'bg-gray-100 text-gray-400 cursor-pointer'
-                : 'gradient-cast text-white shadow-lg hover:shadow-xl hover:scale-105 active:scale-95'
+                ? 'bg-white/5 text-white/40 border border-white/10 cursor-pointer'
+                : 'bg-white/10 border border-white/20 text-white shadow-lg hover:bg-white/15 active:scale-95'
             }`}
             onClick={handleUploadPhoto}
           >
@@ -199,10 +283,10 @@ export function ImageCasting({ activeCommitment, currentDisplay, setCurrentDispl
             <span className="text-sm">Take Photo</span>
           </button>
           <button
-            className={`h-24 flex flex-col items-center justify-center gap-2 rounded-xl transition-all ${
+            className={`h-24 flex flex-col items-center justify-center gap-2 rounded-xl transition-all backdrop-blur-sm ${
               activeCommitment || !einkCaseAttached
-                ? 'bg-gray-100 text-gray-400 cursor-pointer'
-                : 'gradient-primary text-white shadow-lg hover:shadow-xl hover:scale-105 active:scale-95'
+                ? 'bg-white/5 text-white/40 border border-white/10 cursor-pointer'
+                : 'bg-white/10 border border-white/20 text-white shadow-lg hover:bg-white/15 active:scale-95'
             }`}
             onClick={handleUploadPhoto}
           >
@@ -214,17 +298,18 @@ export function ImageCasting({ activeCommitment, currentDisplay, setCurrentDispl
 
       {/* Recent Casting - Smaller Thumbnails */}
       <div className="px-4 mb-6">
-        <h3 className="mb-3">Recent Casting</h3>
+        <h3 className="mb-3 text-white font-semibold tracking-tight">Recent Casting</h3>
         <div className="flex gap-2 overflow-x-auto pb-2">
           {recentImages.map((image) => (
             <div
               key={image.id}
-              className={`relative flex-shrink-0 w-14 h-14 rounded-lg overflow-hidden cursor-pointer border-2 transition-all ${
+              data-gallery-image={image.url}
+              className={`relative flex-shrink-0 w-14 h-14 rounded-lg overflow-hidden cursor-pointer border transition-all ${
                 activeCommitment || !einkCaseAttached
-                  ? 'opacity-50 border-gray-200'
+                  ? 'opacity-50 border-white/15'
                   : currentDisplay?.data?.id === image.id
-                  ? 'border-blue-600 ring-2 ring-blue-600 ring-offset-2'
-                  : 'border-gray-200 hover:border-gray-400'
+                  ? 'border-[#00FFC2] ring-2 ring-[#00FFC2]/40'
+                  : 'border-white/20 hover:border-white/50'
               }`}
               onClick={() => handleCastImage(image)}
             >
@@ -241,24 +326,21 @@ export function ImageCasting({ activeCommitment, currentDisplay, setCurrentDispl
       {/* Gallery Collections */}
       <div className="px-4 space-y-6">
         {/* Collections */}
-        {galleryCollections.map((collection, collectionIndex) => (
+        {galleryCollections.map((collection) => (
           <div key={collection.id}>
-            <div className={`flex items-center gap-2 mb-3 ${
-              collectionIndex === 0 ? 'text-gradient-primary' : 
-              collectionIndex === 1 ? 'text-gradient-success' : 
-              'text-purple-600'
-            }`}>
+            <div className="flex items-center gap-2 mb-3 text-white/80">
               {collection.icon}
-              <h4 className="text-sm">{collection.title}</h4>
+              <h4 className="text-sm font-semibold tracking-wide uppercase">{collection.title}</h4>
             </div>
             <div className="grid grid-cols-2 gap-3">
               {collection.images.map((image) => (
                 <Card
                   key={image.id}
-                  className={`overflow-hidden cursor-pointer transition-all border-2 ${
+                  data-gallery-image={image.url}
+                  className={`overflow-hidden cursor-pointer transition-all bg-transparent border ${
                     activeCommitment || !einkCaseAttached
-                      ? 'opacity-50 border-gray-200'
-                      : 'hover:shadow-xl hover:scale-105 border-transparent hover:border-purple-300'
+                      ? 'opacity-50 border-white/10'
+                      : 'border-white/15 hover:border-white/40 hover:shadow-lg'
                   }`}
                   onClick={() => handleCastImage(image)}
                 >
@@ -269,26 +351,10 @@ export function ImageCasting({ activeCommitment, currentDisplay, setCurrentDispl
                       className="w-full h-full object-cover"
                     />
                     {currentDisplay?.data?.id === image.id && (
-                      <div className="absolute inset-0 border-2 border-blue-600" />
+                      <div className="absolute inset-0 border-2 border-[#00FFC2]" />
                     )}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleSaveImage(image.id);
-                      }}
-                      className="absolute top-2 right-2 bg-white rounded-full p-1.5 shadow-md"
-                      disabled={!!activeCommitment}
-                    >
-                      <Heart 
-                        className={`w-4 h-4 ${
-                          savedImages.includes(image.id) 
-                            ? 'fill-red-500 text-red-500' 
-                            : 'text-gray-600'
-                        }`}
-                      />
-                    </button>
-                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2">
-                      <div className="text-sm text-white truncate">{image.title}</div>
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2">
+                      <div className="text-sm text-white truncate font-medium">{image.title}</div>
                     </div>
                   </div>
                 </Card>
@@ -297,8 +363,178 @@ export function ImageCasting({ activeCommitment, currentDisplay, setCurrentDispl
           </div>
         ))}
       </div>
+      </div>
 
       <EinkCasePrompt open={showEinkPrompt} onClose={() => setShowEinkPrompt(false)} />
+
+      {previewImage && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          className="fixed inset-0 z-[60] overflow-y-auto bg-[#0a0a0a]"
+        >
+          {/* Blurred image backdrop (TikTok-style) */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            <ImageWithFallback
+              src={previewImage.url}
+              alt=""
+              className="absolute inset-0 w-full h-full object-cover scale-125"
+              style={{ filter: 'blur(36px) saturate(1.4) brightness(0.7)' }}
+            />
+            {/* Dark vignette for legibility */}
+            <div
+              className="absolute inset-0"
+              style={{
+                background:
+                  'linear-gradient(to bottom, rgba(10,10,10,0.55) 0%, rgba(10,10,10,0.25) 35%, rgba(10,10,10,0.55) 70%, rgba(10,10,10,0.85) 100%)',
+              }}
+            />
+            {/* Subtle grain to match brand "Matte Obsidian" texture */}
+            <div
+              className="absolute inset-0 opacity-30 mix-blend-overlay"
+              style={{
+                background:
+                  'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'3\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\' opacity=\'0.5\'/%3E%3C/svg%3E")',
+              }}
+            />
+          </div>
+
+          {/* Foreground content */}
+          <div className="relative z-[1]">
+            {/* Header — mirrors the Cast tab identity (Frame icon + gradient-cast accent) */}
+            <div className="sticky top-0 z-10 backdrop-blur-sm bg-black/5 border-b border-white/5">
+              <div className="flex items-center justify-between px-4 py-3">
+                <button
+                  onClick={() => setPreviewImage(null)}
+                  className="flex items-center gap-1 text-white"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                  <span className="text-sm">Back</span>
+                </button>
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg gradient-cast flex items-center justify-center shadow-sm">
+                    <Frame className="w-4 h-4 text-white" />
+                  </div>
+                  <h2 className="text-base font-semibold text-white">Cast Preview</h2>
+                </div>
+                <div className="w-12" />
+              </div>
+            </div>
+
+            {/* Image */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.94 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+              className="flex justify-center pt-6 px-4"
+            >
+              <div className="relative w-full max-w-[340px]">
+                <div
+                  className="absolute inset-0 rounded-2xl blur-2xl opacity-50"
+                  style={{ background: 'linear-gradient(135deg, #00FFC2, #BC13FE)', transform: 'scale(1.06)' }}
+                />
+                <div
+                  className="relative rounded-2xl p-[2px]"
+                  style={{ background: 'linear-gradient(135deg, #00FFC2, #BC13FE)' }}
+                >
+                  <ImageWithFallback
+                    src={previewImage.url}
+                    alt={previewImage.title}
+                    className="w-full aspect-[11/16] object-cover rounded-2xl block"
+                  />
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Title */}
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.15 }}
+              className="text-center mt-5 px-6"
+            >
+              <h1 className="text-xl font-bold text-white drop-shadow-sm">{previewImage.title}</h1>
+              <p className="text-sm text-white/60 mt-1.5">From your gallery</p>
+            </motion.div>
+
+            {/* Cast button */}
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.25 }}
+              className="mx-6 mt-7 pb-10"
+            >
+              <button
+                onClick={handleConfirmCast}
+                disabled={isNfcWriting}
+                className="w-full h-14 rounded-xl font-bold text-base flex items-center justify-center gap-2.5 transition-all active:scale-95 gradient-cast text-white shadow-lg disabled:opacity-60"
+              >
+                <Nfc className="w-5 h-5" />
+                Cast to Screen
+              </button>
+              <p className="text-center text-xs text-white/50 mt-3">
+                Tap to send this image to your e-ink display
+              </p>
+            </motion.div>
+          </div>
+
+          {/* Simulated Face ID confirmation */}
+          <FaceIdPrompt
+            open={showFaceId}
+            title="Confirm Cast"
+            subtitle={previewImage ? `Sign to cast "${previewImage.title}" to your e-ink display` : 'Sign to confirm'}
+            onConfirm={handleFaceIdConfirm}
+            onCancel={() => setShowFaceId(false)}
+          />
+
+          {/* NFC writing sheet */}
+          {isNfcWriting && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="fixed inset-0 z-50 flex items-end justify-center"
+              style={{ background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(6px)' }}
+            >
+              <motion.div
+                initial={{ y: 120, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.38, ease: [0.16, 1, 0.3, 1] }}
+                className="w-full max-w-md rounded-t-3xl px-8 py-10 text-center"
+                style={{ background: '#1c1c1e', borderTop: '1px solid rgba(255,255,255,0.12)' }}
+              >
+                <div className="relative w-28 h-28 mx-auto mb-6">
+                  {[0, 1, 2].map(i => (
+                    <motion.div
+                      key={i}
+                      className="absolute inset-0 rounded-full border-2"
+                      style={{ borderColor: '#00FFC2' }}
+                      animate={{ scale: [1, 1.6 + i * 0.3], opacity: [0.7, 0] }}
+                      transition={{ duration: 1.6, delay: i * 0.4, repeat: Infinity, ease: 'easeOut' }}
+                    />
+                  ))}
+                  <div
+                    className="absolute inset-0 rounded-full flex items-center justify-center"
+                    style={{ background: 'rgba(0,255,194,0.12)', border: '2px solid rgba(0,255,194,0.4)' }}
+                  >
+                    <Nfc className="w-10 h-10" style={{ color: '#00FFC2' }} />
+                  </div>
+                </div>
+                <h3 className="text-xl font-semibold text-white mb-2">Ready to Write NFC</h3>
+                <p className="text-sm text-gray-400 leading-relaxed">
+                  Hold your phone close to the<br />E-ink case to cast the image
+                </p>
+                <div className="mt-6 flex items-center justify-center gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#00FFC2] animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#00FFC2] animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#00FFC2] animate-bounce" style={{ animationDelay: '300ms' }} />
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </motion.div>
+      )}
     </div>
   );
 }
