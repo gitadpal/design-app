@@ -10,6 +10,8 @@ import {
   Settings as SettingsIcon
 } from 'lucide-react';
 import { Toaster } from './components/ui/sonner';
+import { toast } from 'sonner@2.0.3';
+import { OnboardingFlow, ONBOARDING_STORAGE_KEY } from './components/onboarding/OnboardingFlow';
 
 type TabValue = 'ads' | 'cast' | 'assets' | 'settings';
 type AdView = 'main' | 'campaign-detail' | 'cast-preview' | 'bonus-rewards' | 'active-commitment' | 'participation-history';
@@ -64,6 +66,26 @@ export default function App() {
   const [language, setLanguage] = useState('en');
   const [network, setNetwork] = useState('ethereum');
 
+  // Onboarding state — gated by localStorage so it only runs on first launch
+  const [showOnboarding, setShowOnboarding] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    return window.localStorage.getItem(ONBOARDING_STORAGE_KEY) !== 'true';
+  });
+
+  const completeOnboarding = (result: { einkCaseAttached: boolean; currentDisplay: any }) => {
+    setEinkCaseAttached(result.einkCaseAttached);
+    if (result.currentDisplay) setCurrentDisplay(result.currentDisplay);
+    window.localStorage.setItem(ONBOARDING_STORAGE_KEY, 'true');
+    setShowOnboarding(false);
+    setActiveTab('ads');
+    setTimeout(() => toast.success('Welcome bonus: +12.5 ADPAL'), 400);
+  };
+
+  const skipOnboarding = () => {
+    window.localStorage.setItem(ONBOARDING_STORAGE_KEY, 'true');
+    setShowOnboarding(false);
+  };
+
   return (
     <div ref={rootRef} className="bg-gradient-to-br from-purple-50 via-blue-50 to-cyan-50 flex flex-col overflow-hidden relative">
       {/* Main Content */}
@@ -114,9 +136,18 @@ export default function App() {
             setNetwork={setNetwork}
             einkCaseAttached={einkCaseAttached}
             setEinkCaseAttached={setEinkCaseAttached}
+            onReplayOnboarding={() => {
+              window.localStorage.removeItem(ONBOARDING_STORAGE_KEY);
+              setSettingsView('main');
+              setShowOnboarding(true);
+            }}
           />
         )}
       </main>
+
+      {showOnboarding && (
+        <OnboardingFlow onComplete={completeOnboarding} onSkip={skipOnboarding} />
+      )}
 
       {/* Bottom Navigation — liquid glass with the active tab's accent spreading across it */}
       {(() => {

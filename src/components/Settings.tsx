@@ -38,9 +38,10 @@ interface SettingsProps {
   setNetwork: (network: string) => void;
   einkCaseAttached: boolean;
   setEinkCaseAttached: (attached: boolean) => void;
+  onReplayOnboarding: () => void;
 }
 
-export function Settings({ view, setView, currency, setCurrency, language, setLanguage, network, setNetwork, einkCaseAttached, setEinkCaseAttached }: SettingsProps) {
+export function Settings({ view, setView, currency, setCurrency, language, setLanguage, network, setNetwork, einkCaseAttached, setEinkCaseAttached, onReplayOnboarding }: SettingsProps) {
   const [notifications, setNotifications] = useState(true);
   const [biometric, setBiometric] = useState(false);
   const [phraseRevealed, setPhraseRevealed] = useState(false);
@@ -748,6 +749,14 @@ export function Settings({ view, setView, currency, setCurrency, language, setLa
           onClick={() => setView('privacy')}
         >
           <Label className="cursor-pointer">Privacy Policy</Label>
+          <ChevronRight className="w-4 h-4 text-gray-400" />
+        </div>
+
+        <div
+          className="flex items-center justify-between px-4 py-3 cursor-pointer active:bg-gray-50 border-b"
+          onClick={onReplayOnboarding}
+        >
+          <Label className="cursor-pointer">Replay Tutorial</Label>
           <ChevronRight className="w-4 h-4 text-gray-400" />
         </div>
 
