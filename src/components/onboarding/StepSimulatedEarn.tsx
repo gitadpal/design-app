@@ -69,7 +69,7 @@ export function StepSimulatedEarn({ castImage, onDone }: StepSimulatedEarnProps)
         <p className="text-sm text-white/55 max-w-[280px] mx-auto leading-relaxed">
           {beat === 'finale'
             ? 'A welcome bonus is on its way to your wallet.'
-            : 'Sit back — we&apos;ll walk you through how a paid cast works.'}
+            : "Sit back — we'll walk you through how a paid cast works."}
         </p>
       </header>
 
