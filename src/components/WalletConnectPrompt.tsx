@@ -29,7 +29,7 @@ export function WalletConnectPrompt({ open, onClose, onGoToWallet }: WalletConne
 
           <DialogHeader className="space-y-1.5">
             <DialogTitle className="text-white text-base font-semibold">Wallet Not Connected</DialogTitle>
-            <DialogDescription className="text-gray-400 text-sm leading-relaxed">
+            <DialogDescription className="text-white/40 text-sm leading-relaxed">
               A connected wallet is required to receive campaign rewards. Tokens are deposited directly to your wallet upon completion.
             </DialogDescription>
           </DialogHeader>
@@ -52,7 +52,7 @@ export function WalletConnectPrompt({ open, onClose, onGoToWallet }: WalletConne
                 >
                   {i + 1}
                 </span>
-                <span className="text-xs text-gray-300 leading-relaxed">{step}</span>
+                <span className="text-xs text-white/30 leading-relaxed">{step}</span>
               </div>
             ))}
           </div>
@@ -60,7 +60,7 @@ export function WalletConnectPrompt({ open, onClose, onGoToWallet }: WalletConne
           <div className="flex gap-2">
             <Button
               variant="outline"
-              className="flex-1 border-[#444] bg-transparent text-gray-300 hover:bg-[#2C2C2C] hover:text-white"
+              className="flex-1 border-[#444] bg-transparent text-white/30 hover:bg-[#2C2C2C] hover:text-white"
               onClick={onClose}
             >
               Cancel

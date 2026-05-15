@@ -23,7 +23,7 @@ export function EinkCasePrompt({ open, onClose }: EinkCasePromptProps) {
 
           <DialogHeader className="space-y-1.5">
             <DialogTitle className="text-white text-base font-semibold">E-Ink Case Not Detected</DialogTitle>
-            <DialogDescription className="text-gray-400 text-sm leading-relaxed">
+            <DialogDescription className="text-white/40 text-sm leading-relaxed">
               Attach your AdPal E-Ink phone case and activate it to unlock earnings, casting, and full campaign access.
             </DialogDescription>
           </DialogHeader>
@@ -42,7 +42,7 @@ export function EinkCasePrompt({ open, onClose }: EinkCasePromptProps) {
                 >
                   {i + 1}
                 </span>
-                <span className="text-xs text-gray-300 leading-relaxed">{step}</span>
+                <span className="text-xs text-white/30 leading-relaxed">{step}</span>
               </div>
             ))}
           </div>

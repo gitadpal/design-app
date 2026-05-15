@@ -86,10 +86,76 @@ export default function App() {
     setShowOnboarding(false);
   };
 
+  // Per-tab ambient backdrop. Brand palette is strictly Cyber Mint (#00FFC2) + Electric Violet (#BC13FE) —
+  // each tab gets a distinct *composition* of those two colors so the room is lit differently per page
+  // without ever leaving the Prism Gradient palette.
+  //   ads:      mint-dominant — light comes from top edges, violet anchors bottom (earn / fresh)
+  //   assets:   violet-dominant — heavy at top + sides, single mint accent below (wealth / premium)
+  //   settings: balanced, muted, corner-anchored — calmer, lower intensity (utility)
+  //   cast:     skipped; the page paints its own image-driven backdrop.
+  const MINT = '#00FFC2';
+  const VIOLET = '#BC13FE';
+  const tabBackdrops: Record<TabValue, string | null> = {
+    ads:
+      `radial-gradient(circle at 15% 12%, ${MINT} 0%, transparent 28%),` +
+      `radial-gradient(circle at 88% 28%, ${MINT} 0%, transparent 22%),` +
+      `radial-gradient(circle at 72% 96%, ${VIOLET} 0%, transparent 34%),` +
+      `radial-gradient(circle at 28% 72%, ${MINT} 0%, transparent 18%)`,
+    cast: null,
+    assets:
+      `radial-gradient(circle at 50% 14%, ${VIOLET} 0%, transparent 32%),` +
+      `radial-gradient(circle at 8% 48%, ${VIOLET} 0%, transparent 28%),` +
+      `radial-gradient(circle at 90% 62%, ${VIOLET} 0%, transparent 24%),` +
+      `radial-gradient(circle at 50% 102%, ${MINT} 0%, transparent 30%)`,
+    settings:
+      `radial-gradient(circle at 18% 20%, ${VIOLET} 0%, transparent 22%),` +
+      `radial-gradient(circle at 82% 80%, ${MINT} 0%, transparent 22%),` +
+      `radial-gradient(circle at 84% 18%, ${MINT} 0%, transparent 16%),` +
+      `radial-gradient(circle at 18% 82%, ${VIOLET} 0%, transparent 16%)`,
+  };
+  const backdrop = tabBackdrops[activeTab];
+
   return (
-    <div ref={rootRef} className="bg-gradient-to-br from-purple-50 via-blue-50 to-cyan-50 flex flex-col overflow-hidden relative">
+    <div ref={rootRef} className="dark bg-[#0A0A0A] text-white flex flex-col overflow-hidden relative">
+      {/* Tab-aware ambient backdrop — same recipe as the Cast gallery page (blurred color field
+          + vignette + grain). Each tab gets a unique pair of brand-color blobs so the room
+          "lights up" differently as you switch tabs. */}
+      {backdrop && (
+        <div
+          aria-hidden="true"
+          className="fixed inset-0 pointer-events-none overflow-hidden bg-[#0a0a0a]"
+        >
+          {/* Per-tab composition of Cyber Mint + Electric Violet blobs, heavily blurred to
+              mimic the lens-out-of-focus atmosphere of the Cast page's image backdrop. */}
+          <div
+            className="absolute -inset-[15%]"
+            style={{
+              background: backdrop,
+              filter: 'blur(60px) saturate(1.5) brightness(0.55)',
+              transition: 'background 800ms ease',
+            }}
+          />
+          {/* Vertical vignette for legibility */}
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                'linear-gradient(to bottom, rgba(10,10,10,0.55) 0%, rgba(10,10,10,0.25) 30%, rgba(10,10,10,0.45) 70%, rgba(10,10,10,0.85) 100%)',
+            }}
+          />
+          {/* Subtle grain — same Matte Obsidian texture as the Cast page */}
+          <div
+            className="absolute inset-0 opacity-25 mix-blend-overlay"
+            style={{
+              background:
+                'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'3\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\' opacity=\'0.5\'/%3E%3C/svg%3E")',
+            }}
+          />
+        </div>
+      )}
+
       {/* Main Content */}
-      <main className={`flex-1 overflow-y-auto ${
+      <main className={`relative flex-1 overflow-y-auto ${
         (activeTab === 'ads' && adView !== 'main') || (activeTab === 'settings' && settingsView !== 'main') || (activeTab === 'assets' && assetsView !== 'main')
           ? ''
           : 'pb-20'

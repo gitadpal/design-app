@@ -231,39 +231,49 @@ export function ImageCasting({ activeCommitment, currentDisplay, setCurrentDispl
       {/* Active Commitment Banner */}
       {activeCommitment && (
         <div className="px-4 pt-4 mb-4">
+          <div className="prism-ring">
           <Card
-            className={`gradient-earn text-white shadow-lg border-0 transition-all ${
-              onViewActiveStatus ? 'cursor-pointer hover:shadow-xl active:scale-[0.99]' : ''
+            className={`relative overflow-hidden bg-[#1A1A1A] text-white border-0 transition-all ${
+              onViewActiveStatus ? 'cursor-pointer active:scale-[0.99]' : ''
             }`}
             onClick={onViewActiveStatus}
           >
             <CardContent className="p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-sm opacity-90 mb-1">Active Campaign</div>
+                  <div className="text-xs uppercase tracking-wider text-white/60 mb-1">Active Campaign</div>
                   <div className="text-lg">{activeCommitment.title}</div>
                 </div>
                 <div className="text-right">
                   <div className="flex items-center gap-1 justify-end mb-1">
-                    <Coins className="w-5 h-5" />
-                    <span className="text-lg">{activeCommitment.reward}</span>
+                    <Coins className="w-5 h-5" style={{ color: '#00FFC2' }} strokeWidth={1.75} />
+                    <span className="text-lg tracking-tight">{activeCommitment.reward}</span>
                   </div>
-                  <div className="text-xs opacity-75">tokens</div>
+                  <div className="text-xs text-white/60">tokens</div>
                 </div>
               </div>
               <div>
                 <div className="flex items-center justify-between text-sm mb-2">
-                  <span className="opacity-90">Time Remaining</span>
-                  <span>{formatTime(timeRemaining)}</span>
+                  <span className="text-white/70">Time Remaining</span>
+                  <span className="tabular-nums">{formatTime(timeRemaining)}</span>
                 </div>
-                <Progress value={progress} className="h-2 bg-white/20" />
+                <div className="relative h-1.5 w-full rounded-full bg-white/10 overflow-hidden">
+                  <div
+                    className="absolute inset-y-0 left-0 rounded-full transition-[width] duration-300"
+                    style={{
+                      width: `${progress}%`,
+                      background: 'linear-gradient(90deg, #00FFC2 0%, #BC13FE 100%)',
+                    }}
+                  />
+                </div>
               </div>
-              <div className="flex items-center gap-2 text-sm opacity-90">
-                <AlertCircle className="w-4 h-4" />
+              <div className="flex items-center gap-2 text-sm text-white/70">
+                <AlertCircle className="w-4 h-4" strokeWidth={1.75} />
                 <span>Display locked until campaign completes</span>
               </div>
             </CardContent>
           </Card>
+          </div>
         </div>
       )}
 
@@ -522,7 +532,7 @@ export function ImageCasting({ activeCommitment, currentDisplay, setCurrentDispl
                   </div>
                 </div>
                 <h3 className="text-xl font-semibold text-white mb-2">Ready to Write NFC</h3>
-                <p className="text-sm text-gray-400 leading-relaxed">
+                <p className="text-sm text-white/40 leading-relaxed">
                   Hold your phone close to the<br />E-ink case to cast the image
                 </p>
                 <div className="mt-6 flex items-center justify-center gap-2">
