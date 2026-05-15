@@ -1,8 +1,70 @@
 import { createContext, useContext, useEffect, useState } from 'react';
-import { animate, motion, useMotionTemplate, useMotionValue, useTransform } from 'motion/react';
+import { animate, AnimatePresence, motion, useMotionTemplate, useMotionValue, useTransform } from 'motion/react';
 import type { MotionValue } from 'motion/react';
-import iphoneBackImg from 'figma:asset/771d461e7de4d0c40d4ef5fcc5c59768d30ec60e.png';
-import { samplePhotos } from './samplePhotos';
+import iphoneBackWhiteImg from 'figma:asset/771d461e7de4d0c40d4ef5fcc5c59768d30ec60e.png';
+import iphoneBackOrangeImg from '@/assets/iphone-case-orange.png';
+import { samplePhotosByCategory, type SampleCategory } from './samplePhotos';
+
+// Rotating headline copy. Two angles on the product, each paired with a case
+// color so the device shifts as the message shifts:
+//   0. Earn  — white case, passive income while the phone is idle
+//   1. Play  — orange case, cast art that moves you (Play pillar)
+// The pair swaps every TITLE_HOLD_MS with a glitch-scratch transition shared
+// by both the headline and the case image.
+const TITLES: Array<{
+  lines: [string, string];
+  caseImg: string;
+  color: string;
+  category: SampleCategory;
+  holdMs: number;
+}> = [
+  // White case → white headline (default) → ads/monetization e-ink images.
+  {
+    lines: ['Earn while your', 'phone rests.'],
+    caseImg: iphoneBackWhiteImg,
+    color: '#FFFFFF',
+    category: 'earn',
+    holdMs: 8000,
+  },
+  // Orange case → tangerine headline matching the case material → art images.
+  // Title, case, and screen content all swap together so the device and the
+  // message read as one visual idea. Held longer than the earn slot so the
+  // art images get enough time to play through their sweep cycles.
+  {
+    lines: ['Play with art', 'that moves you.'],
+    caseImg: iphoneBackOrangeImg,
+    color: '#FF7A1F',
+    category: 'play',
+    holdMs: 12000,
+  },
+];
+const TITLE_TRANSITION_S = 1.6;
+// Shared easing for the title swap (h1 text + chromatic shadow + phone-case
+// crossfade). Material's [0.4, 0, 0.2, 1] is a soft asymmetric s-curve that
+// gives a long, smooth handoff between the two titles — at 1.6s it reads as
+// a gentle dissolve rather than the punchier glitch the original 0.9s gave.
+const TITLE_EASE: [number, number, number, number] = [0.4, 0, 0.2, 1];
+
+// Touch/mobile detection — mobile Chrome can't keep up with the full layer stack
+// (large blurred filters + many mix-blend-mode layers). On mobile we drop the
+// heaviest pixel-fill layers and reduce blur radii. Evaluated once at module load;
+// matches the device class, not the viewport size, so a desktop with a narrow
+// window keeps the full visual.
+//
+// We use a UA check as the primary signal because some Android Chrome installs
+// report `(hover: none) and (pointer: coarse)` as `false` (observed on a real
+// device during diagnosis). The matchMedia query is kept as a fallback so the
+// Chrome DevTools device-emulation toolbar also takes the mobile path.
+const IS_TOUCH_DEVICE = (() => {
+  if (typeof window === 'undefined') return false;
+  const ua = (typeof navigator !== 'undefined' && navigator.userAgent) || '';
+  const isMobileUA =
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+  const matchesCoarse =
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+  return isMobileUA || matchesCoarse;
+})();
 
 // Slot timing — the sweep and the image reveal share this cadence.
 const SLOT_SECONDS = 3.5; // one image per sweep
@@ -16,8 +78,15 @@ const SWEEP_TRAVEL_FRACTION = 0.85; // fraction of the slot during which the swe
 // hop animates over a short eased duration, and the next target is picked when the
 // current one settles. The page never repeats the same color sequence twice.
 const COLOR_CYCLE_KEYS = [0, 1, 2, 3, 4];
-const COLOR_CYCLE_A = ['#BC13FE', '#FF5AC8', '#00FFC2', '#4678FF', '#7D3CFF'];
-const COLOR_CYCLE_B = ['#00FFC2', '#4678FF', '#FF5AC8', '#9A4DFF', '#00FFC2'];
+// "Earn" palette — the original Prism spectrum (violet ↔ mint ↔ blue) that
+// pairs with the white case.
+const EARN_CYCLE_A = ['#BC13FE', '#FF5AC8', '#00FFC2', '#4678FF', '#7D3CFF'];
+const EARN_CYCLE_B = ['#00FFC2', '#4678FF', '#FF5AC8', '#9A4DFF', '#00FFC2'];
+// "Play" palette — iPhone 17 Cosmic Orange spectrum (tangerine → peach →
+// amber → sienna → coral). Pairs with the orange case so the whole page reads
+// as one warm orange organism while the entertaining title is on screen.
+const PLAY_CYCLE_A = ['#FF7A1F', '#FFB380', '#FF5A1A', '#FF9054', '#FF6B1F'];
+const PLAY_CYCLE_B = ['#E04E1A', '#FFAA40', '#FF8C42', '#D9531A', '#FF7A1F'];
 // Per-hop timing: a base settle + a distance-aware glide + a jitter so it never feels
 // mechanical. Average hop ≈ 3s — meaningfully faster than the old 24s sweep.
 const HOP_BASE_SECONDS = 1.2;
@@ -38,7 +107,13 @@ function useThemeColors(): ThemeColors {
   return ctx;
 }
 
-function ThemeColorProvider({ children }: { children: React.ReactNode }) {
+function ThemeColorProvider({
+  category,
+  children,
+}: {
+  category: SampleCategory;
+  children: React.ReactNode;
+}) {
   const phase = useMotionValue(0);
 
   useEffect(() => {
@@ -53,7 +128,7 @@ function ThemeColorProvider({ children }: { children: React.ReactNode }) {
       // or skip several stops in either direction.
       let next = current;
       while (next === current) {
-        next = Math.floor(Math.random() * COLOR_CYCLE_A.length);
+        next = Math.floor(Math.random() * COLOR_CYCLE_KEYS.length);
       }
       const distance = Math.abs(next - current);
       const duration =
@@ -75,8 +150,14 @@ function ThemeColorProvider({ children }: { children: React.ReactNode }) {
     };
   }, [phase]);
 
-  const colorA = useTransform(phase, COLOR_CYCLE_KEYS, COLOR_CYCLE_A);
-  const colorB = useTransform(phase, COLOR_CYCLE_KEYS, COLOR_CYCLE_B);
+  // The palette swaps when the page's title category changes (earn → play).
+  // The new palette takes effect on the next render — visually, the color
+  // transition lands during the title's chromatic-glitch swap, which masks
+  // the discontinuity. Phase keeps ticking so motion stays continuous.
+  const cycleA = category === 'play' ? PLAY_CYCLE_A : EARN_CYCLE_A;
+  const cycleB = category === 'play' ? PLAY_CYCLE_B : EARN_CYCLE_B;
+  const colorA = useTransform(phase, COLOR_CYCLE_KEYS, cycleA);
+  const colorB = useTransform(phase, COLOR_CYCLE_KEYS, cycleB);
   const gradient = useMotionTemplate`linear-gradient(160deg, ${colorA} 0%, ${colorB} 100%)`;
 
   return (
@@ -92,21 +173,52 @@ interface StepWelcomeProps {
 }
 
 export function StepWelcome({ onStart, onSkip }: StepWelcomeProps) {
+  // titleIdx is owned here (not in StepWelcomeInner) so ThemeColorProvider —
+  // which wraps the inner — can read the current category and pick the
+  // matching palette (earn → Prism violet/mint, play → orange spectrum).
+  const [titleIdx, setTitleIdx] = useState(0);
+  useEffect(() => {
+    // setTimeout (not setInterval) so each title can hold for its own duration:
+    // the effect re-runs whenever titleIdx changes and reads holdMs from the
+    // newly-active title. We round the hold up to the next e-ink slot boundary
+    // (multiples of SLOT_SECONDS) so the title swap never lands mid-sweep —
+    // the outgoing image always gets to finish revealing before the category
+    // switch remounts the screen.
+    const slotMs = SLOT_SECONDS * 1000;
+    const heldMs = Math.ceil(TITLES[titleIdx].holdMs / slotMs) * slotMs;
+    const t = setTimeout(() => {
+      setTitleIdx((i) => (i + 1) % TITLES.length);
+    }, heldMs);
+    return () => clearTimeout(t);
+  }, [titleIdx]);
+
   return (
-    <ThemeColorProvider>
-      <StepWelcomeInner onStart={onStart} onSkip={onSkip} />
+    <ThemeColorProvider category={TITLES[titleIdx].category}>
+      <StepWelcomeInner titleIdx={titleIdx} onStart={onStart} onSkip={onSkip} />
     </ThemeColorProvider>
   );
 }
 
-function StepWelcomeInner({ onStart, onSkip }: StepWelcomeProps) {
+function StepWelcomeInner({
+  titleIdx,
+  onStart,
+  onSkip,
+}: StepWelcomeProps & { titleIdx: number }) {
   const { gradient } = useThemeColors();
+
   return (
-    <div className="relative w-full h-full overflow-hidden bg-[#0A0A0A]">
+    <div
+      className="relative w-full h-full overflow-hidden bg-[#0A0A0A]"
+      // `isolation: isolate` keeps every `mix-blend-mode` descendant compositing
+      // against siblings inside this root instead of bubbling up to whatever
+      // happens to be behind the SPA. On mobile Chrome that ambiguity is what
+      // makes the whole scene flash between composited and unrendered states.
+      style={{ isolation: 'isolate' }}
+    >
       <AnimatedBackdrop />
 
       {/* Full-bleed hero device */}
-      <PhoneCaseScene />
+      <PhoneCaseScene titleIdx={titleIdx} />
 
       {/* Bottom legibility scrim — fades the device into a dark plate for the text */}
       <div
@@ -120,14 +232,7 @@ function StepWelcomeInner({ onStart, onSkip }: StepWelcomeProps) {
       {/* Text + CTAs overlay */}
       <div className="absolute inset-x-0 bottom-0 z-10 px-8 pb-10 pt-6 space-y-6">
         <div className="text-center space-y-3">
-          <motion.h1
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-            className="text-[30px] leading-[1.1] font-semibold text-white"
-          >
-            Earn while your<br />phone rests.
-          </motion.h1>
+          <RotatingTitle idx={titleIdx} />
           <motion.p
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
@@ -177,6 +282,98 @@ function StepWelcomeInner({ onStart, onSkip }: StepWelcomeProps) {
   );
 }
 
+function RotatingTitle({ idx }: { idx: number }) {
+  // Headline cycles through TITLES with a glitch-scratch transition between each.
+  // The h1 is absolutely positioned inside a fixed-height relative wrapper so the
+  // enter/exit animation can overlap without shifting the layout below. The
+  // `idx` is owned by `StepWelcomeInner` so this title and the phone-case
+  // crossfade swap in lockstep.
+  const { lines: [lineA, lineB], color } = TITLES[idx];
+
+  return (
+    // Fixed height matches `text-[30px]` × leading-[1.1] × 2 lines ≈ 66px. We
+    // pin it explicitly so AnimatePresence swaps don't reflow the BG scrim
+    // and the subtitle/CTA stack below.
+    <div className="relative" style={{ height: 66 }}>
+      <AnimatePresence mode="popLayout">
+        <motion.h1
+          key={idx}
+          // Chromatic-aberration glitch: text-shadow renders a red-shift left and
+          // a cyan-shift right of the glyphs. The shadows spread wide on entry,
+          // settle to zero while held, then spread wide again on exit — like a
+          // CRT scan misregistering during a refresh.
+          initial={{
+            opacity: 0,
+            textShadow:
+              '-6px 0 0 rgba(255,40,80,0.95), 6px 0 0 rgba(40,220,255,0.95)',
+          }}
+          animate={{
+            opacity: 1,
+            textShadow:
+              '0px 0 0 rgba(255,40,80,0), 0px 0 0 rgba(40,220,255,0)',
+          }}
+          exit={{
+            opacity: 0,
+            textShadow:
+              '-8px 0 0 rgba(255,40,80,0.95), 8px 0 0 rgba(40,220,255,0.95)',
+          }}
+          transition={{ duration: TITLE_TRANSITION_S, ease: TITLE_EASE }}
+          className="absolute inset-0 text-[30px] leading-[1.1] font-semibold"
+          style={{ color }}
+        >
+          {lineA}
+          <br />
+          {lineB}
+        </motion.h1>
+      </AnimatePresence>
+
+      {/* Horizontal scratch streaks that flash across the title during each
+          swap. Keyed by idx so they remount and replay on every change. */}
+      <TitleGlitchScratches key={`title-scratch-${idx}`} duration={TITLE_TRANSITION_S} />
+    </div>
+  );
+}
+
+function TitleGlitchScratches({ duration }: { duration: number }) {
+  // Brief bright streaks that flash across the title region during a transition.
+  // Same visual language as the E-ink screen's GlitchScratches but scaled down
+  // to title height. Timings are expressed as fractions of the title-swap
+  // duration so they stay in sync if TITLE_TRANSITION_S changes.
+  const scratches = [
+    { delayFrac: 0.05, top: 0.18, height: 1.5, color: '#00FFC2', durFrac: 0.30, xJitter: -10 },
+    { delayFrac: 0.22, top: 0.48, height: 2, color: '#BC13FE', durFrac: 0.25, xJitter: 12 },
+    { delayFrac: 0.40, top: 0.78, height: 1, color: '#FFFFFF', durFrac: 0.22, xJitter: -8 },
+    { delayFrac: 0.58, top: 0.32, height: 1, color: '#FF5AC8', durFrac: 0.18, xJitter: 8 },
+  ];
+  return (
+    <div className="absolute inset-0 pointer-events-none">
+      {scratches.map((s, i) => (
+        <motion.div
+          key={i}
+          className="absolute pointer-events-none"
+          style={{
+            top: `${s.top * 100}%`,
+            left: '-4%',
+            right: '-4%',
+            height: s.height,
+            background: s.color,
+            boxShadow: `0 0 6px ${s.color}, 0 0 10px ${s.color}99`,
+            mixBlendMode: 'screen',
+          }}
+          initial={{ opacity: 0, x: 0 }}
+          animate={{ opacity: [0, 0.95, 0], x: [s.xJitter, 0, 2] }}
+          transition={{
+            duration: duration * s.durFrac,
+            delay: duration * s.delayFrac,
+            times: [0, 0.35, 1],
+            ease: 'easeOut',
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
 // A single overlay that paints the live theme gradient with `mix-blend-mode: color`.
 // Used over the E-ink image so its hue tracks the rest of the page in real time.
 function ThemedColorWash() {
@@ -192,7 +389,7 @@ function ThemedColorWash() {
 function BokehLights() {
   // Out-of-focus light circles — large, bright, soft-edged. They drift slowly along
   // the BG and act as the strongest depth cue (real DOF photos always have these).
-  const orbs = [
+  const allOrbs = [
     { size: 220, color: 'rgba(0,255,194,0.50)', left: '12%', top: '20%', dur: 36, dx: 30, dy: 22 },
     { size: 180, color: 'rgba(188,19,254,0.55)', left: '74%', top: '30%', dur: 42, dx: -28, dy: 18 },
     { size: 260, color: 'rgba(0,255,194,0.40)', left: '60%', top: '70%', dur: 48, dx: -22, dy: -32 },
@@ -200,6 +397,9 @@ function BokehLights() {
     { size: 140, color: 'rgba(70,180,255,0.50)', left: '85%', top: '60%', dur: 50, dx: -18, dy: 28 },
     { size: 110, color: 'rgba(255,255,255,0.35)', left: '40%', top: '15%', dur: 44, dx: 20, dy: 14 },
   ];
+  // On touch devices keep only the three biggest/most-distinct orbs — each orb is a
+  // blurred screen-blend layer, and the per-frame fill cost adds up fast on mobile.
+  const orbs = IS_TOUCH_DEVICE ? [allOrbs[0], allOrbs[1], allOrbs[2]] : allOrbs;
   return (
     <div className="absolute inset-0 pointer-events-none">
       {orbs.map((o, i) => (
@@ -285,7 +485,14 @@ function AnimatedBackdrop() {
   ];
 
   return (
-    <div className="absolute inset-0 pointer-events-none overflow-hidden">
+    <div
+      className="absolute inset-0 pointer-events-none overflow-hidden"
+      // Self-contained stacking context: the four ribbons, the orbs, and the
+      // rotating conic all blend against each other here, not against the page.
+      // `translateZ(0)` promotes this subtree to its own compositor layer so
+      // mobile Chrome can keep the blend buffer stable across frames.
+      style={{ isolation: 'isolate', transform: 'translateZ(0)' }}
+    >
       {/* Deep base wash */}
       <div
         className="absolute inset-0"
@@ -295,7 +502,14 @@ function AnimatedBackdrop() {
         }}
       />
 
-      {ribbons.map((r, i) => (
+      {/* Ribbons: desktop gets the full four-ribbon parallax stack; touch
+          devices get a single CSS-animated silk-flow layer (`MobileSilkFlow`
+          below). Bisecting on a real Android Chrome confirmed the original
+          stack — four 300%-wide blurred screen-blend surfaces each animating
+          x continuously — exceeds mobile GPU fill budget and causes the page
+          composite to drop in and out (the "flashing"). */}
+      {IS_TOUCH_DEVICE && <MobileSilkFlow />}
+      {!IS_TOUCH_DEVICE && ribbons.map((r, i) => (
         <div
           key={i}
           className="absolute"
@@ -355,30 +569,43 @@ function AnimatedBackdrop() {
         }}
       />
 
-      {/* Silk shimmer — soft cross-cutting highlight that breathes for "fabric" feel */}
-      <motion.div
-        className="absolute inset-0"
-        style={{
-          background:
-            'linear-gradient(110deg, transparent 0%, transparent 35%, rgba(255,255,255,0.08) 50%, transparent 65%, transparent 100%)',
-          mixBlendMode: 'screen',
-        }}
-        animate={{ x: ['-30%', '30%', '-30%'], opacity: [0.55, 0.9, 0.55] }}
-        transition={{ duration: 14, repeat: Infinity, ease: 'easeInOut' }}
-      />
+      {/* Silk shimmer — soft cross-cutting highlight that breathes for "fabric" feel.
+          Skipped on touch devices: full-viewport screen-blend layer animating x/opacity
+          adds another per-frame composite pass we don't need on phones. */}
+      {!IS_TOUCH_DEVICE && (
+        <motion.div
+          className="absolute inset-0"
+          style={{
+            background:
+              'linear-gradient(110deg, transparent 0%, transparent 35%, rgba(255,255,255,0.08) 50%, transparent 65%, transparent 100%)',
+            mixBlendMode: 'screen',
+            willChange: 'transform, opacity',
+            backfaceVisibility: 'hidden',
+          }}
+          animate={{ x: ['-30%', '30%', '-30%'], opacity: [0.55, 0.9, 0.55] }}
+          transition={{ duration: 14, repeat: Infinity, ease: 'easeInOut' }}
+        />
+      )}
 
-      {/* Slow rotating conic — keeps the palette shifting under the ribbons */}
-      <motion.div
-        className="absolute inset-0"
-        style={{
-          background:
-            'conic-gradient(from 0deg at 50% 50%, rgba(0,255,194,0.10) 0deg, transparent 90deg, rgba(188,19,254,0.10) 180deg, transparent 270deg, rgba(0,255,194,0.10) 360deg)',
-          filter: 'blur(40px)',
-          mixBlendMode: 'screen',
-        }}
-        animate={{ rotate: 360 }}
-        transition={{ duration: 80, repeat: Infinity, ease: 'linear' }}
-      />
+      {/* Slow rotating conic — keeps the palette shifting under the ribbons.
+          Skipped on touch devices: a 40px-blurred full-viewport surface that
+          rotates every frame is the heaviest single layer in this scene, and
+          mobile compositors can't keep up with it. */}
+      {!IS_TOUCH_DEVICE && (
+        <motion.div
+          className="absolute inset-0"
+          style={{
+            background:
+              'conic-gradient(from 0deg at 50% 50%, rgba(0,255,194,0.10) 0deg, transparent 90deg, rgba(188,19,254,0.10) 180deg, transparent 270deg, rgba(0,255,194,0.10) 360deg)',
+            filter: 'blur(40px)',
+            mixBlendMode: 'screen',
+            willChange: 'transform',
+            backfaceVisibility: 'hidden',
+          }}
+          animate={{ rotate: 360 }}
+          transition={{ duration: 80, repeat: Infinity, ease: 'linear' }}
+        />
+      )}
 
       {/* Film grain on top */}
       <div
@@ -392,10 +619,12 @@ function AnimatedBackdrop() {
   );
 }
 
-function PhoneCaseScene() {
+function PhoneCaseScene({ titleIdx }: { titleIdx: number }) {
   // Source asset: 360px-wide reference with E-ink screen overlay at top:222 left:99 w:168 h:250.
   // We scale to 520px so the device runs nearly edge-to-edge (design width is 448px),
-  // letting the phone bleed past the viewport edges for an immersive hero.
+  // letting the phone bleed past the viewport edges for an immersive hero. Both
+  // case PNGs (white + orange) share the same 862×1248 source dimensions, so the
+  // screen overlay coordinates are valid for either.
   const W = 520;
   const F = W / 360;
   const screen = {
@@ -405,6 +634,8 @@ function PhoneCaseScene() {
     height: 250 * F,
     radius: 7 * F,
   };
+
+  const activeCase = TITLES[titleIdx].caseImg;
 
   return (
     <motion.div
@@ -417,17 +648,37 @@ function PhoneCaseScene() {
         top: -30,
         // Layered shadows for foreground depth: a soft contact halo, a colored bloom,
         // and a long ambient shadow — the case visibly hovers above the receded BG.
-        filter:
-          'drop-shadow(0 8px 16px rgba(0,0,0,0.55)) drop-shadow(0 48px 90px rgba(188,19,254,0.42)) drop-shadow(0 20px 40px rgba(0,255,194,0.22))',
+        // On touch devices use a single shadow: three stacked drop-shadow() passes
+        // means three full-image filter rasterizations every composite, which mobile
+        // GPUs struggle with when the scene is already filter-heavy.
+        filter: IS_TOUCH_DEVICE
+          ? 'drop-shadow(0 16px 32px rgba(0,0,0,0.6))'
+          : 'drop-shadow(0 8px 16px rgba(0,0,0,0.55)) drop-shadow(0 48px 90px rgba(188,19,254,0.42)) drop-shadow(0 20px 40px rgba(0,255,194,0.22))',
       }}
     >
       <div className="relative">
+        {/* Invisible layout-holder: a non-rendering copy of the case image so the
+            container takes the right size. The visible crossfading copies are
+            absolutely positioned over it. */}
         <img
-          src={iphoneBackImg}
-          alt="AdPal Device"
-          className="w-full h-auto object-contain select-none"
+          src={iphoneBackWhiteImg}
+          aria-hidden
+          className="w-full h-auto object-contain select-none invisible"
           draggable={false}
         />
+        <AnimatePresence>
+          <motion.img
+            key={titleIdx}
+            src={activeCase}
+            alt="AdPal Device"
+            className="absolute inset-0 w-full h-auto object-contain select-none"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: TITLE_TRANSITION_S, ease: TITLE_EASE }}
+            draggable={false}
+          />
+        </AnimatePresence>
 
         {/* E-ink screen overlay — sweep-driven image reveal */}
         <div
@@ -439,9 +690,21 @@ function PhoneCaseScene() {
             height: screen.height,
             borderRadius: screen.radius,
             background: '#EDE9DC',
+            // Contain the inner `mix-blend-mode: color` washes + sweep band so
+            // they composite within the screen, not against the phone case.
+            isolation: 'isolate',
+            transform: 'translateZ(0)',
+            backfaceVisibility: 'hidden',
           }}
         >
-          <EinkSweepReveal screenHeight={screen.height} />
+          {/* E-ink screen content is keyed by category so that switching from
+              "earn" to "play" remounts the reveal cycle and the screen visibly
+              jumps into the new image set from photo 0. */}
+          <EinkSweepReveal
+            key={TITLES[titleIdx].category}
+            screenHeight={screen.height}
+            category={TITLES[titleIdx].category}
+          />
 
           {/* Subtle paper sheen */}
           <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-white/15 pointer-events-none" />
@@ -484,12 +747,19 @@ function BrandTintedImage({ src }: { src: string }) {
   );
 }
 
-function EinkSweepReveal({ screenHeight }: { screenHeight: number }) {
+function EinkSweepReveal({
+  screenHeight,
+  category,
+}: {
+  screenHeight: number;
+  category: SampleCategory;
+}) {
   // E-ink-style refresh: the previous image sits as the static backdrop. A new image is
   // revealed top-down in perfect lockstep with the sweep bar — at sweep position 35%,
   // the top 35% of the new image is visible; the bottom 65% still shows the previous.
   // After the sweep completes, the new image becomes the backdrop and the cycle repeats.
-  const photos = samplePhotos.slice(0, Math.min(5, samplePhotos.length));
+  const categoryPhotos = samplePhotosByCategory[category];
+  const photos = categoryPhotos.slice(0, Math.min(5, categoryPhotos.length));
   const n = photos.length;
   const SWEEP_HEIGHT = 56;
   const sweepDurationSec = SLOT_SECONDS * SWEEP_TRAVEL_FRACTION;
@@ -743,6 +1013,55 @@ function GlitchScratches({ screenHeight, duration }: { screenHeight: number; dur
           }}
         />
       ))}
+    </>
+  );
+}
+
+function MobileSilkFlow() {
+  // Single-layer silk-river replacement for touch devices. One painted gradient,
+  // 200% wide background panned via a CSS `background-position` keyframe — runs on
+  // the compositor thread on Chrome/WebKit and avoids the four-layer blurred
+  // screen-blend stack that overflowed mobile GPU fill budget. `willChange` and
+  // `translateZ(0)` force the layer onto the compositor so the animation can run
+  // independently of the main thread.
+  return (
+    <>
+      <style>{`
+        @keyframes silk-flow-touch {
+          0%   { background-position:   0% 50%; }
+          100% { background-position: 300% 50%; }
+        }
+      `}</style>
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          // Five color peaks matching the four desktop ribbons (violet, mint,
+          // pink, blue) plus a return-violet so the loop seam is invisible.
+          // Opacity matches the original ribbons (0.75–0.9) for full silk feel.
+          background:
+            'linear-gradient(110deg,' +
+            ' transparent 0%,' +
+            ' rgba(188,19,254,0.88) 9%,' +
+            ' transparent 20%,' +
+            ' rgba(0,255,194,0.85) 32%,' +
+            ' transparent 44%,' +
+            ' rgba(255,90,200,0.75) 56%,' +
+            ' transparent 68%,' +
+            ' rgba(70,120,255,0.8) 80%,' +
+            ' transparent 91%,' +
+            ' rgba(188,19,254,0.6) 100%)',
+          // 300% pan distance = the gradient travels twice as far per cycle as
+          // a 200% pan would, so peaks visibly enter from one side and exit the
+          // other (river-of-light feel rather than a subtle hue shift).
+          backgroundSize: '300% 100%',
+          filter: 'blur(28px)',
+          mixBlendMode: 'screen',
+          animation: 'silk-flow-touch 18s linear infinite',
+          willChange: 'background-position',
+          transform: 'translateZ(0)',
+          opacity: 0.95,
+        }}
+      />
     </>
   );
 }
