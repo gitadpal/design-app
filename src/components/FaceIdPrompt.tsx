@@ -85,12 +85,12 @@ export function FaceIdPrompt({
               </div>
             </div>
 
-            <h3 className="text-xl font-semibold text-white mb-2">{title}</h3>
-            <p className="text-sm text-white/40 leading-relaxed mb-6">{subtitle}</p>
+            <h3 className="text-xl font-semibold text-foreground mb-2">{title}</h3>
+            <p className="text-sm text-soft-4 leading-relaxed mb-6">{subtitle}</p>
 
             <button
               onClick={onCancel}
-              className="text-sm font-medium text-white/60 hover:text-white transition-colors"
+              className="text-sm font-medium text-soft-3 hover:text-foreground transition-colors"
             >
               Cancel
             </button>

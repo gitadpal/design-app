@@ -10,7 +10,7 @@ interface EinkCasePromptProps {
 export function EinkCasePrompt({ open, onClose }: EinkCasePromptProps) {
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-[320px] rounded-2xl bg-[#1A1A1A] border-[#333] text-white p-0 overflow-hidden">
+      <DialogContent className="max-w-[320px] rounded-2xl bg-card border-[#333] text-foreground p-0 overflow-hidden">
         {/* Top accent stripe */}
         <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-[#BC13FE] to-[#00FFC2]" />
 
@@ -22,8 +22,8 @@ export function EinkCasePrompt({ open, onClose }: EinkCasePromptProps) {
           </div>
 
           <DialogHeader className="space-y-1.5">
-            <DialogTitle className="text-white text-base font-semibold">E-Ink Case Not Detected</DialogTitle>
-            <DialogDescription className="text-white/40 text-sm leading-relaxed">
+            <DialogTitle className="text-foreground text-base font-semibold">E-Ink Case Not Detected</DialogTitle>
+            <DialogDescription className="text-soft-4 text-sm leading-relaxed">
               Attach your AdPal E-Ink phone case and activate it to unlock earnings, casting, and full campaign access.
             </DialogDescription>
           </DialogHeader>
@@ -42,13 +42,13 @@ export function EinkCasePrompt({ open, onClose }: EinkCasePromptProps) {
                 >
                   {i + 1}
                 </span>
-                <span className="text-xs text-white/30 leading-relaxed">{step}</span>
+                <span className="text-xs text-soft-5 leading-relaxed">{step}</span>
               </div>
             ))}
           </div>
 
           <Button
-            className="w-full gradient-earn text-white"
+            className="w-full gradient-earn text-foreground"
             onClick={onClose}
           >
             Got It

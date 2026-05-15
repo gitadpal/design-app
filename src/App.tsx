@@ -3,11 +3,11 @@ import { AdCampaigns } from './components/AdCampaigns';
 import { ImageCasting } from './components/ImageCasting';
 import { Assets } from './components/Assets';
 import { Settings } from './components/Settings';
-import { 
-  Coins, 
-  Frame, 
+import {
+  Coins,
+  Frame,
   Wallet,
-  Settings as SettingsIcon
+  Settings as SettingsIcon,
 } from 'lucide-react';
 import { Toaster } from './components/ui/sonner';
 import { toast } from 'sonner@2.0.3';
@@ -45,6 +45,18 @@ export default function App() {
   useResponsiveScale(rootRef);
 
   const [activeTab, setActiveTab] = useState<TabValue>('ads');
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    if (typeof window === 'undefined') return 'dark';
+    return (window.localStorage.getItem('adpal-theme') as 'dark' | 'light') ?? 'dark';
+  });
+  const isDark = theme === 'dark';
+  const toggleTheme = () => {
+    setTheme((t) => {
+      const next = t === 'dark' ? 'light' : 'dark';
+      window.localStorage.setItem('adpal-theme', next);
+      return next;
+    });
+  };
 
   // Ad Campaigns state
   const [adView, setAdView] = useState<AdView>('main');
@@ -86,66 +98,94 @@ export default function App() {
     setShowOnboarding(false);
   };
 
-  // Per-tab ambient backdrop. Brand palette is strictly Cyber Mint (#00FFC2) + Electric Violet (#BC13FE) —
-  // each tab gets a distinct *composition* of those two colors so the room is lit differently per page
-  // without ever leaving the Prism Gradient palette.
-  //   ads:      mint-dominant — light comes from top edges, violet anchors bottom (earn / fresh)
-  //   assets:   violet-dominant — heavy at top + sides, single mint accent below (wealth / premium)
-  //   settings: balanced, muted, corner-anchored — calmer, lower intensity (utility)
-  //   cast:     skipped; the page paints its own image-driven backdrop.
+  // Per-tab ambient backdrop. Two palettes per tab:
+  //   • Dark mode keeps the brand-strict Prism (Cyber Mint + Electric Violet) compositions —
+  //     mint-led for Earnings, violet-led for Assets, balanced for Settings.
+  //   • Bright mode lines each page up with its bottom-nav accent so the "room" you're in
+  //     is colored to match the menu item you tapped (emerald for Earnings, violet for
+  //     Assets, cyan for Settings). Each is paired with a brand color as secondary to keep
+  //     a Prism flavor in the wash.
+  //   cast: skipped — the page paints its own image-driven backdrop.
   const MINT = '#00FFC2';
   const VIOLET = '#BC13FE';
-  const tabBackdrops: Record<TabValue, string | null> = {
-    ads:
-      `radial-gradient(circle at 15% 12%, ${MINT} 0%, transparent 28%),` +
-      `radial-gradient(circle at 88% 28%, ${MINT} 0%, transparent 22%),` +
-      `radial-gradient(circle at 72% 96%, ${VIOLET} 0%, transparent 34%),` +
-      `radial-gradient(circle at 28% 72%, ${MINT} 0%, transparent 18%)`,
-    cast: null,
-    assets:
-      `radial-gradient(circle at 50% 14%, ${VIOLET} 0%, transparent 32%),` +
-      `radial-gradient(circle at 8% 48%, ${VIOLET} 0%, transparent 28%),` +
-      `radial-gradient(circle at 90% 62%, ${VIOLET} 0%, transparent 24%),` +
-      `radial-gradient(circle at 50% 102%, ${MINT} 0%, transparent 30%)`,
-    settings:
-      `radial-gradient(circle at 18% 20%, ${VIOLET} 0%, transparent 22%),` +
-      `radial-gradient(circle at 82% 80%, ${MINT} 0%, transparent 22%),` +
-      `radial-gradient(circle at 84% 18%, ${MINT} 0%, transparent 16%),` +
-      `radial-gradient(circle at 18% 82%, ${VIOLET} 0%, transparent 16%)`,
+  const EMERALD = '#22c55e';
+  const CYAN = '#06b6d4';
+  const tabBackdrops: Record<'dark' | 'light', Record<TabValue, string | null>> = {
+    dark: {
+      ads:
+        `radial-gradient(circle at 15% 12%, ${MINT} 0%, transparent 28%),` +
+        `radial-gradient(circle at 88% 28%, ${MINT} 0%, transparent 22%),` +
+        `radial-gradient(circle at 72% 96%, ${VIOLET} 0%, transparent 34%),` +
+        `radial-gradient(circle at 28% 72%, ${MINT} 0%, transparent 18%)`,
+      cast: null,
+      assets:
+        `radial-gradient(circle at 50% 14%, ${VIOLET} 0%, transparent 32%),` +
+        `radial-gradient(circle at 8% 48%, ${VIOLET} 0%, transparent 28%),` +
+        `radial-gradient(circle at 90% 62%, ${VIOLET} 0%, transparent 24%),` +
+        `radial-gradient(circle at 50% 102%, ${MINT} 0%, transparent 30%)`,
+      settings:
+        `radial-gradient(circle at 18% 20%, ${VIOLET} 0%, transparent 22%),` +
+        `radial-gradient(circle at 82% 80%, ${MINT} 0%, transparent 22%),` +
+        `radial-gradient(circle at 84% 18%, ${MINT} 0%, transparent 16%),` +
+        `radial-gradient(circle at 18% 82%, ${VIOLET} 0%, transparent 16%)`,
+    },
+    light: {
+      ads:
+        `radial-gradient(circle at 15% 12%, ${EMERALD} 0%, transparent 30%),` +
+        `radial-gradient(circle at 88% 28%, ${EMERALD} 0%, transparent 24%),` +
+        `radial-gradient(circle at 72% 96%, ${MINT} 0%, transparent 32%),` +
+        `radial-gradient(circle at 28% 72%, ${EMERALD} 0%, transparent 20%)`,
+      cast: null,
+      assets:
+        `radial-gradient(circle at 50% 14%, ${VIOLET} 0%, transparent 32%),` +
+        `radial-gradient(circle at 8% 48%, ${VIOLET} 0%, transparent 28%),` +
+        `radial-gradient(circle at 90% 62%, ${VIOLET} 0%, transparent 24%),` +
+        `radial-gradient(circle at 50% 102%, ${MINT} 0%, transparent 30%)`,
+      settings:
+        `radial-gradient(circle at 18% 20%, ${CYAN} 0%, transparent 26%),` +
+        `radial-gradient(circle at 82% 80%, ${CYAN} 0%, transparent 26%),` +
+        `radial-gradient(circle at 84% 18%, ${VIOLET} 0%, transparent 18%),` +
+        `radial-gradient(circle at 18% 82%, ${CYAN} 0%, transparent 18%)`,
+    },
   };
-  const backdrop = tabBackdrops[activeTab];
+  const backdrop = tabBackdrops[isDark ? 'dark' : 'light'][activeTab];
 
   return (
-    <div ref={rootRef} className="dark bg-[#0A0A0A] text-white flex flex-col overflow-hidden relative">
+    <div ref={rootRef} className={`${isDark ? 'dark bg-[#0A0A0A] text-white' : 'bg-white text-[#1A1A1A]'} flex flex-col overflow-hidden relative`}>
       {/* Tab-aware ambient backdrop — same recipe as the Cast gallery page (blurred color field
           + vignette + grain). Each tab gets a unique pair of brand-color blobs so the room
           "lights up" differently as you switch tabs. */}
       {backdrop && (
         <div
           aria-hidden="true"
-          className="fixed inset-0 pointer-events-none overflow-hidden bg-[#0a0a0a]"
+          className={`fixed inset-0 pointer-events-none overflow-hidden ${isDark ? 'bg-[#0a0a0a]' : 'bg-white'}`}
         >
           {/* Per-tab composition of Cyber Mint + Electric Violet blobs, heavily blurred to
-              mimic the lens-out-of-focus atmosphere of the Cast page's image backdrop. */}
+              mimic the lens-out-of-focus atmosphere of the Cast page's image backdrop.
+              Dark mode darkens via brightness(0.55); bright mode keeps full brightness but
+              uses lower saturation so the color reads as a tint on white rather than poster paint. */}
           <div
             className="absolute -inset-[15%]"
             style={{
               background: backdrop,
-              filter: 'blur(60px) saturate(1.5) brightness(0.55)',
-              transition: 'background 800ms ease',
+              filter: isDark
+                ? 'blur(60px) saturate(1.5) brightness(0.55)'
+                : 'blur(70px) saturate(0.85) brightness(1.15) opacity(0.55)',
+              transition: 'background 800ms ease, filter 400ms ease',
             }}
           />
           {/* Vertical vignette for legibility */}
           <div
             className="absolute inset-0"
             style={{
-              background:
-                'linear-gradient(to bottom, rgba(10,10,10,0.55) 0%, rgba(10,10,10,0.25) 30%, rgba(10,10,10,0.45) 70%, rgba(10,10,10,0.85) 100%)',
+              background: isDark
+                ? 'linear-gradient(to bottom, rgba(10,10,10,0.55) 0%, rgba(10,10,10,0.25) 30%, rgba(10,10,10,0.45) 70%, rgba(10,10,10,0.85) 100%)'
+                : 'linear-gradient(to bottom, rgba(255,255,255,0.50) 0%, rgba(255,255,255,0.20) 30%, rgba(255,255,255,0.30) 70%, rgba(255,255,255,0.65) 100%)',
             }}
           />
-          {/* Subtle grain — same Matte Obsidian texture as the Cast page */}
+          {/* Subtle grain — Matte Obsidian texture (overlay) for dark, softer for bright */}
           <div
-            className="absolute inset-0 opacity-25 mix-blend-overlay"
+            className={`absolute inset-0 ${isDark ? 'opacity-25 mix-blend-overlay' : 'opacity-[0.08] mix-blend-multiply'}`}
             style={{
               background:
                 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'3\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\' opacity=\'0.5\'/%3E%3C/svg%3E")',
@@ -207,6 +247,8 @@ export default function App() {
               setSettingsView('main');
               setShowOnboarding(true);
             }}
+            theme={theme}
+            onToggleTheme={toggleTheme}
           />
         )}
       </main>

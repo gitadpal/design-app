@@ -76,7 +76,7 @@ export function Assets({ view, setView }: AssetsProps) {
       balance: 1247.50, 
       value: 1247.50, 
       change: 5.2,
-      color: 'text-white/80',
+      color: 'text-soft-2',
       category: 'crypto',
       lastChanged: 1
     },
@@ -106,7 +106,7 @@ export function Assets({ view, setView }: AssetsProps) {
       balance: 1, 
       value: 45000.00, 
       change: 3.5,
-      color: 'text-white/80',
+      color: 'text-soft-2',
       category: 'nft',
       lastChanged: 2,
       image: 'https://images.unsplash.com/photo-1583578568005-60c0cd38f066?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxib3JlZCUyMGFwZSUyMG5mdCUyMGFydHxlbnwxfHx8fDE3NjE2MTk4NTl8MA&ixlib=rb-4.1.0&q=80&w=400'
@@ -117,7 +117,7 @@ export function Assets({ view, setView }: AssetsProps) {
       balance: 1, 
       value: 12500.00, 
       change: -1.2,
-      color: 'text-white/55',
+      color: 'text-soft-3',
       category: 'nft',
       lastChanged: 5,
       image: 'https://images.unsplash.com/photo-1743310855295-8c0368a4ab22?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxhbmltZSUyMGNoYXJhY3RlciUyMG5mdHxlbnwxfHx8fDE3NjE2MTk4NjB8MA&ixlib=rb-4.1.0&q=80&w=400'
@@ -275,11 +275,11 @@ export function Assets({ view, setView }: AssetsProps) {
       animate={{ opacity: 1, y: 0 }}
       className="flex flex-col items-center justify-center py-16 px-4 text-center"
     >
-      <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mb-4">
-        <Icon className="w-8 h-8 text-white/40" />
+      <div className="w-16 h-16 bg-soft-1 rounded-full flex items-center justify-center mb-4">
+        <Icon className="w-8 h-8 text-soft-4" />
       </div>
-      <h3 className="mb-2 text-white">{title}</h3>
-      <p className="text-sm text-white/55 max-w-sm">{description}</p>
+      <h3 className="mb-2 text-foreground">{title}</h3>
+      <p className="text-sm text-soft-3 max-w-sm">{description}</p>
     </motion.div>
   );
 
@@ -345,15 +345,15 @@ export function Assets({ view, setView }: AssetsProps) {
                   </div>
                   <div>
                     <div className="mb-1">{token.symbol}</div>
-                    <div className="text-sm text-white/55">{token.name}</div>
+                    <div className="text-sm text-soft-3">{token.name}</div>
                   </div>
                 </div>
                 <div className="text-right">
                   <div className="mb-1">{token.balance.toFixed(2)}</div>
-                  <div className="text-sm text-white/55 mb-1">${token.value.toLocaleString()}</div>
+                  <div className="text-sm text-soft-3 mb-1">${token.value.toLocaleString()}</div>
                   <Badge 
                     variant="secondary"
-                    className={`text-xs ${token.change >= 0 ? 'text-[#00FFC2]' : token.change < 0 ? 'text-white/55' : 'text-white/55'}`}
+                    className={`text-xs ${token.change >= 0 ? 'text-[#00FFC2]' : token.change < 0 ? 'text-soft-3' : 'text-soft-3'}`}
                   >
                     {token.change > 0 ? '+' : ''}{token.change}%
                   </Badge>
@@ -377,7 +377,7 @@ export function Assets({ view, setView }: AssetsProps) {
           >
             <Card className="cursor-pointer hover:shadow-lg transition-shadow overflow-hidden">
             <CardContent className="p-0">
-              <div className="aspect-square bg-white/10 relative">
+              <div className="aspect-square bg-soft-1 relative">
                 {token.image && (
                   <img 
                     src={token.image} 
@@ -388,12 +388,12 @@ export function Assets({ view, setView }: AssetsProps) {
               </div>
               <div className="p-3">
                 <div className="mb-1 text-sm">{token.symbol}</div>
-                <div className="text-xs text-white/55 mb-2">{token.name}</div>
+                <div className="text-xs text-soft-3 mb-2">{token.name}</div>
                 <div className="flex items-center justify-between">
                   <div className="text-sm">${token.value.toLocaleString()}</div>
                   <Badge 
                     variant="secondary"
-                    className={`text-xs ${token.change >= 0 ? 'text-[#00FFC2]' : token.change < 0 ? 'text-white/55' : 'text-white/55'}`}
+                    className={`text-xs ${token.change >= 0 ? 'text-[#00FFC2]' : token.change < 0 ? 'text-soft-3' : 'text-soft-3'}`}
                   >
                     {token.change > 0 ? '+' : ''}{token.change}%
                   </Badge>
@@ -414,7 +414,7 @@ export function Assets({ view, setView }: AssetsProps) {
         exit={{ opacity: 0, x: -20 }}
         transition={{ duration: 0.2 }}
       >
-        <div className="bg-[#1A1A1A] border-b border-[#E0E0E0] sticky top-0 z-10">
+        <div className="bg-card border-b border-[#E0E0E0] sticky top-0 z-10">
           <div className="flex items-center justify-between px-4 py-3">
             <button
               onClick={() => setView('main')}
@@ -480,7 +480,7 @@ export function Assets({ view, setView }: AssetsProps) {
         exit={{ opacity: 0, x: -20 }}
         transition={{ duration: 0.2 }}
       >
-        <div className="bg-[#1A1A1A] border-b border-[#E0E0E0] sticky top-0 z-10">
+        <div className="bg-card border-b border-[#E0E0E0] sticky top-0 z-10">
           <div className="flex items-center justify-between px-4 py-3">
             <button
               onClick={() => setView('main')}
@@ -512,7 +512,7 @@ export function Assets({ view, setView }: AssetsProps) {
                         activity.type === 'earn' 
                           ? 'bg-green-100 text-[#00FFC2]' 
                           : activity.type === 'send'
-                          ? 'bg-blue-100 text-white/80'
+                          ? 'bg-blue-100 text-soft-2'
                           : 'bg-purple-100 text-[#BC13FE]'
                       }`}>
                         {activity.type === 'earn' ? (
@@ -525,15 +525,15 @@ export function Assets({ view, setView }: AssetsProps) {
                       </div>
                       <div>
                         <div className="text-sm mb-0.5">{activity.title}</div>
-                        <div className="text-xs text-white/55">{activity.subtitle}</div>
-                        <div className="text-xs text-white/40 mt-0.5">{activity.timestamp}</div>
+                        <div className="text-xs text-soft-3">{activity.subtitle}</div>
+                        <div className="text-xs text-soft-4 mt-0.5">{activity.timestamp}</div>
                       </div>
                     </div>
                     <div className={`text-right ${
-                      activity.type === 'earn' || activity.type === 'receive' ? 'text-[#00FFC2]' : 'text-white'
+                      activity.type === 'earn' || activity.type === 'receive' ? 'text-[#00FFC2]' : 'text-foreground'
                     }`}>
                       <div>{activity.amount}</div>
-                      <div className="text-xs text-white/55">PIXP</div>
+                      <div className="text-xs text-soft-3">PIXP</div>
                     </div>
                   </div>
                 </CardContent>
@@ -555,7 +555,7 @@ export function Assets({ view, setView }: AssetsProps) {
   if (!walletConnected) {
     return (
       <div
-        className="flex flex-col items-center justify-center px-6 bg-[#1A1A1A]"
+        className="flex flex-col items-center justify-center px-6 bg-card"
         style={{ minHeight: 'max(100vh, 100%)' }}
       >
         <motion.div
@@ -577,20 +577,20 @@ export function Assets({ view, setView }: AssetsProps) {
 
           <div className="space-y-2">
             <h2 className="text-xl font-semibold tracking-tight text-[#1A1A1A]">No Wallet Connected</h2>
-            <p className="text-sm text-white/55 leading-relaxed">
+            <p className="text-sm text-soft-3 leading-relaxed">
               Connect your wallet to view balances, send tokens, and receive campaign rewards.
             </p>
           </div>
 
           <button
-            className="w-full h-12 rounded-xl text-base font-semibold flex items-center justify-center transition-all active:scale-[0.98] shadow-md hover:shadow-lg text-white bg-[#1A1A1A] hover:bg-[#2C2C2C]"
+            className="w-full h-12 rounded-xl text-base font-semibold flex items-center justify-center transition-all active:scale-[0.98] shadow-md hover:shadow-lg text-foreground bg-card hover:bg-[#2C2C2C]"
             onClick={() => login()}
           >
             <Wallet className="w-5 h-5 mr-2" />
             Connect Wallet
           </button>
 
-          <p className="text-xs text-white/40">
+          <p className="text-xs text-soft-4">
             Your embedded AdPal wallet — no seed phrase required for setup.
           </p>
         </motion.div>
@@ -605,7 +605,7 @@ export function Assets({ view, setView }: AssetsProps) {
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="pb-6 text-white min-h-screen"
+        className="pb-6 text-foreground min-h-screen"
       >
         {/* Wallet Balance Header */}
         <div className="px-4 pt-5 pb-4 mb-2">
@@ -613,19 +613,19 @@ export function Assets({ view, setView }: AssetsProps) {
             <div className="section-header" style={{ color: 'rgba(255,255,255,0.5)' }}>Total Balance</div>
             <button
               onClick={() => setShowDisconnectConfirm(true)}
-              className="p-1.5 -mr-1.5 hover:bg-white/5 rounded-full transition-colors"
+              className="p-1.5 -mr-1.5 hover:bg-soft-3 rounded-full transition-colors"
               aria-label="Disconnect wallet"
             >
-              <LogOut className="w-4 h-4 text-white/50" strokeWidth={1.75} />
+              <LogOut className="w-4 h-4 text-soft-3" strokeWidth={1.75} />
             </button>
           </div>
-          <div className="text-4xl font-semibold tracking-tight text-white mb-3 tabular-nums">
+          <div className="text-4xl font-semibold tracking-tight text-foreground mb-3 tabular-nums">
             ${totalBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
 
           <button
             onClick={handleCopyAddress}
-            className="inline-flex items-center gap-1.5 text-xs text-white/55 hover:text-white transition-colors mb-5"
+            className="inline-flex items-center gap-1.5 text-xs text-soft-3 hover:text-foreground transition-colors mb-5"
           >
             <span className="font-mono">{shortAddress}</span>
             <Copy className="w-3 h-3" strokeWidth={1.75} />
@@ -633,7 +633,7 @@ export function Assets({ view, setView }: AssetsProps) {
 
           <div className="grid grid-cols-2 gap-3">
             <button
-              className="w-full h-11 rounded-xl transition-all active:scale-95 flex items-center justify-center text-sm font-semibold text-white border border-white/15 bg-white/5 hover:bg-white/10 hover:border-white/25"
+              className="w-full h-11 rounded-xl transition-all active:scale-95 flex items-center justify-center text-sm font-semibold text-foreground border border-soft-2 bg-soft-3 hover:bg-soft-1 hover:border-soft-1"
               onClick={() => setIsReceiveOpen(true)}
             >
               <ArrowDownLeft className="w-4 h-4 mr-2" strokeWidth={1.75} />
@@ -653,7 +653,7 @@ export function Assets({ view, setView }: AssetsProps) {
       {/* Token List */}
       <div className="px-4 mb-6">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="font-semibold tracking-tight text-white">Assets</h3>
+          <h3 className="font-semibold tracking-tight text-foreground">Assets</h3>
           <button
             className="flex items-center gap-1 text-sm font-medium transition-colors hover:opacity-80"
             style={{ color: '#BC13FE' }}
@@ -678,27 +678,27 @@ export function Assets({ view, setView }: AssetsProps) {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
               >
-                <Card className="bg-[#1A1A1A] border-white/10 hover:border-white/25 hover:bg-[#1F1F1F] transition-all">
+                <Card className="bg-card border-soft-3 hover:border-soft-1 hover:bg-accent transition-all">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         {token.category === 'nft' && token.image ? (
-                          <div className="w-10 h-10 rounded-lg overflow-hidden bg-white/5 flex-shrink-0">
+                          <div className="w-10 h-10 rounded-lg overflow-hidden bg-soft-3 flex-shrink-0">
                             <img src={token.image} alt={token.symbol} className="w-full h-full object-cover" />
                           </div>
                         ) : (
-                          <div className="w-10 h-10 rounded-full flex items-center justify-center text-white" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.10)' }}>
+                          <div className="w-10 h-10 rounded-full flex items-center justify-center text-foreground" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.10)' }}>
                             <span>{token.symbol.charAt(0)}</span>
                           </div>
                         )}
                         <div>
-                          <div className="mb-0.5 text-white">{token.symbol}</div>
-                          <div className="text-sm text-white/50">{token.name}</div>
+                          <div className="mb-0.5 text-foreground">{token.symbol}</div>
+                          <div className="text-sm text-soft-3">{token.name}</div>
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="mb-0.5 text-white tabular-nums">{token.category === 'nft' ? token.balance : token.balance.toFixed(2)}</div>
-                        <div className="text-sm text-white/55 tabular-nums">
+                        <div className="mb-0.5 text-foreground tabular-nums">{token.category === 'nft' ? token.balance : token.balance.toFixed(2)}</div>
+                        <div className="text-sm text-soft-3 tabular-nums">
                           {token.change > 0 ? '+' : ''}{token.change}%
                         </div>
                       </div>
@@ -714,7 +714,7 @@ export function Assets({ view, setView }: AssetsProps) {
       {/* Recent Activity */}
       <div className="px-4">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="font-semibold tracking-tight text-white">Recent Activity</h3>
+          <h3 className="font-semibold tracking-tight text-foreground">Recent Activity</h3>
           <button
             className="flex items-center gap-1 text-sm font-medium transition-colors hover:opacity-80"
             style={{ color: '#BC13FE' }}
@@ -739,7 +739,7 @@ export function Assets({ view, setView }: AssetsProps) {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.05 }}
               >
-                <Card className="bg-[#1A1A1A] border-white/10 hover:border-white/25 hover:bg-[#1F1F1F] transition-all">
+                <Card className="bg-card border-soft-3 hover:border-soft-1 hover:bg-accent transition-all">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
@@ -758,14 +758,14 @@ export function Assets({ view, setView }: AssetsProps) {
                           )}
                         </div>
                         <div>
-                          <div className="text-sm mb-0.5 text-white">{activity.title}</div>
-                          <div className="text-xs text-white/50">{activity.subtitle}</div>
-                          <div className="text-xs text-white/35 mt-0.5">{activity.timestamp}</div>
+                          <div className="text-sm mb-0.5 text-foreground">{activity.title}</div>
+                          <div className="text-xs text-soft-3">{activity.subtitle}</div>
+                          <div className="text-xs text-soft-5 mt-0.5">{activity.timestamp}</div>
                         </div>
                       </div>
-                      <div className="text-right text-white">
+                      <div className="text-right text-foreground">
                         <div className="tracking-tight tabular-nums">{activity.amount}</div>
-                        <div className="text-xs text-white/50">PIXP</div>
+                        <div className="text-xs text-soft-3">PIXP</div>
                       </div>
                     </div>
                   </CardContent>
@@ -787,15 +787,15 @@ export function Assets({ view, setView }: AssetsProps) {
           </DrawerHeader>
           <div className="px-4 pb-4">
             <div className="text-center mb-6">
-              <div className="bg-[#1A1A1A] border-4 border-white/10 rounded-2xl p-6 inline-block mb-4">
-                <QrCode className="w-32 h-32 text-white/40" />
+              <div className="bg-card border-4 border-soft-3 rounded-2xl p-6 inline-block mb-4">
+                <QrCode className="w-32 h-32 text-soft-4" />
               </div>
-              <p className="text-sm text-white/70">Scan QR code to receive PIXP tokens</p>
+              <p className="text-sm text-soft-2">Scan QR code to receive PIXP tokens</p>
             </div>
 
             <div className="space-y-3">
               <div>
-                <Label className="text-xs text-white/70 mb-1.5 block">Your Wallet Address</Label>
+                <Label className="text-xs text-soft-2 mb-1.5 block">Your Wallet Address</Label>
                 <div className="flex gap-2">
                   <Input 
                     value={walletAddress}
@@ -814,7 +814,7 @@ export function Assets({ view, setView }: AssetsProps) {
             </div>
 
             <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-              <p className="text-xs text-white/70">
+              <p className="text-xs text-soft-2">
                 Only send PIXP tokens to this address. Sending other tokens may result in permanent loss.
               </p>
             </div>
@@ -846,7 +846,7 @@ export function Assets({ view, setView }: AssetsProps) {
                   <Label className="mb-1.5 block">Select Token</Label>
                   <button
                     onClick={() => setIsSelectingToken(true)}
-                    className="w-full p-3 border rounded-lg flex items-center justify-between hover:bg-white/5 transition-colors"
+                    className="w-full p-3 border rounded-lg flex items-center justify-between hover:bg-soft-3 transition-colors"
                   >
                     <div className="flex items-center gap-3">
                       {(() => {
@@ -856,7 +856,7 @@ export function Assets({ view, setView }: AssetsProps) {
                         return (
                           <>
                             {token.category === 'nft' && token.image ? (
-                              <div className="w-10 h-10 rounded-lg overflow-hidden bg-white/10 flex-shrink-0">
+                              <div className="w-10 h-10 rounded-lg overflow-hidden bg-soft-1 flex-shrink-0">
                                 <img src={token.image} alt={token.symbol} className="w-full h-full object-cover" />
                               </div>
                             ) : (
@@ -866,13 +866,13 @@ export function Assets({ view, setView }: AssetsProps) {
                             )}
                             <div className="text-left">
                               <div className="mb-0.5">{token.symbol}</div>
-                              <div className="text-sm text-white/55">{token.name}</div>
+                              <div className="text-sm text-soft-3">{token.name}</div>
                             </div>
                           </>
                         );
                       })()}
                     </div>
-                    <ChevronRight className="w-5 h-5 text-white/40" />
+                    <ChevronRight className="w-5 h-5 text-soft-4" />
                   </button>
                 </div>
 
@@ -880,7 +880,7 @@ export function Assets({ view, setView }: AssetsProps) {
                 <Card className="mb-4">
                   <CardContent className="p-4">
                     <div className="text-center">
-                      <div className="text-xs text-white/70 mb-1">Available Balance</div>
+                      <div className="text-xs text-soft-2 mb-1">Available Balance</div>
                       {(() => {
                         const token = tokens.find(t => t.symbol === selectedToken);
                         if (!token) return null;
@@ -890,7 +890,7 @@ export function Assets({ view, setView }: AssetsProps) {
                             <div className="text-2xl font-semibold tracking-tight text-[#1A1A1A]">
                               {token.category === 'nft' ? token.balance : token.balance.toFixed(2)} {token.symbol}
                             </div>
-                            <div className="text-xs text-white/55 mt-0.5">≈ ${token.value.toFixed(2)}</div>
+                            <div className="text-xs text-soft-3 mt-0.5">≈ ${token.value.toFixed(2)}</div>
                           </>
                         );
                       })()}
@@ -930,14 +930,14 @@ export function Assets({ view, setView }: AssetsProps) {
                         MAX
                       </button>
                     </div>
-                    <p className="text-xs text-white/55 mt-1">
+                    <p className="text-xs text-soft-3 mt-1">
                       Fee: ~0.001 {selectedToken}
                     </p>
                   </div>
                 </div>
 
                 <div className="mt-4 p-3 bg-yellow-50 rounded-lg">
-                  <p className="text-xs text-white/70">
+                  <p className="text-xs text-soft-2">
                     Double-check the recipient address. Transactions cannot be reversed.
                   </p>
                 </div>
@@ -984,12 +984,12 @@ export function Assets({ view, setView }: AssetsProps) {
                           setIsSelectingToken(false);
                           setAmount('');
                         }}
-                        className="w-full p-3 border rounded-lg hover:bg-white/5 transition-colors"
+                        className="w-full p-3 border rounded-lg hover:bg-soft-3 transition-colors"
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
                             {token.category === 'nft' && token.image ? (
-                              <div className="w-12 h-12 rounded-lg overflow-hidden bg-white/10 flex-shrink-0">
+                              <div className="w-12 h-12 rounded-lg overflow-hidden bg-soft-1 flex-shrink-0">
                                 <img src={token.image} alt={token.symbol} className="w-full h-full object-cover" />
                               </div>
                             ) : (
@@ -999,13 +999,13 @@ export function Assets({ view, setView }: AssetsProps) {
                             )}
                             <div className="text-left">
                               <div className="mb-0.5">{token.symbol}</div>
-                              <div className="text-sm text-white/55">{token.name}</div>
+                              <div className="text-sm text-soft-3">{token.name}</div>
                             </div>
                           </div>
                           <div className="text-right flex items-center gap-2">
                             <div>
                               <div className="mb-0.5">{token.category === 'nft' ? token.balance : token.balance.toFixed(2)}</div>
-                              <div className="text-sm text-white/55">${token.value.toFixed(2)}</div>
+                              <div className="text-sm text-soft-3">${token.value.toFixed(2)}</div>
                             </div>
                             {selectedToken === token.symbol && (
                               <Check className="w-5 h-5" style={{ color: '#BC13FE' }} />
@@ -1028,11 +1028,11 @@ export function Assets({ view, setView }: AssetsProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>Confirm Transaction</AlertDialogTitle>
             <AlertDialogDescription>
-              You are about to send <span className="text-white">{amount} {selectedToken}</span> to:
-              <div className="mt-2 p-2 bg-white/10 rounded text-xs break-all text-white">
+              You are about to send <span className="text-foreground">{amount} {selectedToken}</span> to:
+              <div className="mt-2 p-2 bg-soft-1 rounded text-xs break-all text-foreground">
                 {recipient}
               </div>
-              <div className="mt-3 text-xs text-white/70">
+              <div className="mt-3 text-xs text-soft-2">
                 This transaction cannot be reversed. Please verify the recipient address is correct.
               </div>
             </AlertDialogDescription>

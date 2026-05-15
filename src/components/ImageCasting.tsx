@@ -190,7 +190,7 @@ export function ImageCasting({ activeCommitment, currentDisplay, setCurrentDispl
   return (
     <div ref={rootRef} className="relative pb-28 min-h-screen">
       {/* Fluid blurred backdrop — image driven by whichever gallery card is centered in the viewport */}
-      <div className="fixed inset-0 overflow-hidden bg-[#0a0a0a] pointer-events-none">
+      <div className="fixed inset-0 overflow-hidden pointer-events-none" style={{ background: "var(--backdrop-base)" }}>
         <AnimatePresence>
           <motion.div
             key={centerImageUrl}
@@ -204,7 +204,7 @@ export function ImageCasting({ activeCommitment, currentDisplay, setCurrentDispl
               src={centerImageUrl}
               alt=""
               className="absolute inset-0 w-full h-full object-cover"
-              style={{ filter: 'blur(48px) saturate(1.5) brightness(0.55)' }}
+              style={{ filter: 'blur(48px) saturate(1.5) brightness(var(--backdrop-brightness))' }}
             />
           </motion.div>
         </AnimatePresence>
@@ -213,13 +213,15 @@ export function ImageCasting({ activeCommitment, currentDisplay, setCurrentDispl
           className="absolute inset-0"
           style={{
             background:
-              'linear-gradient(to bottom, rgba(10,10,10,0.55) 0%, rgba(10,10,10,0.25) 30%, rgba(10,10,10,0.45) 70%, rgba(10,10,10,0.85) 100%)',
+              'var(--backdrop-vignette)',
           }}
         />
         {/* Subtle grain — brand "Matte Obsidian" texture */}
         <div
-          className="absolute inset-0 opacity-25 mix-blend-overlay"
+          className="absolute inset-0"
           style={{
+            opacity: 'var(--backdrop-grain-opacity)',
+            mixBlendMode: 'var(--backdrop-grain-blend)' as any,
             background:
               'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'3\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\' opacity=\'0.5\'/%3E%3C/svg%3E")',
           }}
@@ -233,7 +235,7 @@ export function ImageCasting({ activeCommitment, currentDisplay, setCurrentDispl
         <div className="px-4 pt-4 mb-4">
           <div className="prism-ring">
           <Card
-            className={`relative overflow-hidden bg-[#1A1A1A] text-white border-0 transition-all ${
+            className={`relative overflow-hidden bg-card text-foreground border-0 transition-all ${
               onViewActiveStatus ? 'cursor-pointer active:scale-[0.99]' : ''
             }`}
             onClick={onViewActiveStatus}
@@ -241,7 +243,7 @@ export function ImageCasting({ activeCommitment, currentDisplay, setCurrentDispl
             <CardContent className="p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-xs uppercase tracking-wider text-white/60 mb-1">Active Campaign</div>
+                  <div className="text-xs uppercase tracking-wider text-soft-3 mb-1">Active Campaign</div>
                   <div className="text-lg">{activeCommitment.title}</div>
                 </div>
                 <div className="text-right">
@@ -249,15 +251,15 @@ export function ImageCasting({ activeCommitment, currentDisplay, setCurrentDispl
                     <Coins className="w-5 h-5" style={{ color: '#00FFC2' }} strokeWidth={1.75} />
                     <span className="text-lg tracking-tight">{activeCommitment.reward}</span>
                   </div>
-                  <div className="text-xs text-white/60">tokens</div>
+                  <div className="text-xs text-soft-3">tokens</div>
                 </div>
               </div>
               <div>
                 <div className="flex items-center justify-between text-sm mb-2">
-                  <span className="text-white/70">Time Remaining</span>
+                  <span className="text-soft-2">Time Remaining</span>
                   <span className="tabular-nums">{formatTime(timeRemaining)}</span>
                 </div>
-                <div className="relative h-1.5 w-full rounded-full bg-white/10 overflow-hidden">
+                <div className="relative h-1.5 w-full rounded-full bg-soft-1 overflow-hidden">
                   <div
                     className="absolute inset-y-0 left-0 rounded-full transition-[width] duration-300"
                     style={{
@@ -267,7 +269,7 @@ export function ImageCasting({ activeCommitment, currentDisplay, setCurrentDispl
                   />
                 </div>
               </div>
-              <div className="flex items-center gap-2 text-sm text-white/70">
+              <div className="flex items-center gap-2 text-sm text-soft-2">
                 <AlertCircle className="w-4 h-4" strokeWidth={1.75} />
                 <span>Display locked until campaign completes</span>
               </div>
@@ -279,13 +281,13 @@ export function ImageCasting({ activeCommitment, currentDisplay, setCurrentDispl
 
       {/* Quick Actions */}
       <div className="px-4 mt-4 mb-6">
-        <h3 className="mb-3 text-white font-semibold tracking-tight">Quick Cast</h3>
+        <h3 className="mb-3 text-foreground font-semibold tracking-tight">Quick Cast</h3>
         <div className="grid grid-cols-2 gap-3">
           <button
             className={`h-24 flex flex-col items-center justify-center gap-2 rounded-xl transition-all backdrop-blur-sm ${
               activeCommitment || !einkCaseAttached
-                ? 'bg-white/5 text-white/40 border border-white/10 cursor-pointer'
-                : 'bg-white/10 border border-white/20 text-white shadow-lg hover:bg-white/15 active:scale-95'
+                ? 'bg-glass-1 text-soft-4 border border-glass cursor-pointer opacity-60'
+                : 'bg-glass-1 border border-glass text-foreground shadow-lg hover:bg-glass-2 active:scale-95'
             }`}
             onClick={handleUploadPhoto}
           >
@@ -295,8 +297,8 @@ export function ImageCasting({ activeCommitment, currentDisplay, setCurrentDispl
           <button
             className={`h-24 flex flex-col items-center justify-center gap-2 rounded-xl transition-all backdrop-blur-sm ${
               activeCommitment || !einkCaseAttached
-                ? 'bg-white/5 text-white/40 border border-white/10 cursor-pointer'
-                : 'bg-white/10 border border-white/20 text-white shadow-lg hover:bg-white/15 active:scale-95'
+                ? 'bg-glass-1 text-soft-4 border border-glass cursor-pointer opacity-60'
+                : 'bg-glass-1 border border-glass text-foreground shadow-lg hover:bg-glass-2 active:scale-95'
             }`}
             onClick={handleUploadPhoto}
           >
@@ -308,7 +310,7 @@ export function ImageCasting({ activeCommitment, currentDisplay, setCurrentDispl
 
       {/* Recent Casting - Smaller Thumbnails */}
       <div className="px-4 mb-6">
-        <h3 className="mb-3 text-white font-semibold tracking-tight">Recent Casting</h3>
+        <h3 className="mb-3 text-foreground font-semibold tracking-tight">Recent Casting</h3>
         <div className="flex gap-2 overflow-x-auto pb-2">
           {recentImages.map((image) => (
             <div
@@ -316,10 +318,10 @@ export function ImageCasting({ activeCommitment, currentDisplay, setCurrentDispl
               data-gallery-image={image.url}
               className={`relative flex-shrink-0 w-14 h-14 rounded-lg overflow-hidden cursor-pointer border transition-all ${
                 activeCommitment || !einkCaseAttached
-                  ? 'opacity-50 border-white/15'
+                  ? 'opacity-50 border-soft-2'
                   : currentDisplay?.data?.id === image.id
                   ? 'border-[#00FFC2] ring-2 ring-[#00FFC2]/40'
-                  : 'border-white/20 hover:border-white/50'
+                  : 'border-soft-1 hover:border-white/50'
               }`}
               onClick={() => handleCastImage(image)}
             >
@@ -338,7 +340,7 @@ export function ImageCasting({ activeCommitment, currentDisplay, setCurrentDispl
         {/* Collections */}
         {galleryCollections.map((collection) => (
           <div key={collection.id}>
-            <div className="flex items-center gap-2 mb-3 text-white/80">
+            <div className="flex items-center gap-2 mb-3 text-soft-2">
               {collection.icon}
               <h4 className="text-sm font-semibold tracking-wide uppercase">{collection.title}</h4>
             </div>
@@ -349,8 +351,8 @@ export function ImageCasting({ activeCommitment, currentDisplay, setCurrentDispl
                   data-gallery-image={image.url}
                   className={`overflow-hidden cursor-pointer transition-all bg-transparent border ${
                     activeCommitment || !einkCaseAttached
-                      ? 'opacity-50 border-white/10'
-                      : 'border-white/15 hover:border-white/40 hover:shadow-lg'
+                      ? 'opacity-50 border-soft-3'
+                      : 'border-soft-2 hover:border-white/40 hover:shadow-lg'
                   }`}
                   onClick={() => handleCastImage(image)}
                 >
@@ -364,7 +366,7 @@ export function ImageCasting({ activeCommitment, currentDisplay, setCurrentDispl
                       <div className="absolute inset-0 border-2 border-[#00FFC2]" />
                     )}
                     <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2">
-                      <div className="text-sm text-white truncate font-medium">{image.title}</div>
+                      <div className="text-sm text-foreground truncate font-medium">{image.title}</div>
                     </div>
                   </div>
                 </Card>
@@ -383,30 +385,30 @@ export function ImageCasting({ activeCommitment, currentDisplay, setCurrentDispl
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
-          className="fixed inset-0 z-[60] overflow-y-auto bg-[#0a0a0a]"
+          className="fixed inset-0 z-[60] overflow-y-auto" style={{ background: "var(--backdrop-base)" }}
         >
           {/* Blurred image backdrop (TikTok-style) */}
-          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute inset-0 overflow-hidden pointer-events-none" data-backdrop-image-wrap>
             <ImageWithFallback
               src={previewImage.url}
               alt=""
               className="absolute inset-0 w-full h-full object-cover scale-125"
-              style={{ filter: 'blur(36px) saturate(1.4) brightness(0.7)' }}
+              style={{ filter: 'blur(36px) saturate(1.4) brightness(var(--backdrop-brightness))' }}
             />
             {/* Dark vignette for legibility */}
             <div
               className="absolute inset-0"
               style={{
-                background:
-                  'linear-gradient(to bottom, rgba(10,10,10,0.55) 0%, rgba(10,10,10,0.25) 35%, rgba(10,10,10,0.55) 70%, rgba(10,10,10,0.85) 100%)',
+                background: 'var(--backdrop-vignette)',
               }}
             />
             {/* Subtle grain to match brand "Matte Obsidian" texture */}
             <div
-              className="absolute inset-0 opacity-30 mix-blend-overlay"
+              className="absolute inset-0"
               style={{
-                background:
-                  'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'3\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\' opacity=\'0.5\'/%3E%3C/svg%3E")',
+                  opacity: "var(--backdrop-grain-opacity)",
+                  mixBlendMode: "var(--backdrop-grain-blend)" as any,
+                  background: 'url("data:image/svg+xml,%3Csvg viewBox=\' 0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'3\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\' opacity=\'0.5\'/%3E%3C/svg%3E")',
               }}
             />
           </div>
@@ -414,20 +416,20 @@ export function ImageCasting({ activeCommitment, currentDisplay, setCurrentDispl
           {/* Foreground content */}
           <div className="relative z-[1]">
             {/* Header — mirrors the Cast tab identity (Frame icon + gradient-cast accent) */}
-            <div className="sticky top-0 z-10 backdrop-blur-sm bg-black/5 border-b border-white/5">
+            <div className="sticky top-0 z-10 backdrop-blur-sm bg-scrim border-b border-glass">
               <div className="flex items-center justify-between px-4 py-3">
                 <button
                   onClick={() => setPreviewImage(null)}
-                  className="flex items-center gap-1 text-white"
+                  className="flex items-center gap-1 text-foreground"
                 >
                   <ChevronLeft className="w-5 h-5" />
                   <span className="text-sm">Back</span>
                 </button>
                 <div className="flex items-center gap-2">
                   <div className="w-7 h-7 rounded-lg gradient-cast flex items-center justify-center shadow-sm">
-                    <Frame className="w-4 h-4 text-white" />
+                    <Frame className="w-4 h-4 text-foreground" />
                   </div>
-                  <h2 className="text-base font-semibold text-white">Cast Preview</h2>
+                  <h2 className="text-base font-semibold text-foreground">Cast Preview</h2>
                 </div>
                 <div className="w-12" />
               </div>
@@ -465,8 +467,8 @@ export function ImageCasting({ activeCommitment, currentDisplay, setCurrentDispl
               transition={{ duration: 0.4, delay: 0.15 }}
               className="text-center mt-5 px-6"
             >
-              <h1 className="text-xl font-bold text-white drop-shadow-sm">{previewImage.title}</h1>
-              <p className="text-sm text-white/60 mt-1.5">From your gallery</p>
+              <h1 className="text-xl font-bold text-foreground drop-shadow-sm">{previewImage.title}</h1>
+              <p className="text-sm text-soft-3 mt-1.5">From your gallery</p>
             </motion.div>
 
             {/* Cast button */}
@@ -479,12 +481,12 @@ export function ImageCasting({ activeCommitment, currentDisplay, setCurrentDispl
               <button
                 onClick={handleConfirmCast}
                 disabled={isNfcWriting}
-                className="w-full h-14 rounded-xl font-bold text-base flex items-center justify-center gap-2.5 transition-all active:scale-95 gradient-cast text-white shadow-lg disabled:opacity-60"
+                className="w-full h-14 rounded-xl font-bold text-base flex items-center justify-center gap-2.5 transition-all active:scale-95 gradient-cast text-foreground shadow-lg disabled:opacity-60"
               >
                 <Nfc className="w-5 h-5" />
                 Cast to Screen
               </button>
-              <p className="text-center text-xs text-white/50 mt-3">
+              <p className="text-center text-xs text-soft-3 mt-3">
                 Tap to send this image to your e-ink display
               </p>
             </motion.div>
@@ -505,14 +507,14 @@ export function ImageCasting({ activeCommitment, currentDisplay, setCurrentDispl
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               className="fixed inset-0 z-50 flex items-end justify-center"
-              style={{ background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(6px)' }}
+              style={{ background: 'var(--modal-scrim)', backdropFilter: 'blur(6px)' }}
             >
               <motion.div
                 initial={{ y: 120, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ duration: 0.38, ease: [0.16, 1, 0.3, 1] }}
                 className="w-full max-w-md rounded-t-3xl px-8 py-10 text-center"
-                style={{ background: '#1c1c1e', borderTop: '1px solid rgba(255,255,255,0.12)' }}
+                style={{ background: 'var(--card)', borderTop: '1px solid var(--border)' }}
               >
                 <div className="relative w-28 h-28 mx-auto mb-6">
                   {[0, 1, 2].map(i => (
@@ -531,8 +533,8 @@ export function ImageCasting({ activeCommitment, currentDisplay, setCurrentDispl
                     <Nfc className="w-10 h-10" style={{ color: '#00FFC2' }} />
                   </div>
                 </div>
-                <h3 className="text-xl font-semibold text-white mb-2">Ready to Write NFC</h3>
-                <p className="text-sm text-white/40 leading-relaxed">
+                <h3 className="text-xl font-semibold text-foreground mb-2">Ready to Write NFC</h3>
+                <p className="text-sm text-soft-4 leading-relaxed">
                   Hold your phone close to the<br />E-ink case to cast the image
                 </p>
                 <div className="mt-6 flex items-center justify-center gap-2">

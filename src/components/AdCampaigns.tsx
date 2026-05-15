@@ -158,11 +158,11 @@ export function AdCampaigns({
       animate={{ opacity: 1, y: 0 }}
       className="flex flex-col items-center justify-center py-16 px-4 text-center"
     >
-      <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mb-4">
-        <Icon className="w-8 h-8 text-white/40" />
+      <div className="w-16 h-16 bg-soft-1 rounded-full flex items-center justify-center mb-4">
+        <Icon className="w-8 h-8 text-soft-4" />
       </div>
-      <h3 className="mb-2 text-white">{title}</h3>
-      <p className="text-sm text-white/55 max-w-sm">{description}</p>
+      <h3 className="mb-2 text-foreground">{title}</h3>
+      <p className="text-sm text-soft-3 max-w-sm">{description}</p>
     </motion.div>
   );
 
@@ -433,7 +433,7 @@ export function AdCampaigns({
 
     return (
       <div className="min-h-screen">
-        <div className="bg-[#1A1A1A] border-b border-[#E0E0E0] sticky top-0 z-10">
+        <div className="bg-card border-b border-[#E0E0E0] sticky top-0 z-10">
           <div className="flex items-center justify-between px-4 py-3">
             <button
               onClick={() => setView('main')}
@@ -467,7 +467,7 @@ export function AdCampaigns({
               <Card key={participation.id}>
                 <CardContent className="p-0">
                   <div className="flex gap-3 p-3">
-                    <div className="w-16 h-16 bg-white/10 rounded-lg overflow-hidden flex-shrink-0">
+                    <div className="w-16 h-16 bg-soft-1 rounded-lg overflow-hidden flex-shrink-0">
                       <img 
                         src={participation.image} 
                         alt={participation.campaignTitle}
@@ -480,12 +480,12 @@ export function AdCampaigns({
                         <div className="text-xl text-[#00FFC2] flex-shrink-0">+{participation.reward}</div>
                       </div>
                       <div className="flex items-center gap-2 text-xs mb-2">
-                        <span className="flex items-center gap-1 text-white/55">
+                        <span className="flex items-center gap-1 text-soft-3">
                           <Clock className="w-3 h-3" />
                           {participation.duration}h
                         </span>
-                        <span className="text-white/40">•</span>
-                        <span className="text-white/55">{participation.completedAt}</span>
+                        <span className="text-soft-4">•</span>
+                        <span className="text-soft-3">{participation.completedAt}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <Badge variant="secondary" className="text-xs text-[#00FFC2]">
@@ -496,7 +496,7 @@ export function AdCampaigns({
                           href={`https://etherscan.io/tx/${participation.txHash}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-xs text-white/80 flex items-center gap-1 hover:underline"
+                          className="text-xs text-soft-2 flex items-center gap-1 hover:underline"
                           onClick={(e) => {
                             e.preventDefault();
                             toast.success('Transaction link copied!');
@@ -523,29 +523,30 @@ export function AdCampaigns({
 
     return (
       <div
-        className="relative pb-8 bg-[#0a0a0a] overflow-hidden"
+        className="relative pb-8 bg-background overflow-hidden"
         style={{ minHeight: 'max(100vh, 100%)' }}
       >
         {/* Blurred campaign image backdrop */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute inset-0 overflow-hidden pointer-events-none" data-backdrop-image-wrap>
           <img
             src={activeCommitment.image}
             alt=""
             className="absolute inset-0 w-full h-full object-cover scale-125"
-            style={{ filter: 'blur(48px) saturate(1.5) brightness(0.55)' }}
+            style={{ filter: 'blur(48px) saturate(1.5) brightness(var(--backdrop-brightness))' }}
           />
           <div
             className="absolute inset-0"
             style={{
               background:
-                'linear-gradient(to bottom, rgba(10,10,10,0.55) 0%, rgba(10,10,10,0.25) 30%, rgba(10,10,10,0.45) 70%, rgba(10,10,10,0.85) 100%)',
+                'var(--backdrop-vignette)',
             }}
           />
           <div
-            className="absolute inset-0 opacity-25 mix-blend-overlay"
+            className="absolute inset-0"
             style={{
-              background:
-                'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'3\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\' opacity=\'0.5\'/%3E%3C/svg%3E")',
+                opacity: "var(--backdrop-grain-opacity)",
+                mixBlendMode: "var(--backdrop-grain-blend)" as any,
+                background: 'url("data:image/svg+xml,%3Csvg viewBox=\' 0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'3\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\' opacity=\'0.5\'/%3E%3C/svg%3E")',
             }}
           />
         </div>
@@ -553,16 +554,16 @@ export function AdCampaigns({
         {/* Foreground */}
         <div className="relative z-[1]">
           {/* Transparent glass header */}
-          <div className="sticky top-0 z-20 backdrop-blur-md bg-black/20 border-b border-white/10">
+          <div className="sticky top-0 z-20 backdrop-blur-md bg-scrim border-b border-glass">
             <div className="flex items-center justify-between px-4 py-3">
               <button
                 onClick={() => setView('main')}
-                className="flex items-center gap-1 text-white"
+                className="flex items-center gap-1 text-foreground"
               >
                 <ChevronRight className="w-5 h-5 rotate-180" />
                 <span className="text-sm">Back</span>
               </button>
-              <h2 className="text-base font-semibold text-white">Campaign Status</h2>
+              <h2 className="text-base font-semibold text-foreground">Campaign Status</h2>
               <div className="w-16" />
             </div>
           </div>
@@ -607,7 +608,7 @@ export function AdCampaigns({
                       className="text-center"
                     >
                       <CheckCircle2 className="w-14 h-14 mx-auto mb-1.5" style={{ color: '#00FFC2' }} />
-                      <div className="text-xl font-bold text-white drop-shadow-sm">Complete!</div>
+                      <div className="text-xl font-bold text-foreground drop-shadow-sm">Complete!</div>
                     </motion.div>
                   </div>
                 )}
@@ -622,8 +623,8 @@ export function AdCampaigns({
             transition={{ duration: 0.45, delay: 0.2 }}
             className="text-center mt-5 px-6"
           >
-            <h1 className="text-xl font-bold text-white drop-shadow-sm mb-2">{activeCommitment.title}</h1>
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-white/15 bg-white/10 backdrop-blur-md text-xs text-white/85">
+            <h1 className="text-xl font-bold text-foreground drop-shadow-sm mb-2">{activeCommitment.title}</h1>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-glass bg-glass-1 backdrop-blur-md text-xs text-soft-1">
               <Timer className="w-3.5 h-3.5" style={{ color: isComplete ? '#00FFC2' : '#00FFC2' }} />
               {isComplete ? 'Ready to Claim' : 'Active Campaign'}
             </div>
@@ -634,19 +635,19 @@ export function AdCampaigns({
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.45, delay: 0.3 }}
-            className="mx-6 mt-5 rounded-xl p-4 border border-white/15 bg-white/10 backdrop-blur-md"
+            className="mx-6 mt-5 rounded-xl p-4 border border-glass bg-glass-1 backdrop-blur-md"
           >
             <div className="flex items-center justify-between mb-3">
               <div>
-                <div className="text-[10px] uppercase tracking-wider text-white/50 mb-1">
+                <div className="text-[10px] uppercase tracking-wider text-soft-3 mb-1">
                   {isComplete ? 'Completed' : 'Time Remaining'}
                 </div>
-                <div className="text-2xl font-bold text-white">
+                <div className="text-2xl font-bold text-foreground">
                   {isComplete ? '0h 0m 0s' : formatTime(timeRemaining)}
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-[10px] uppercase tracking-wider text-white/50 mb-1">Reward</div>
+                <div className="text-[10px] uppercase tracking-wider text-soft-3 mb-1">Reward</div>
                 <div className="text-2xl font-bold flex items-center gap-1 justify-end" style={{ color: '#00FFC2' }}>
                   <Coins className="w-5 h-5" />
                   {activeCommitment.reward}
@@ -656,10 +657,10 @@ export function AdCampaigns({
 
             <div className="space-y-1.5">
               <div className="flex items-center justify-between text-xs">
-                <span className="text-white/60">Progress</span>
-                <span className="text-white font-semibold">{progress.toFixed(1)}%</span>
+                <span className="text-soft-3">Progress</span>
+                <span className="text-foreground font-semibold">{progress.toFixed(1)}%</span>
               </div>
-              <div className="h-2 rounded-full bg-white/10 overflow-hidden">
+              <div className="h-2 rounded-full bg-soft-1 overflow-hidden">
                 <div
                   className="h-full rounded-full transition-all"
                   style={{
@@ -678,11 +679,11 @@ export function AdCampaigns({
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.45, delay: 0.4 }}
-            className="mx-6 mt-3 rounded-xl p-4 border border-white/15 bg-white/[0.06] backdrop-blur-md"
+            className="mx-6 mt-3 rounded-xl p-4 border border-glass bg-glass-1 backdrop-blur-md"
           >
             <div className="flex items-start gap-3">
               <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: '#00FFC2' }} />
-              <div className="text-sm text-white/85 space-y-1">
+              <div className="text-sm text-soft-1 space-y-1">
                 {isComplete ? (
                   <>
                     <p>Campaign completed successfully</p>
@@ -720,7 +721,7 @@ export function AdCampaigns({
               <button
                 onClick={handleFastForward}
                 disabled={isFastForwarding}
-                className="w-full h-14 rounded-xl font-semibold text-base flex items-center justify-center gap-2.5 transition-all active:scale-95 border border-white/20 bg-white/5 hover:bg-white/10 backdrop-blur-md text-white disabled:opacity-60"
+                className="w-full h-14 rounded-xl font-semibold text-base flex items-center justify-center gap-2.5 transition-all active:scale-95 border border-glass bg-glass-2 hover:bg-glass-1 backdrop-blur-md text-foreground disabled:opacity-60"
               >
                 {isFastForwarding ? (
                   <>
@@ -753,7 +754,7 @@ export function AdCampaigns({
     return (
       <>
       <div
-        className="relative bg-[#0a0a0a] pb-6 overflow-hidden"
+        className="relative bg-background pb-6 overflow-hidden"
         style={{ minHeight: 'max(100vh, 100%)' }}
       >
         {/* Blurred campaign image backdrop (TikTok-style) */}
@@ -762,36 +763,37 @@ export function AdCampaigns({
             src={selectedCampaign.image}
             alt=""
             className="absolute inset-0 w-full h-full object-cover scale-125"
-            style={{ filter: 'blur(48px) saturate(1.5) brightness(0.55)' }}
+            style={{ filter: 'blur(48px) saturate(1.5) brightness(var(--backdrop-brightness))' }}
           />
           <div
             className="absolute inset-0"
             style={{
               background:
-                'linear-gradient(to bottom, rgba(10,10,10,0.55) 0%, rgba(10,10,10,0.25) 30%, rgba(10,10,10,0.45) 70%, rgba(10,10,10,0.85) 100%)',
+                'var(--backdrop-vignette)',
             }}
           />
           <div
-            className="absolute inset-0 opacity-25 mix-blend-overlay"
+            className="absolute inset-0"
             style={{
-              background:
-                'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'3\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\' opacity=\'0.5\'/%3E%3C/svg%3E")',
+                opacity: "var(--backdrop-grain-opacity)",
+                mixBlendMode: "var(--backdrop-grain-blend)" as any,
+                background: 'url("data:image/svg+xml,%3Csvg viewBox=\' 0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'3\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\' opacity=\'0.5\'/%3E%3C/svg%3E")',
             }}
           />
         </div>
 
         <div className="relative z-[1]">
         {/* Header with Back Button — translucent over the blurred backdrop */}
-        <div className="sticky top-0 z-20 backdrop-blur-md bg-black/20 border-b border-white/10">
+        <div className="sticky top-0 z-20 backdrop-blur-md bg-scrim border-b border-glass">
           <div className="flex items-center justify-between px-4 py-3">
             <button
               onClick={() => setView('main')}
-              className="flex items-center gap-1 text-white"
+              className="flex items-center gap-1 text-foreground"
             >
               <ChevronRight className="w-5 h-5 rotate-180" />
               <span className="text-sm">Back</span>
             </button>
-            <h2 className="text-base font-semibold text-white">Campaign Details</h2>
+            <h2 className="text-base font-semibold text-foreground">Campaign Details</h2>
             <div className="w-12"></div>
           </div>
         </div>
@@ -860,7 +862,7 @@ export function AdCampaigns({
               transition={{ duration: 0.5, delay: 0.1 }}
               className="mb-3"
             >
-              <Badge className="gradient-secondary text-white border-0 shadow-lg rounded-[10px] px-3 py-1">
+              <Badge className="gradient-secondary text-foreground border-0 shadow-lg rounded-[10px] px-3 py-1">
                 <Sparkles className="w-3 h-3 mr-1" />
                 {selectedCampaign.category}
               </Badge>
@@ -870,7 +872,7 @@ export function AdCampaigns({
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
-              className="mb-3 text-[24px] font-bold text-white leading-tight"
+              className="mb-3 text-[24px] font-bold text-foreground leading-tight"
             >
               {selectedCampaign.title}
             </motion.h1>
@@ -879,7 +881,7 @@ export function AdCampaigns({
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.3 }}
-              className="text-white/70 text-sm leading-relaxed max-w-[65%] mt-1"
+              className="text-soft-2 text-sm leading-relaxed max-w-[65%] mt-1"
             >
               {selectedCampaign.description}
             </motion.p>
@@ -904,7 +906,7 @@ export function AdCampaigns({
                 <div className="absolute -top-4 -right-4 w-16 h-16 bg-emerald-400 rounded-full opacity-20 blur-xl"></div>
                 <div className="flex items-center gap-1.5 mb-2">
                   <div className="w-5 h-5 rounded-full bg-gradient-to-br from-emerald-400 to-green-500 flex items-center justify-center">
-                    <Zap className="w-3 h-3 text-white" />
+                    <Zap className="w-3 h-3 text-foreground" />
                   </div>
                   <span className="text-[10px] text-emerald-700 font-semibold uppercase tracking-wider">Per Cast Reward</span>
                 </div>
@@ -944,12 +946,12 @@ export function AdCampaigns({
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-1.5">
                     <div className="w-1.5 h-1.5 bg-yellow-500 rounded-full animate-pulse"></div>
-                    <span className="text-[10px] font-semibold text-white/80 uppercase tracking-wider">Pool Activity</span>
+                    <span className="text-[10px] font-semibold text-soft-2 uppercase tracking-wider">Pool Activity</span>
                   </div>
-                  <span className="text-xs font-bold text-white">{claimedPercent}%</span>
+                  <span className="text-xs font-bold text-foreground">{claimedPercent}%</span>
                 </div>
                 
-                <div className="relative h-2.5 bg-white/10 rounded-full overflow-hidden shadow-inner mb-2.5">
+                <div className="relative h-2.5 bg-soft-1 rounded-full overflow-hidden shadow-inner mb-2.5">
                   <motion.div 
                     initial={{ width: 0 }}
                     animate={{ width: `${claimedPercent}%` }}
@@ -963,11 +965,11 @@ export function AdCampaigns({
                 <div className="flex items-center justify-between text-[10px]">
                   <div>
                     <div className="text-[#00FFC2] font-medium">Claimed</div>
-                    <div className="text-sm font-bold text-white">
+                    <div className="text-sm font-bold text-foreground">
                       {(selectedCampaign.completions * selectedCampaign.reward * 0.65).toFixed(0)}
                     </div>
                   </div>
-                  <div className="w-px h-8 bg-white/10"></div>
+                  <div className="w-px h-8 bg-soft-1"></div>
                   <div className="text-right">
                     <div className="text-[#BC13FE] font-medium">Available</div>
                     <div className="text-sm font-bold text-[#BC13FE]">
@@ -987,8 +989,8 @@ export function AdCampaigns({
                 style={{ background: 'rgba(255,255,255,0.5)', backdropFilter: 'blur(2px)' }}
               >
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-[10px] text-white/55 uppercase tracking-wider font-medium">Cast Duration</span>
-                  <span className="text-xs font-bold text-white">{selectedCampaign.duration}h</span>
+                  <span className="text-[10px] text-soft-3 uppercase tracking-wider font-medium">Cast Duration</span>
+                  <span className="text-xs font-bold text-foreground">{selectedCampaign.duration}h</span>
                 </div>
                 <div className="flex items-end gap-[3px]">
                   {Array.from({ length: 8 }).map((_, i) => (
@@ -1000,15 +1002,15 @@ export function AdCampaigns({
                       className={`flex-1 rounded-[2px] origin-bottom ${
                         i < selectedCampaign.duration
                           ? 'bg-gradient-to-t from-blue-500 to-blue-400'
-                          : 'bg-white/10'
+                          : 'bg-soft-1'
                       }`}
                       style={{ height: `${12 + i * 1.5}px` }}
                     />
                   ))}
                 </div>
                 <div className="flex justify-between mt-1">
-                  <span className="text-[8px] text-white/40">1h</span>
-                  <span className="text-[8px] text-white/40">8h</span>
+                  <span className="text-[8px] text-soft-4">1h</span>
+                  <span className="text-[8px] text-soft-4">8h</span>
                 </div>
               </motion.div>
             </div>
@@ -1026,10 +1028,10 @@ export function AdCampaigns({
             transition={{ duration: 0.5, delay: 0.65 }}
           >
             <Button
-              className={`w-full h-14 text-base shadow-xl transition-all text-white ${
+              className={`w-full h-14 text-base shadow-xl transition-all text-foreground ${
                 einkCaseAttached && walletConnected
                   ? 'hover:shadow-2xl'
-                  : 'bg-white/10 text-white/40 cursor-pointer'
+                  : 'bg-soft-1 text-soft-4 cursor-pointer'
               }`}
               style={
                 einkCaseAttached && walletConnected
@@ -1056,8 +1058,8 @@ export function AdCampaigns({
             transition={{ duration: 0.4, delay: 0.75 }}
             className="flex items-center justify-center gap-1.5 mt-2.5"
           >
-            <CalendarDays className="w-3 h-3 text-white/50" />
-            <span className="text-[11px] text-white/50">
+            <CalendarDays className="w-3 h-3 text-soft-3" />
+            <span className="text-[11px] text-soft-3">
               {daysLeft > 0 ? (
                 <>
                   Campaign ends {new Date(selectedCampaign.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} · <span className="text-orange-400 font-semibold">{daysLeft} days left</span>
@@ -1076,12 +1078,12 @@ export function AdCampaigns({
           transition={{ duration: 0.5, delay: 0.8 }}
           className="px-4 mt-5"
         >
-          <div className="rounded-[10px] overflow-hidden bg-[#1A1A1A] border border-white/10">
-            <div className="px-4 py-3 flex items-center gap-2 border-b border-white/10">
+          <div className="rounded-[10px] overflow-hidden bg-card border border-soft-3">
+            <div className="px-4 py-3 flex items-center gap-2 border-b border-soft-3">
               <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #00FFC2 0%, #BC13FE 100%)' }}>
                 <Info className="w-3.5 h-3.5 text-[#0A0A0A]" strokeWidth={2} />
               </div>
-              <span className="text-sm font-semibold text-white">How It Works</span>
+              <span className="text-sm font-semibold text-foreground">How It Works</span>
             </div>
 
             <div className="px-4 py-3 space-y-2.5">
@@ -1098,7 +1100,7 @@ export function AdCampaigns({
                   className="flex items-start gap-2"
                 >
                   <span className="text-[10px] font-bold mt-0.5" style={{ color: '#00FFC2' }}>{i + 1}</span>
-                  <span className="text-xs text-white/75 leading-relaxed">{text}</span>
+                  <span className="text-xs text-soft-2 leading-relaxed">{text}</span>
                 </motion.div>
               ))}
             </div>
@@ -1142,29 +1144,30 @@ export function AdCampaigns({
     return (
       <>
         <div
-          className="relative pb-8 bg-[#0a0a0a] overflow-hidden"
+          className="relative pb-8 bg-background overflow-hidden"
           style={{ minHeight: 'max(100vh, 100%)' }}
         >
           {/* Blurred campaign image backdrop (TikTok-style) */}
-          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute inset-0 overflow-hidden pointer-events-none" data-backdrop-image-wrap>
             <img
               src={selectedCampaign.image}
               alt=""
               className="absolute inset-0 w-full h-full object-cover scale-125"
-              style={{ filter: 'blur(48px) saturate(1.5) brightness(0.55)' }}
+              style={{ filter: 'blur(48px) saturate(1.5) brightness(var(--backdrop-brightness))' }}
             />
             <div
               className="absolute inset-0"
               style={{
                 background:
-                  'linear-gradient(to bottom, rgba(10,10,10,0.55) 0%, rgba(10,10,10,0.25) 30%, rgba(10,10,10,0.45) 70%, rgba(10,10,10,0.85) 100%)',
+                  'var(--backdrop-vignette)',
               }}
             />
             <div
-              className="absolute inset-0 opacity-25 mix-blend-overlay"
+              className="absolute inset-0"
               style={{
-                background:
-                  'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'3\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\' opacity=\'0.5\'/%3E%3C/svg%3E")',
+                  opacity: "var(--backdrop-grain-opacity)",
+                  mixBlendMode: "var(--backdrop-grain-blend)" as any,
+                  background: 'url("data:image/svg+xml,%3Csvg viewBox=\' 0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'3\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\' opacity=\'0.5\'/%3E%3C/svg%3E")',
               }}
             />
           </div>
@@ -1172,16 +1175,16 @@ export function AdCampaigns({
           {/* Foreground content */}
           <div className="relative z-[1]">
           {/* Header */}
-          <div className="sticky top-0 z-20 backdrop-blur-md bg-black/20 border-b border-white/10">
+          <div className="sticky top-0 z-20 backdrop-blur-md bg-scrim border-b border-glass">
             <div className="flex items-center justify-between px-4 py-3">
               <button
                 onClick={() => setView('campaign-detail')}
-                className="flex items-center gap-1 text-white"
+                className="flex items-center gap-1 text-foreground"
               >
                 <ChevronRight className="w-5 h-5 rotate-180" />
                 <span className="text-sm">Back</span>
               </button>
-              <h2 className="text-base font-semibold text-white">Cast Preview</h2>
+              <h2 className="text-base font-semibold text-foreground">Cast Preview</h2>
               <div className="w-16" />
             </div>
           </div>
@@ -1226,7 +1229,7 @@ export function AdCampaigns({
             transition={{ duration: 0.45, delay: 0.2 }}
             className="text-center mt-5 px-6"
           >
-            <h1 className="text-xl font-bold text-white drop-shadow-sm">{selectedCampaign.title}</h1>
+            <h1 className="text-xl font-bold text-foreground drop-shadow-sm">{selectedCampaign.title}</h1>
           </motion.div>
 
           {/* Confirm details */}
@@ -1236,15 +1239,15 @@ export function AdCampaigns({
             transition={{ duration: 0.45, delay: 0.3 }}
             className="mx-6 mt-5 grid grid-cols-2 gap-3"
           >
-            <div className="rounded-xl p-4 border border-white/15 bg-white/10 backdrop-blur-md text-center">
-              <Clock className="w-5 h-5 mx-auto mb-1.5 text-white/80" />
-              <div className="text-[10px] uppercase tracking-wider text-white/50 mb-1">Duration</div>
-              <div className="text-lg font-bold text-white">{selectedCampaign.duration}<span className="text-sm text-white/50 ml-0.5">h</span></div>
+            <div className="rounded-xl p-4 border border-glass bg-glass-1 backdrop-blur-md text-center">
+              <Clock className="w-5 h-5 mx-auto mb-1.5 text-soft-2" />
+              <div className="text-[10px] uppercase tracking-wider text-soft-3 mb-1">Duration</div>
+              <div className="text-lg font-bold text-foreground">{selectedCampaign.duration}<span className="text-sm text-soft-3 ml-0.5">h</span></div>
             </div>
-            <div className="rounded-xl p-4 border border-white/15 bg-white/10 backdrop-blur-md text-center">
+            <div className="rounded-xl p-4 border border-glass bg-glass-1 backdrop-blur-md text-center">
               <Coins className="w-5 h-5 mx-auto mb-1.5 text-[#00FFC2]" />
-              <div className="text-[10px] uppercase tracking-wider text-white/50 mb-1">Reward</div>
-              <div className="text-lg font-bold text-white">
+              <div className="text-[10px] uppercase tracking-wider text-soft-3 mb-1">Reward</div>
+              <div className="text-lg font-bold text-foreground">
                 {selectedCampaign.reward}
                 <span className="text-sm ml-1 text-[#00FFC2]">{selectedCampaign.tokenSymbol}</span>
               </div>
@@ -1266,7 +1269,7 @@ export function AdCampaigns({
               <Nfc className="w-5 h-5" />
               Cast to Screen
             </button>
-            <p className="text-center text-xs text-white/50 mt-3">
+            <p className="text-center text-xs text-soft-3 mt-3">
               Your e-ink display will show this ad for {selectedCampaign.duration}h
             </p>
           </motion.div>
@@ -1288,14 +1291,14 @@ export function AdCampaigns({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             className="fixed inset-0 z-50 flex items-end justify-center"
-            style={{ background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(6px)' }}
+            style={{ background: 'var(--modal-scrim)', backdropFilter: 'blur(6px)' }}
           >
             <motion.div
               initial={{ y: 120, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.38, ease: [0.16, 1, 0.3, 1] }}
               className="w-full max-w-md rounded-t-3xl px-8 py-10 text-center"
-              style={{ background: '#1c1c1e', borderTop: '1px solid rgba(255,255,255,0.12)' }}
+              style={{ background: 'var(--card)', borderTop: '1px solid var(--border)' }}
             >
               {/* Animated NFC rings */}
               <div className="relative w-28 h-28 mx-auto mb-6">
@@ -1315,8 +1318,8 @@ export function AdCampaigns({
                   <Nfc className="w-10 h-10" style={{ color: '#00FFC2' }} />
                 </div>
               </div>
-              <h3 className="text-xl font-semibold text-white mb-2">Ready to Write NFC</h3>
-              <p className="text-sm text-white/40 leading-relaxed">
+              <h3 className="text-xl font-semibold text-foreground mb-2">Ready to Write NFC</h3>
+              <p className="text-sm text-soft-4 leading-relaxed">
                 Hold your phone close to the<br />E-ink case to cast the ad
               </p>
               <div className="mt-6 flex items-center justify-center gap-2">
@@ -1335,7 +1338,7 @@ export function AdCampaigns({
   if (view === 'bonus-rewards') {
     return (
       <div className="min-h-screen">
-        <div className="bg-[#1A1A1A] border-b border-[#E0E0E0] sticky top-0 z-10">
+        <div className="bg-card border-b border-[#E0E0E0] sticky top-0 z-10">
           <div className="flex items-center justify-between px-4 py-3">
             <button
               onClick={() => setView('main')}
@@ -1352,7 +1355,7 @@ export function AdCampaigns({
 
         <div className="px-4 mt-4 space-y-4">
           {/* Points Balance */}
-          <Card className="bg-gradient-to-br from-purple-500 to-blue-500 text-white">
+          <Card className="bg-gradient-to-br from-purple-500 to-blue-500 text-foreground">
             <CardContent className="p-6 text-center">
               <Gift className="w-12 h-12 mx-auto mb-3 opacity-90" />
               <div className="text-3xl mb-1">{bonusPoints}</div>
@@ -1374,7 +1377,7 @@ export function AdCampaigns({
                       <div className="text-3xl mr-4">{task.icon}</div>
                       <div className="flex-1">
                         <div className="mb-1">{task.title}</div>
-                        <div className="text-sm text-white/55 flex items-center gap-3">
+                        <div className="text-sm text-soft-3 flex items-center gap-3">
                           <span className="flex items-center gap-1">
                             <Clock className="w-3 h-3" />
                             {task.duration}
@@ -1416,7 +1419,7 @@ export function AdCampaigns({
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="pt-4 pb-6 text-white min-h-screen"
+      className="pt-4 pb-6 text-foreground min-h-screen"
     >
       {/* Earning Stats */}
       <div className="px-4 mb-4">
@@ -1433,13 +1436,13 @@ export function AdCampaigns({
               transition={{ delay: stat.delay }}
             >
               <Card
-                className="cursor-pointer bg-[#1A1A1A] border-white/10 hover:border-white/20 hover:bg-[#1F1F1F] transition-all active:scale-[0.98]"
+                className="cursor-pointer bg-card border-soft-3 hover:border-soft-1 hover:bg-accent transition-all active:scale-[0.98]"
                 onClick={() => einkCaseAttached ? setView('participation-history') : setShowEinkPrompt(true)}
               >
                 <CardContent className="p-4 text-center">
-                  <stat.icon className={`w-5 h-5 ${einkCaseAttached ? 'text-white' : 'text-white/25'} mx-auto mb-2`} strokeWidth={1.75} />
-                  <div className={`text-lg mb-0.5 tracking-tight ${einkCaseAttached ? 'text-white' : 'text-white/40'}`}>{stat.value}</div>
-                  <div className="text-xs text-white/50">{stat.label}</div>
+                  <stat.icon className={`w-5 h-5 ${einkCaseAttached ? 'text-foreground' : 'text-soft-5'} mx-auto mb-2`} strokeWidth={1.75} />
+                  <div className={`text-lg mb-0.5 tracking-tight ${einkCaseAttached ? 'text-foreground' : 'text-soft-4'}`}>{stat.value}</div>
+                  <div className="text-xs text-soft-3">{stat.label}</div>
                 </CardContent>
               </Card>
             </motion.div>
@@ -1459,13 +1462,13 @@ export function AdCampaigns({
           >
             <div className="prism-ring">
             <Card
-              className="relative overflow-hidden bg-[#1A1A1A] text-white border-0 cursor-pointer transition-all active:scale-[0.99]"
+              className="relative overflow-hidden bg-card text-foreground border-0 cursor-pointer transition-all active:scale-[0.99]"
               onClick={() => setView('active-commitment')}
             >
               <CardContent className="p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="min-w-0">
-                    <div className="text-xs uppercase tracking-wider text-white/60 mb-1">Active Campaign</div>
+                    <div className="text-xs uppercase tracking-wider text-soft-3 mb-1">Active Campaign</div>
                     <div className="text-lg truncate">{activeCommitment.title}</div>
                   </div>
                   <div className="text-right flex-shrink-0 ml-3">
@@ -1473,15 +1476,15 @@ export function AdCampaigns({
                       <Coins className="w-5 h-5" style={{ color: '#00FFC2' }} strokeWidth={1.75} />
                       <span className="text-lg tracking-tight">{activeCommitment.reward}</span>
                     </div>
-                    <div className="text-xs text-white/60">tokens</div>
+                    <div className="text-xs text-soft-3">tokens</div>
                   </div>
                 </div>
                 <div>
                   <div className="flex items-center justify-between text-sm mb-2">
-                    <span className="text-white/70">Time Remaining</span>
+                    <span className="text-soft-2">Time Remaining</span>
                     <span className="tabular-nums">{formatTime(timeRemaining)}</span>
                   </div>
-                  <div className="relative h-1.5 w-full rounded-full bg-white/10 overflow-hidden">
+                  <div className="relative h-1.5 w-full rounded-full bg-soft-1 overflow-hidden">
                     <div
                       className="absolute inset-y-0 left-0 rounded-full transition-[width] duration-300"
                       style={{
@@ -1491,7 +1494,7 @@ export function AdCampaigns({
                     />
                   </div>
                 </div>
-                <div className="flex items-center gap-2 text-sm text-white/70">
+                <div className="flex items-center gap-2 text-sm text-soft-2">
                   <AlertCircle className="w-4 h-4" strokeWidth={1.75} />
                   <span>Display locked until campaign completes</span>
                 </div>
@@ -1510,7 +1513,7 @@ export function AdCampaigns({
         transition={{ delay: 0.2 }}
       >
         <button
-          className="w-full text-left rounded-lg px-3 py-2.5 transition-all active:scale-[0.99] text-white border"
+          className="w-full text-left rounded-lg px-3 py-2.5 transition-all active:scale-[0.99] text-foreground border"
           style={{ background: 'rgba(0,255,194,0.08)', borderColor: 'rgba(0,255,194,0.30)' }}
           onClick={() => setView('bonus-rewards')}
         >
@@ -1519,7 +1522,7 @@ export function AdCampaigns({
               <Gift className="w-3.5 h-3.5" style={{ color: '#00FFC2' }} strokeWidth={1.75} />
               <span className="text-xs font-semibold">Bonus Rewards Available</span>
             </div>
-            <ChevronRight className="w-3.5 h-3.5 text-white/60" />
+            <ChevronRight className="w-3.5 h-3.5 text-soft-3" />
           </div>
         </button>
       </motion.div>
@@ -1527,8 +1530,8 @@ export function AdCampaigns({
       {/* Campaign List */}
       <div className="px-4">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="font-semibold tracking-tight text-white">Available Campaigns</h3>
-          <Badge variant="outline" className="border-white/15 text-white/70 bg-transparent">{einkCaseAttached ? campaigns.length : 2} active</Badge>
+          <h3 className="font-semibold tracking-tight text-foreground">Available Campaigns</h3>
+          <Badge variant="outline" className="border-soft-2 text-soft-2 bg-transparent">{einkCaseAttached ? campaigns.length : 2} active</Badge>
         </div>
 
         {campaigns.length === 0 ? (
@@ -1552,10 +1555,10 @@ export function AdCampaigns({
                 transition={{ delay: index * 0.1 }}
               >
                 <Card
-                  className={`overflow-hidden bg-[#1A1A1A] border-white/10 transition-all ${
+                  className={`overflow-hidden bg-card border-soft-3 transition-all ${
                     locked
                       ? 'opacity-50 cursor-pointer'
-                      : 'cursor-pointer hover:border-white/25 hover:bg-[#1F1F1F]'
+                      : 'cursor-pointer hover:border-soft-1 hover:bg-accent'
                   }`}
                   onClick={() => {
                     if (locked) {
@@ -1569,7 +1572,7 @@ export function AdCampaigns({
                 <CardContent className="p-0">
                   <div className="relative">
                     <div className="flex gap-3 p-3 pb-2">
-                      <div className="w-20 h-20 bg-white/5 rounded-lg overflow-hidden flex-shrink-0">
+                      <div className="w-20 h-20 bg-soft-3 rounded-lg overflow-hidden flex-shrink-0">
                         <img
                           src={campaign.image}
                           alt={campaign.title}
@@ -1577,30 +1580,30 @@ export function AdCampaigns({
                         />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="mb-1 truncate text-white">{campaign.title}</div>
-                        <p className="text-sm text-white/55 mb-2 truncate">{campaign.description}</p>
+                        <div className="mb-1 truncate text-foreground">{campaign.title}</div>
+                        <p className="text-sm text-soft-3 mb-2 truncate">{campaign.description}</p>
                         <div className="flex items-center gap-3 text-xs">
                           <span className="flex items-center gap-1" style={{ color: '#00FFC2' }}>
                             <Coins className="w-3 h-3" strokeWidth={1.75} />
                             {campaign.reward}
                           </span>
-                          <span className="flex items-center gap-1 text-white/50">
+                          <span className="flex items-center gap-1 text-soft-3">
                             <Clock className="w-3 h-3" strokeWidth={1.75} />
                             {campaign.duration}h
                           </span>
                         </div>
                       </div>
                       {locked ? (
-                        <Shield className="w-5 h-5 text-white/30 flex-shrink-0 self-center" strokeWidth={1.75} />
+                        <Shield className="w-5 h-5 text-soft-5 flex-shrink-0 self-center" strokeWidth={1.75} />
                       ) : (
-                        <ChevronRight className="w-5 h-5 text-white/40 flex-shrink-0 self-center" strokeWidth={1.75} />
+                        <ChevronRight className="w-5 h-5 text-soft-4 flex-shrink-0 self-center" strokeWidth={1.75} />
                       )}
                     </div>
                   </div>
 
                   {/* Progress Bar */}
                   <div className="px-3 pb-2">
-                    <div className="relative h-1 w-full rounded-full bg-white/10 overflow-hidden">
+                    <div className="relative h-1 w-full rounded-full bg-soft-1 overflow-hidden">
                       <div
                         className="absolute inset-y-0 left-0 rounded-full"
                         style={{
@@ -1612,7 +1615,7 @@ export function AdCampaigns({
                   </div>
 
                   {/* Footer */}
-                  <div className="flex items-center justify-between px-3 py-2 text-xs text-white/55">
+                  <div className="flex items-center justify-between px-3 py-2 text-xs text-soft-3">
                     <span className="flex items-center gap-1">
                       <Users className="w-3 h-3" strokeWidth={1.75} />
                       {campaign.completions.toLocaleString()} casts
@@ -1636,7 +1639,7 @@ export function AdCampaigns({
               transition={{ delay: 0.25 }}
             >
               <button
-                className="w-full rounded-xl border border-dashed border-white/15 py-4 px-4 flex items-center justify-center gap-2 text-sm text-white/45 hover:border-white/25 hover:text-white/60 transition-colors"
+                className="w-full rounded-xl border border-dashed border-soft-2 py-4 px-4 flex items-center justify-center gap-2 text-sm text-soft-4 hover:border-soft-1 hover:text-soft-3 transition-colors"
                 onClick={() => setShowEinkPrompt(true)}
               >
                 <Shield className="w-4 h-4" strokeWidth={1.75} />

@@ -39,9 +39,11 @@ interface SettingsProps {
   einkCaseAttached: boolean;
   setEinkCaseAttached: (attached: boolean) => void;
   onReplayOnboarding: () => void;
+  theme: 'dark' | 'light';
+  onToggleTheme: () => void;
 }
 
-export function Settings({ view, setView, currency, setCurrency, language, setLanguage, network, setNetwork, einkCaseAttached, setEinkCaseAttached, onReplayOnboarding }: SettingsProps) {
+export function Settings({ view, setView, currency, setCurrency, language, setLanguage, network, setNetwork, einkCaseAttached, setEinkCaseAttached, onReplayOnboarding, theme, onToggleTheme }: SettingsProps) {
   const [notifications, setNotifications] = useState(true);
   const [biometric, setBiometric] = useState(false);
   const [phraseRevealed, setPhraseRevealed] = useState(false);
@@ -89,7 +91,7 @@ export function Settings({ view, setView, currency, setCurrency, language, setLa
   if (view === 'currency') {
     return (
       <div className="min-h-screen">
-        <div className="bg-[#1A1A1A] border-b sticky top-0">
+        <div className="bg-card border-b sticky top-0">
           <div className="flex items-center gap-3 px-4 py-3">
             <button 
               onClick={() => setView('main')}
@@ -100,11 +102,11 @@ export function Settings({ view, setView, currency, setCurrency, language, setLa
             <h2>Currency</h2>
           </div>
         </div>
-        <div className="bg-[#1A1A1A] mt-6">
+        <div className="bg-card mt-6">
           {currencies.map((item) => (
             <div
               key={item.value}
-              className="flex items-center justify-between px-4 py-4 border-b cursor-pointer active:bg-white/5"
+              className="flex items-center justify-between px-4 py-4 border-b cursor-pointer active:bg-soft-3"
               onClick={() => {
                 setCurrency(item.value);
                 setView('main');
@@ -125,7 +127,7 @@ export function Settings({ view, setView, currency, setCurrency, language, setLa
   if (view === 'language') {
     return (
       <div className="min-h-screen">
-        <div className="bg-[#1A1A1A] border-b sticky top-0">
+        <div className="bg-card border-b sticky top-0">
           <div className="flex items-center gap-3 px-4 py-3">
             <button 
               onClick={() => setView('main')}
@@ -136,11 +138,11 @@ export function Settings({ view, setView, currency, setCurrency, language, setLa
             <h2>Language</h2>
           </div>
         </div>
-        <div className="bg-[#1A1A1A] mt-6">
+        <div className="bg-card mt-6">
           {languages.map((item) => (
             <div
               key={item.value}
-              className="flex items-center justify-between px-4 py-4 border-b cursor-pointer active:bg-white/5"
+              className="flex items-center justify-between px-4 py-4 border-b cursor-pointer active:bg-soft-3"
               onClick={() => {
                 setLanguage(item.value);
                 setView('main');
@@ -161,7 +163,7 @@ export function Settings({ view, setView, currency, setCurrency, language, setLa
   if (view === 'network') {
     return (
       <div className="min-h-screen">
-        <div className="bg-[#1A1A1A] border-b sticky top-0">
+        <div className="bg-card border-b sticky top-0">
           <div className="flex items-center gap-3 px-4 py-3">
             <button 
               onClick={() => setView('main')}
@@ -172,11 +174,11 @@ export function Settings({ view, setView, currency, setCurrency, language, setLa
             <h2>Active Network</h2>
           </div>
         </div>
-        <div className="bg-[#1A1A1A] mt-6">
+        <div className="bg-card mt-6">
           {networks.map((item) => (
             <div
               key={item.value}
-              className="flex items-center justify-between px-4 py-4 border-b cursor-pointer active:bg-white/5"
+              className="flex items-center justify-between px-4 py-4 border-b cursor-pointer active:bg-soft-3"
               onClick={() => {
                 setNetwork(item.value);
                 setView('main');
@@ -212,7 +214,7 @@ export function Settings({ view, setView, currency, setCurrency, language, setLa
 
     return (
       <div className="min-h-screen">
-        <div className="bg-[#1A1A1A] border-b sticky top-0">
+        <div className="bg-card border-b sticky top-0">
           <div className="flex items-center gap-3 px-4 py-3">
             <button 
               onClick={() => {
@@ -246,10 +248,10 @@ export function Settings({ view, setView, currency, setCurrency, language, setLa
 
           {!phraseRevealed ? (
             /* Before Reveal */
-            <div className="bg-[#1A1A1A] rounded-lg p-6 text-center">
+            <div className="bg-card rounded-lg p-6 text-center">
               <Shield className="w-16 h-16 text-blue-600 mx-auto mb-4" />
               <h3 className="mb-3">View Your Recovery Phrase</h3>
-              <p className="text-sm text-white/70 mb-6">
+              <p className="text-sm text-soft-2 mb-6">
                 Make sure no one is looking at your screen. You'll need to write down these 12 words in order.
               </p>
               <Button 
@@ -263,14 +265,14 @@ export function Settings({ view, setView, currency, setCurrency, language, setLa
           ) : (
             /* After Reveal */
             <>
-              <div className="bg-[#1A1A1A] rounded-lg p-6 mb-4">
-                <p className="text-sm text-white/70 mb-4 text-center">
+              <div className="bg-card rounded-lg p-6 mb-4">
+                <p className="text-sm text-soft-2 mb-4 text-center">
                   Write down these words in order and store them safely
                 </p>
                 <div className="grid grid-cols-2 gap-3 mb-4">
                   {recoveryPhrase.map((word, index) => (
-                    <div key={index} className="flex items-center gap-2 p-3 bg-[#0A0A0A] rounded-lg border">
-                      <span className="text-xs text-white/55 w-6">{index + 1}.</span>
+                    <div key={index} className="flex items-center gap-2 p-3 bg-muted rounded-lg border">
+                      <span className="text-xs text-soft-3 w-6">{index + 1}.</span>
                       <span>{word}</span>
                     </div>
                   ))}
@@ -302,7 +304,7 @@ export function Settings({ view, setView, currency, setCurrency, language, setLa
   if (view === 'tos') {
     return (
       <div className="min-h-screen">
-        <div className="bg-[#1A1A1A] border-b sticky top-0">
+        <div className="bg-card border-b sticky top-0">
           <div className="flex items-center gap-3 px-4 py-3">
             <button 
               onClick={() => setView('main')}
@@ -315,8 +317,8 @@ export function Settings({ view, setView, currency, setCurrency, language, setLa
         </div>
 
         <div className="px-4 mt-6">
-          <div className="bg-[#1A1A1A] rounded-lg p-6">
-            <p className="text-sm text-white/55 mb-6">Last updated: October 24, 2025</p>
+          <div className="bg-card rounded-lg p-6">
+            <p className="text-sm text-soft-3 mb-6">Last updated: October 24, 2025</p>
             
             <div className="space-y-6 text-sm">
               <div>
@@ -325,42 +327,42 @@ export function Settings({ view, setView, currency, setCurrency, language, setLa
 
               <div>
                 <h3 className="mb-2">1. Acceptance of Terms</h3>
-                <p className="text-white/70">
+                <p className="text-soft-2">
                   By accessing and using PixPal, you accept and agree to be bound by the terms and provision of this agreement. If you do not agree to these terms, please do not use our service.
                 </p>
               </div>
 
               <div>
                 <h3 className="mb-2">2. Use License</h3>
-                <p className="text-white/70">
+                <p className="text-soft-2">
                   Permission is granted to use PixPal for personal, non-commercial purposes. You may not modify, distribute, or reproduce any part of the application without written permission.
                 </p>
               </div>
 
               <div>
                 <h3 className="mb-2">3. Cryptocurrency Risks</h3>
-                <p className="text-white/70">
+                <p className="text-soft-2">
                   Cryptocurrency transactions carry inherent risks. You acknowledge that digital asset prices are volatile and may result in significant losses. You are responsible for the security of your wallet and private keys.
                 </p>
               </div>
 
               <div>
                 <h3 className="mb-2">4. User Responsibilities</h3>
-                <p className="text-white/70">
+                <p className="text-soft-2">
                   You agree to use the service in compliance with all applicable laws and regulations. You are responsible for maintaining the confidentiality of your account and for all activities that occur under your account.
                 </p>
               </div>
 
               <div>
                 <h3 className="mb-2">5. E-ink Display Usage</h3>
-                <p className="text-white/70">
+                <p className="text-soft-2">
                   You agree to display advertisements as committed and understand that failure to fulfill commitments may result in penalties or account suspension.
                 </p>
               </div>
 
               <div>
                 <h3 className="mb-2">6. Limitation of Liability</h3>
-                <p className="text-white/70">
+                <p className="text-soft-2">
                   PixPal shall not be liable for any indirect, incidental, special, consequential or punitive damages resulting from your use or inability to use the service.
                 </p>
               </div>
@@ -375,7 +377,7 @@ export function Settings({ view, setView, currency, setCurrency, language, setLa
   if (view === 'privacy') {
     return (
       <div className="min-h-screen">
-        <div className="bg-[#1A1A1A] border-b sticky top-0">
+        <div className="bg-card border-b sticky top-0">
           <div className="flex items-center gap-3 px-4 py-3">
             <button 
               onClick={() => setView('main')}
@@ -388,8 +390,8 @@ export function Settings({ view, setView, currency, setCurrency, language, setLa
         </div>
 
         <div className="px-4 mt-6">
-          <div className="bg-[#1A1A1A] rounded-lg p-6">
-            <p className="text-sm text-white/55 mb-6">Last updated: October 24, 2025</p>
+          <div className="bg-card rounded-lg p-6">
+            <p className="text-sm text-soft-3 mb-6">Last updated: October 24, 2025</p>
             
             <div className="space-y-6 text-sm">
               <div>
@@ -398,42 +400,42 @@ export function Settings({ view, setView, currency, setCurrency, language, setLa
 
               <div>
                 <h3 className="mb-2">1. Information Collection</h3>
-                <p className="text-white/70">
+                <p className="text-soft-2">
                   We collect information necessary to provide our services, including wallet addresses, transaction data, device information, and usage statistics. This information helps us deliver and improve the PixPal experience.
                 </p>
               </div>
 
               <div>
                 <h3 className="mb-2">2. Data Usage</h3>
-                <p className="text-white/70">
+                <p className="text-soft-2">
                   Your data is used solely to facilitate app functionality and improve user experience. We analyze usage patterns to optimize performance and develop new features.
                 </p>
               </div>
 
               <div>
                 <h3 className="mb-2">3. Data Security</h3>
-                <p className="text-white/70">
+                <p className="text-soft-2">
                   We implement industry-standard security measures to protect your information. Your private keys and recovery phrases are stored locally on your device and are never transmitted to our servers.
                 </p>
               </div>
 
               <div>
                 <h3 className="mb-2">4. Third-Party Services</h3>
-                <p className="text-white/70">
+                <p className="text-soft-2">
                   We may use third-party services for analytics and functionality improvements. These services have their own privacy policies and we encourage you to review them.
                 </p>
               </div>
 
               <div>
                 <h3 className="mb-2">5. Data Sharing</h3>
-                <p className="text-white/70">
+                <p className="text-soft-2">
                   We do not sell your personal information to third parties. We may share anonymized, aggregated data for research and analytics purposes.
                 </p>
               </div>
 
               <div>
                 <h3 className="mb-2">6. Your Rights</h3>
-                <p className="text-white/70">
+                <p className="text-soft-2">
                   You have the right to access, correct, or delete your personal data. Contact us at privacy@pixpal.io to exercise these rights.
                 </p>
               </div>
@@ -463,7 +465,7 @@ export function Settings({ view, setView, currency, setCurrency, language, setLa
 
     return (
       <div className="min-h-screen">
-        <div className="bg-[#1A1A1A] border-b sticky top-0">
+        <div className="bg-card border-b sticky top-0">
           <div className="flex items-center gap-3 px-4 py-3">
             <button
               onClick={() => setView('main')}
@@ -480,24 +482,24 @@ export function Settings({ view, setView, currency, setCurrency, language, setLa
           {!einkCaseAttached ? (
             <>
               {/* Not connected state */}
-              <div className="rounded-2xl overflow-hidden" style={{ background: '#1A1A1A' }}>
+              <div className="rounded-2xl overflow-hidden bg-card border border-border">
                 <div className="h-[3px] bg-gradient-to-r from-[#BC13FE] to-[#00FFC2]" />
                 <div className="p-5 text-center space-y-4">
                   <div
                     className="w-14 h-14 rounded-2xl mx-auto flex items-center justify-center"
-                    style={{ background: 'rgba(0,255,194,0.1)', border: '1px solid rgba(0,255,194,0.25)' }}
+                    style={{ background: 'rgba(0,255,194,0.10)', border: '1px solid rgba(0,255,194,0.30)' }}
                   >
                     <WifiOff className="w-7 h-7" style={{ color: '#00FFC2' }} />
                   </div>
                   <div>
-                    <p className="text-white font-semibold mb-1">E-Ink Case Not Detected</p>
-                    <p className="text-white/40 text-sm leading-relaxed">
+                    <p className="text-foreground font-semibold mb-1">E-Ink Case Not Detected</p>
+                    <p className="text-soft-3 text-sm leading-relaxed">
                       Attach your AdPal E-Ink case and tap Activate Device to get started.
                     </p>
                   </div>
 
                   {/* Setup steps */}
-                  <div className="text-left space-y-2.5 rounded-xl p-4" style={{ background: '#2C2C2C' }}>
+                  <div className="text-left space-y-2.5 rounded-xl p-4 bg-muted">
                     {[
                       'Attach the E-Ink case to your iPhone',
                       'Enable NFC and Bluetooth in iOS Settings',
@@ -506,11 +508,11 @@ export function Settings({ view, setView, currency, setCurrency, language, setLa
                       <div key={i} className="flex items-start gap-3">
                         <span
                           className="w-5 h-5 rounded-full text-xs flex items-center justify-center flex-shrink-0 mt-0.5 font-bold"
-                          style={{ background: 'rgba(0,255,194,0.15)', border: '1px solid rgba(0,255,194,0.35)', color: '#00FFC2' }}
+                          style={{ background: 'rgba(0,255,194,0.15)', border: '1px solid rgba(0,255,194,0.40)', color: '#0a8a6b' }}
                         >
                           {i + 1}
                         </span>
-                        <span className="text-xs text-white/30 leading-relaxed">{step}</span>
+                        <span className="text-xs text-soft-3 leading-relaxed">{step}</span>
                       </div>
                     ))}
                   </div>
@@ -526,13 +528,13 @@ export function Settings({ view, setView, currency, setCurrency, language, setLa
               </div>
 
               {/* Device ID — unavailable */}
-              <div className="bg-[#1A1A1A] rounded-lg p-4 opacity-50">
+              <div className="bg-card rounded-lg p-4 opacity-50">
                 <div className="flex items-center gap-2 mb-3">
-                  <Smartphone className="w-5 h-5 text-white/40" />
-                  <h3 className="text-white/40">Device ID</h3>
+                  <Smartphone className="w-5 h-5 text-soft-4" />
+                  <h3 className="text-soft-4">Device ID</h3>
                 </div>
-                <div className="bg-[#0A0A0A] rounded-lg p-4 mb-3">
-                  <p className="text-sm text-white/40 italic">Not available — connect E-Ink case to view</p>
+                <div className="bg-muted rounded-lg p-4 mb-3">
+                  <p className="text-sm text-soft-4 italic">Not available — connect E-Ink case to view</p>
                 </div>
                 <Button variant="outline" className="w-full" disabled>
                   <Copy className="w-4 h-4 mr-2" />
@@ -541,13 +543,13 @@ export function Settings({ view, setView, currency, setCurrency, language, setLa
               </div>
 
               {/* Public Key — unavailable */}
-              <div className="bg-[#1A1A1A] rounded-lg p-4 opacity-50">
+              <div className="bg-card rounded-lg p-4 opacity-50">
                 <div className="flex items-center gap-2 mb-3">
-                  <Shield className="w-5 h-5 text-white/40" />
-                  <h3 className="text-white/40">Public Key</h3>
+                  <Shield className="w-5 h-5 text-soft-4" />
+                  <h3 className="text-soft-4">Public Key</h3>
                 </div>
-                <div className="bg-[#0A0A0A] rounded-lg p-4 mb-3">
-                  <p className="text-sm text-white/40 italic">Not available — connect E-Ink case to view</p>
+                <div className="bg-muted rounded-lg p-4 mb-3">
+                  <p className="text-sm text-soft-4 italic">Not available — connect E-Ink case to view</p>
                 </div>
                 <Button variant="outline" className="w-full" disabled>
                   <Copy className="w-4 h-4 mr-2" />
@@ -558,12 +560,12 @@ export function Settings({ view, setView, currency, setCurrency, language, setLa
           ) : (
             <>
               {/* Device ID */}
-              <div className="bg-[#1A1A1A] rounded-lg p-4">
+              <div className="bg-card rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-3">
-                  <Smartphone className="w-5 h-5 text-white/70" />
+                  <Smartphone className="w-5 h-5 text-soft-2" />
                   <h3>Device ID</h3>
                 </div>
-                <div className="bg-[#0A0A0A] rounded-lg p-4 mb-3">
+                <div className="bg-muted rounded-lg p-4 mb-3">
                   <p className="text-sm break-all">{deviceId}</p>
                 </div>
                 <Button
@@ -577,12 +579,12 @@ export function Settings({ view, setView, currency, setCurrency, language, setLa
               </div>
 
               {/* Public Key */}
-              <div className="bg-[#1A1A1A] rounded-lg p-4">
+              <div className="bg-card rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-3">
-                  <Shield className="w-5 h-5 text-white/70" />
+                  <Shield className="w-5 h-5 text-soft-2" />
                   <h3>Public Key</h3>
                 </div>
-                <div className="bg-[#0A0A0A] rounded-lg p-4 mb-3">
+                <div className="bg-muted rounded-lg p-4 mb-3">
                   <p className="text-sm break-all">{publicKey}</p>
                 </div>
                 <Button
@@ -616,7 +618,7 @@ export function Settings({ view, setView, currency, setCurrency, language, setLa
       <div className="mt-6 mb-4 px-4">
         <h3 className="section-header">Wallet</h3>
       </div>
-      <div className="bg-[#1A1A1A]">
+      <div className="bg-card">
         <div className="flex items-center justify-between px-4 py-3 border-b">
           <Label>Show Balance</Label>
           <Switch defaultChecked />
@@ -637,19 +639,34 @@ export function Settings({ view, setView, currency, setCurrency, language, setLa
         </div>
 
         <div 
-          className="flex items-center justify-between px-4 py-3 cursor-pointer active:bg-white/5 border-b"
+          className="flex items-center justify-between px-4 py-3 cursor-pointer active:bg-soft-3 border-b"
           onClick={() => setView('recovery')}
         >
           <Label className="cursor-pointer">Recovery Phrase</Label>
-          <ChevronRight className="w-4 h-4 text-white/40" />
+          <ChevronRight className="w-4 h-4 text-soft-4" />
         </div>
 
-        <div 
-          className="flex items-center justify-between px-4 py-3 cursor-pointer active:bg-white/5"
+        <div
+          className="flex items-center justify-between px-4 py-3 cursor-pointer active:bg-soft-3"
           onClick={() => setView('device-info')}
         >
           <Label className="cursor-pointer">Device Info</Label>
-          <ChevronRight className="w-4 h-4 text-white/40" />
+          <ChevronRight className="w-4 h-4 text-soft-4" />
+        </div>
+      </div>
+
+      {/* Appearance */}
+      <div className="mt-6 mb-4 px-4">
+        <h3 className="section-header">Appearance</h3>
+      </div>
+      <div className="bg-card">
+        <div className="flex items-center justify-between px-4 py-3">
+          <Label htmlFor="dark-mode">Dark Mode</Label>
+          <Switch
+            id="dark-mode"
+            checked={theme === 'dark'}
+            onCheckedChange={onToggleTheme}
+          />
         </div>
       </div>
 
@@ -657,28 +674,28 @@ export function Settings({ view, setView, currency, setCurrency, language, setLa
       <div className="mt-6 mb-4 px-4">
         <h3 className="section-header">Currency & Region</h3>
       </div>
-      <div className="bg-[#1A1A1A]">
+      <div className="bg-card">
         <div 
-          className="flex items-center justify-between px-4 py-3 border-b cursor-pointer active:bg-white/5"
+          className="flex items-center justify-between px-4 py-3 border-b cursor-pointer active:bg-soft-3"
           onClick={() => setView('currency')}
         >
           <Label className="cursor-pointer">Currency</Label>
           <div className="flex items-center gap-2">
-            <span className="text-sm text-white/55">{currency}</span>
-            <ChevronRight className="w-4 h-4 text-white/40" />
+            <span className="text-sm text-soft-3">{currency}</span>
+            <ChevronRight className="w-4 h-4 text-soft-4" />
           </div>
         </div>
 
         <div 
-          className="flex items-center justify-between px-4 py-3 cursor-pointer active:bg-white/5"
+          className="flex items-center justify-between px-4 py-3 cursor-pointer active:bg-soft-3"
           onClick={() => setView('language')}
         >
           <Label className="cursor-pointer">Language</Label>
           <div className="flex items-center gap-2">
-            <span className="text-sm text-white/55">
+            <span className="text-sm text-soft-3">
               {languages.find(l => l.value === language)?.label}
             </span>
-            <ChevronRight className="w-4 h-4 text-white/40" />
+            <ChevronRight className="w-4 h-4 text-soft-4" />
           </div>
         </div>
       </div>
@@ -687,17 +704,17 @@ export function Settings({ view, setView, currency, setCurrency, language, setLa
       <div className="mt-6 mb-4 px-4">
         <h3 className="section-header">Network</h3>
       </div>
-      <div className="bg-[#1A1A1A]">
+      <div className="bg-card">
         <div 
-          className="flex items-center justify-between px-4 py-3 border-b cursor-pointer active:bg-white/5"
+          className="flex items-center justify-between px-4 py-3 border-b cursor-pointer active:bg-soft-3"
           onClick={() => setView('network')}
         >
           <Label className="cursor-pointer">Active Network</Label>
           <div className="flex items-center gap-2">
-            <span className="text-sm text-white/55">
+            <span className="text-sm text-soft-3">
               {networks.find(n => n.value === network)?.label}
             </span>
-            <ChevronRight className="w-4 h-4 text-white/40" />
+            <ChevronRight className="w-4 h-4 text-soft-4" />
           </div>
         </div>
 
@@ -711,7 +728,7 @@ export function Settings({ view, setView, currency, setCurrency, language, setLa
       <div className="mt-6 mb-4 px-4">
         <h3 className="section-header">Notifications</h3>
       </div>
-      <div className="bg-[#1A1A1A]">
+      <div className="bg-card">
         <div className="flex items-center justify-between px-4 py-3 border-b">
           <Label>Push Notifications</Label>
           <Switch 
@@ -735,34 +752,34 @@ export function Settings({ view, setView, currency, setCurrency, language, setLa
       <div className="mt-6 mb-4 px-4">
         <h3 className="section-header">About</h3>
       </div>
-      <div className="bg-[#1A1A1A]">
+      <div className="bg-card">
         <div 
-          className="flex items-center justify-between px-4 py-3 cursor-pointer active:bg-white/5 border-b"
+          className="flex items-center justify-between px-4 py-3 cursor-pointer active:bg-soft-3 border-b"
           onClick={() => setView('tos')}
         >
           <Label className="cursor-pointer">Terms of Service</Label>
-          <ChevronRight className="w-4 h-4 text-white/40" />
+          <ChevronRight className="w-4 h-4 text-soft-4" />
         </div>
 
         <div
-          className="flex items-center justify-between px-4 py-3 cursor-pointer active:bg-white/5 border-b"
+          className="flex items-center justify-between px-4 py-3 cursor-pointer active:bg-soft-3 border-b"
           onClick={() => setView('privacy')}
         >
           <Label className="cursor-pointer">Privacy Policy</Label>
-          <ChevronRight className="w-4 h-4 text-white/40" />
+          <ChevronRight className="w-4 h-4 text-soft-4" />
         </div>
 
         <div
-          className="flex items-center justify-between px-4 py-3 cursor-pointer active:bg-white/5 border-b"
+          className="flex items-center justify-between px-4 py-3 cursor-pointer active:bg-soft-3 border-b"
           onClick={onReplayOnboarding}
         >
           <Label className="cursor-pointer">Replay Tutorial</Label>
-          <ChevronRight className="w-4 h-4 text-white/40" />
+          <ChevronRight className="w-4 h-4 text-soft-4" />
         </div>
 
         <div className="flex items-center justify-between px-4 py-3">
           <Label>Version</Label>
-          <span className="text-sm text-white/55">1.0.0</span>
+          <span className="text-sm text-soft-3">1.0.0</span>
         </div>
       </div>
     </div>
