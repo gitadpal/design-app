@@ -9,13 +9,16 @@ import type { SamplePhoto } from './samplePhotos';
 import { getOnboardingTokens, type OnboardingTheme } from './onboardingTheme';
 
 export interface OnboardingResult {
-  einkCaseAttached: boolean;
   currentDisplay: { type: 'image'; data: { id: string; url: string; name: string } } | null;
 }
 
 interface OnboardingFlowProps {
   onComplete: (result: OnboardingResult) => void;
   onSkip: () => void;
+  // Fires the moment the Pair step's handshake completes — App uses this to
+  // flip the global "device activated" state and toast, so the tutorial's
+  // pair click produces the same effect as Settings → Device → Activate.
+  onDeviceActivated: () => void;
   theme: OnboardingTheme;
   onToggleTheme: () => void;
 }
@@ -23,7 +26,7 @@ interface OnboardingFlowProps {
 type Step = 'welcome' | 'pair' | 'cast' | 'earn';
 const ORDER: Step[] = ['welcome', 'pair', 'cast', 'earn'];
 
-export function OnboardingFlow({ onComplete, onSkip, theme, onToggleTheme }: OnboardingFlowProps) {
+export function OnboardingFlow({ onComplete, onSkip, onDeviceActivated, theme, onToggleTheme }: OnboardingFlowProps) {
   const [step, setStep] = useState<Step>('welcome');
   const [castPhoto, setCastPhoto] = useState<SamplePhoto | null>(null);
   const currentIndex = ORDER.indexOf(step);
@@ -33,7 +36,6 @@ export function OnboardingFlow({ onComplete, onSkip, theme, onToggleTheme }: Onb
 
   const finish = () => {
     onComplete({
-      einkCaseAttached: true,
       currentDisplay: castPhoto
         ? { type: 'image', data: { id: 'onboard', url: castPhoto.src, name: castPhoto.name } }
         : null,
@@ -119,7 +121,11 @@ export function OnboardingFlow({ onComplete, onSkip, theme, onToggleTheme }: Onb
             transition={{ duration: 0.42, ease: [0.16, 1, 0.3, 1] }}
             className="absolute inset-0"
           >
-            <StepPairDevice theme={theme} onPaired={() => setStep('cast')} />
+            <StepPairDevice
+              theme={theme}
+              onActivate={onDeviceActivated}
+              onPaired={() => setStep('cast')}
+            />
           </motion.div>
         )}
 

@@ -84,8 +84,15 @@ export default function App() {
     return window.localStorage.getItem(ONBOARDING_STORAGE_KEY) !== 'true';
   });
 
-  const completeOnboarding = (result: { einkCaseAttached: boolean; currentDisplay: any }) => {
-    setEinkCaseAttached(result.einkCaseAttached);
+  // Single source of truth for "the device just activated" side-effect — used
+  // both by Settings → Device → Activate and by the tutorial's Pair step, so
+  // the two paths produce identical state + toast and don't drift.
+  const activateDevice = () => {
+    setEinkCaseAttached(true);
+    toast.success('E-Ink case activated!', { description: 'Your device is now connected.' });
+  };
+
+  const completeOnboarding = (result: { currentDisplay: any }) => {
     if (result.currentDisplay) setCurrentDisplay(result.currentDisplay);
     window.localStorage.setItem(ONBOARDING_STORAGE_KEY, 'true');
     setShowOnboarding(false);
@@ -241,7 +248,7 @@ export default function App() {
             network={network}
             setNetwork={setNetwork}
             einkCaseAttached={einkCaseAttached}
-            setEinkCaseAttached={setEinkCaseAttached}
+            onActivateDevice={activateDevice}
             onReplayOnboarding={() => {
               window.localStorage.removeItem(ONBOARDING_STORAGE_KEY);
               setSettingsView('main');
@@ -257,6 +264,7 @@ export default function App() {
         <OnboardingFlow
           onComplete={completeOnboarding}
           onSkip={skipOnboarding}
+          onDeviceActivated={activateDevice}
           theme={theme}
           onToggleTheme={toggleTheme}
         />

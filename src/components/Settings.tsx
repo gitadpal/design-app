@@ -37,13 +37,13 @@ interface SettingsProps {
   network: string;
   setNetwork: (network: string) => void;
   einkCaseAttached: boolean;
-  setEinkCaseAttached: (attached: boolean) => void;
+  onActivateDevice: () => void;
   onReplayOnboarding: () => void;
   theme: 'dark' | 'light';
   onToggleTheme: () => void;
 }
 
-export function Settings({ view, setView, currency, setCurrency, language, setLanguage, network, setNetwork, einkCaseAttached, setEinkCaseAttached, onReplayOnboarding, theme, onToggleTheme }: SettingsProps) {
+export function Settings({ view, setView, currency, setCurrency, language, setLanguage, network, setNetwork, einkCaseAttached, onActivateDevice, onReplayOnboarding, theme, onToggleTheme }: SettingsProps) {
   const [notifications, setNotifications] = useState(true);
   const [biometric, setBiometric] = useState(false);
   const [phraseRevealed, setPhraseRevealed] = useState(false);
@@ -458,10 +458,9 @@ export function Settings({ view, setView, currency, setCurrency, language, setLa
       toast.success('Public key copied to clipboard');
     };
 
-    const handleActivate = () => {
-      setEinkCaseAttached(true);
-      toast.success('E-Ink case activated!', { description: 'Your device is now connected.' });
-    };
+    // Delegate to the shared App-level activator — state flip + toast live
+     // in one place, so this and the tutorial's Pair step can't drift.
+    const handleActivate = onActivateDevice;
 
     return (
       <div className="min-h-screen">
