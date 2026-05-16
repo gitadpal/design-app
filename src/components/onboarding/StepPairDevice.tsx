@@ -1,9 +1,11 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { Bluetooth, Nfc, KeyRound, Check, Hand, Lock } from 'lucide-react';
+import { getOnboardingTokens, type OnboardingTheme } from './onboardingTheme';
 
 interface StepPairDeviceProps {
   onPaired: () => void;
+  theme: OnboardingTheme;
 }
 
 type Phase = 'awaiting' | 'handshaking' | 'found' | 'pairing' | 'done';
@@ -12,8 +14,9 @@ const DEVICE_ID = 'A7F3';
 const PUBKEY_HEAD = '0x7A3F';
 const PUBKEY_TAIL = 'E2B1';
 
-export function StepPairDevice({ onPaired }: StepPairDeviceProps) {
+export function StepPairDevice({ onPaired, theme }: StepPairDeviceProps) {
   const [phase, setPhase] = useState<Phase>('awaiting');
+  const tokens = getOnboardingTokens(theme);
 
   useEffect(() => {
     if (phase !== 'awaiting') return;
@@ -34,18 +37,24 @@ export function StepPairDevice({ onPaired }: StepPairDeviceProps) {
   };
 
   return (
-    <div className="w-full h-full flex flex-col px-7 pt-20 pb-10 bg-[#0A0A0A] relative overflow-hidden">
-      <BackdropGlow />
+    <div
+      className="w-full h-full flex flex-col px-7 pt-20 pb-10 relative overflow-hidden"
+      style={{ background: tokens.bg }}
+    >
+      <BackdropGlow theme={theme} />
 
       <header className="text-center space-y-2 relative z-10">
-        <h2 className="text-2xl font-semibold text-white">Pair your AdPal case</h2>
-        <p className="text-sm text-white/55 max-w-[280px] mx-auto leading-relaxed">
+        <h2 className="text-2xl font-semibold" style={{ color: tokens.text }}>Pair your AdPal case</h2>
+        <p
+          className="text-sm max-w-[280px] mx-auto leading-relaxed"
+          style={{ color: tokens.textMuted }}
+        >
           Press the case flat against the back of your phone.
         </p>
       </header>
 
       <div className="flex-1 flex items-center justify-center relative z-10">
-        <ContactVisual phase={phase} />
+        <ContactVisual phase={phase} theme={theme} />
       </div>
 
       <div className="relative z-10 min-h-[200px]">
@@ -56,13 +65,14 @@ export function StepPairDevice({ onPaired }: StepPairDeviceProps) {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="text-center text-sm text-white/55 space-y-1"
+              className="text-center text-sm space-y-1"
+              style={{ color: tokens.textMuted }}
             >
               <div className="inline-flex items-center gap-2">
                 <Nfc className="w-4 h-4 animate-pulse" style={{ color: '#00FFC2' }} />
                 Waiting for NFC contact…
               </div>
-              <div className="text-[11px] text-white/40">
+              <div className="text-[11px]" style={{ color: tokens.textFaint }}>
                 Hold the case tightly to your phone
               </div>
             </motion.div>
@@ -74,13 +84,14 @@ export function StepPairDevice({ onPaired }: StepPairDeviceProps) {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="text-center text-sm text-white/55 space-y-1"
+              className="text-center text-sm space-y-1"
+              style={{ color: tokens.textMuted }}
             >
               <div className="inline-flex items-center gap-2">
                 <Bluetooth className="w-4 h-4 animate-pulse" style={{ color: '#00FFC2' }} />
                 Reading device ID and pubkey…
               </div>
-              <div className="text-[11px] text-white/40">
+              <div className="text-[11px]" style={{ color: tokens.textFaint }}>
                 Keep the case pressed flat
               </div>
             </motion.div>
@@ -95,7 +106,7 @@ export function StepPairDevice({ onPaired }: StepPairDeviceProps) {
               transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
               className="space-y-4"
             >
-              <DeviceCard phase={phase} />
+              <DeviceCard phase={phase} theme={theme} />
               <button
                 onClick={handlePair}
                 disabled={phase !== 'found'}
@@ -119,7 +130,7 @@ export function StepPairDevice({ onPaired }: StepPairDeviceProps) {
   );
 }
 
-function ContactVisual({ phase }: { phase: Phase }) {
+function ContactVisual({ phase, theme }: { phase: Phase; theme: OnboardingTheme }) {
   const isAwaiting = phase === 'awaiting';
   const isHandshaking = phase === 'handshaking';
   const isDone = phase === 'done';
@@ -161,6 +172,7 @@ function ContactVisual({ phase }: { phase: Phase }) {
           attached={!isAwaiting}
           handshaking={isHandshaking}
           locked={isPaired}
+          theme={theme}
         />
       )}
     </div>
@@ -171,10 +183,12 @@ function PhoneCaseAttach({
   attached,
   handshaking,
   locked,
+  theme,
 }: {
   attached: boolean;
   handshaking: boolean;
   locked: boolean;
+  theme: OnboardingTheme;
 }) {
   const idle = !attached && !locked;
   const MINT = '#00FFC2';
@@ -204,7 +218,7 @@ function PhoneCaseAttach({
           zIndex: 1,
         }}
       >
-        <IPhoneBackSVG />
+        <IPhoneBackSVG theme={theme} />
       </div>
 
       {idle && (
@@ -300,14 +314,17 @@ function PhoneCaseAttach({
   );
 }
 
-function DeviceCard({ phase }: { phase: Phase }) {
+function DeviceCard({ phase, theme }: { phase: Phase; theme: OnboardingTheme }) {
+  const tokens = getOnboardingTokens(theme);
   return (
     <div
       className="rounded-2xl p-4 space-y-3"
       style={{
-        background: '#1C1C1E',
-        border: '1px solid rgba(255,255,255,0.08)',
-        boxShadow: '0 8px 24px -12px rgba(0,0,0,0.6)',
+        background: tokens.cardBg,
+        border: `1px solid ${tokens.cardBorder}`,
+        boxShadow: theme === 'dark'
+          ? '0 8px 24px -12px rgba(0,0,0,0.6)'
+          : '0 8px 24px -12px rgba(0,0,0,0.12)',
       }}
     >
       <div className="flex items-center gap-3">
@@ -321,18 +338,19 @@ function DeviceCard({ phase }: { phase: Phase }) {
           <Nfc className="w-5 h-5" style={{ color: '#00FFC2' }} />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-sm font-semibold text-white">AdPal Case</div>
+          <div className="text-sm font-semibold" style={{ color: tokens.text }}>AdPal Case</div>
         </div>
         <StatusPill phase={phase} />
       </div>
 
-      <div className="h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
+      <div className="h-px" style={{ background: tokens.divider }} />
 
       <div className="space-y-2">
         <CredentialRow
           label="Device ID"
           value={DEVICE_ID}
           mono
+          theme={theme}
         />
         {phase === 'done' ? (
           <CredentialRow
@@ -340,6 +358,7 @@ function DeviceCard({ phase }: { phase: Phase }) {
             value={`${PUBKEY_HEAD}…${PUBKEY_TAIL}`}
             icon={<KeyRound className="w-3 h-3" />}
             mono
+            theme={theme}
           />
         ) : (
           <CredentialRow
@@ -347,6 +366,7 @@ function DeviceCard({ phase }: { phase: Phase }) {
             value={phase === 'pairing' ? 'Generating…' : 'Available after pairing'}
             icon={<Lock className="w-3 h-3" />}
             muted
+            theme={theme}
           />
         )}
       </div>
@@ -360,22 +380,31 @@ function CredentialRow({
   icon,
   mono,
   muted,
+  theme,
 }: {
   label: string;
   value: string;
   icon?: ReactNode;
   mono?: boolean;
   muted?: boolean;
+  theme: OnboardingTheme;
 }) {
+  const tokens = getOnboardingTokens(theme);
+  const valueColor = muted
+    ? tokens.textFaint
+    : (theme === 'dark' ? 'rgba(255,255,255,0.85)' : 'rgba(26,26,26,0.85)');
   return (
     <div className="flex items-center justify-between gap-3">
-      <span className="inline-flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-white/45">
+      <span
+        className="inline-flex items-center gap-1.5 text-[11px] uppercase tracking-wider"
+        style={{ color: tokens.textDim }}
+      >
         {icon}
         {label}
       </span>
       <span
-        className={`text-xs ${muted ? 'text-white/40 italic' : 'text-white/85'} ${mono ? 'font-mono' : ''}`}
-        style={{ letterSpacing: mono ? '0.04em' : undefined }}
+        className={`text-xs ${muted ? 'italic' : ''} ${mono ? 'font-mono' : ''}`}
+        style={{ letterSpacing: mono ? '0.04em' : undefined, color: valueColor }}
       >
         {value}
       </span>
@@ -400,10 +429,11 @@ function StatusPill({ phase }: { phase: Phase }) {
   );
 }
 
-function IPhoneBackSVG() {
-  const stroke = 'rgba(255,255,255,0.85)';
-  const subtle = 'rgba(255,255,255,0.5)';
-  const fillBody = 'rgba(28,28,30,0.95)';
+function IPhoneBackSVG({ theme }: { theme: OnboardingTheme }) {
+  const isDark = theme === 'dark';
+  const stroke = isDark ? 'rgba(255,255,255,0.85)' : 'rgba(26,26,26,0.7)';
+  const subtle = isDark ? 'rgba(255,255,255,0.5)' : 'rgba(26,26,26,0.45)';
+  const fillBody = isDark ? 'rgba(28,28,30,0.95)' : 'rgba(220,220,225,0.95)';
   return (
     <svg
       viewBox="0 0 80 162"
@@ -413,8 +443,8 @@ function IPhoneBackSVG() {
     >
       <defs>
         <linearGradient id="phoneBack" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#2A2A2C" />
-          <stop offset="100%" stopColor="#161618" />
+          <stop offset="0%" stopColor={isDark ? '#2A2A2C' : '#E8E8EC'} />
+          <stop offset="100%" stopColor={isDark ? '#161618' : '#C8C8CE'} />
         </linearGradient>
       </defs>
       <rect
@@ -576,7 +606,8 @@ function CaseBackSVG({ accent }: { accent: string }) {
   );
 }
 
-function BackdropGlow() {
+function BackdropGlow({ theme }: { theme: OnboardingTheme }) {
+  const isDark = theme === 'dark';
   return (
     <motion.div
       className="absolute inset-0 pointer-events-none"
@@ -586,7 +617,9 @@ function BackdropGlow() {
       <div
         className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[420px] h-[420px] rounded-full"
         style={{
-          background: 'radial-gradient(circle, rgba(0,255,194,0.18) 0%, transparent 65%)',
+          background: isDark
+            ? 'radial-gradient(circle, rgba(0,255,194,0.18) 0%, transparent 65%)'
+            : 'radial-gradient(circle, rgba(0,255,194,0.28) 0%, rgba(188,19,254,0.10) 45%, transparent 70%)',
           filter: 'blur(40px)',
         }}
       />

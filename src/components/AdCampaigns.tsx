@@ -862,8 +862,17 @@ export function AdCampaigns({
               transition={{ duration: 0.5, delay: 0.1 }}
               className="mb-3"
             >
-              <Badge className="gradient-secondary text-foreground border-0 shadow-lg rounded-[10px] px-3 py-1">
-                <Sparkles className="w-3 h-3 mr-1" />
+              {/* Tonal chip — was a full-saturation Prism gradient with shadow,
+                  which pulled focus from the headline + reward. Subdued so the
+                  category reads as a tag, not a CTA. */}
+              <Badge
+                className="text-soft-1 border rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] shadow-none"
+                style={{
+                  background: 'rgba(0,255,194,0.10)',
+                  borderColor: 'rgba(0,255,194,0.28)',
+                }}
+              >
+                <Sparkles className="w-2.5 h-2.5 mr-1 opacity-80" />
                 {selectedCampaign.category}
               </Badge>
             </motion.div>
@@ -1583,7 +1592,7 @@ export function AdCampaigns({
                         <div className="mb-1 truncate text-foreground">{campaign.title}</div>
                         <p className="text-sm text-soft-3 mb-2 truncate">{campaign.description}</p>
                         <div className="flex items-center gap-3 text-xs">
-                          <span className="flex items-center gap-1" style={{ color: '#00FFC2' }}>
+                          <span className="flex items-center gap-1" style={{ color: 'var(--mint-on-surface)' }}>
                             <Coins className="w-3 h-3" strokeWidth={1.75} />
                             {campaign.reward}
                           </span>
@@ -1620,7 +1629,7 @@ export function AdCampaigns({
                       <Users className="w-3 h-3" strokeWidth={1.75} />
                       {campaign.completions.toLocaleString()} casts
                     </span>
-                    <span className="flex items-center gap-1" style={{ color: '#00FFC2' }}>
+                    <span className="flex items-center gap-1" style={{ color: 'var(--mint-on-surface)' }}>
                       <Coins className="w-3 h-3" strokeWidth={1.75} />
                       {tokensClaimedEstimate.toLocaleString()} claimed
                     </span>

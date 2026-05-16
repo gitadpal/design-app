@@ -55,6 +55,11 @@
   --glass-bg-strong: rgba(255, 255, 255, 0.86);
   --glass-border: rgba(26, 26, 26, 0.10);
   --scrim-bg: rgba(255, 255, 255, 0.55);
+  /* On-surface variants of the Prism brand colors. The pure brand neons
+     (#00FFC2 / #BC13FE) are tuned for dark surfaces; on white cards they glare
+     and lose legibility. Use these darker variants for body text on light. */
+  --mint-on-surface: #0AAE82;
+  --violet-on-surface: #8A0FC2;
 }
 
 .dark {
@@ -91,6 +96,9 @@
   --glass-bg-strong: rgba(255, 255, 255, 0.14);
   --glass-border: rgba(255, 255, 255, 0.18);
   --scrim-bg: rgba(0, 0, 0, 0.22);
+  /* Dark surfaces — full brand neons are legible at full brightness. */
+  --mint-on-surface: #00FFC2;
+  --violet-on-surface: #BC13FE;
   --font-weight-medium: 500;
   --font-weight-normal: 400;
   --chart-1: oklch(0.488 0.243 264.376);

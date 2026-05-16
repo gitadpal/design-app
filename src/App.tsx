@@ -254,7 +254,12 @@ export default function App() {
       </main>
 
       {showOnboarding && (
-        <OnboardingFlow onComplete={completeOnboarding} onSkip={skipOnboarding} />
+        <OnboardingFlow
+          onComplete={completeOnboarding}
+          onSkip={skipOnboarding}
+          theme={theme}
+          onToggleTheme={toggleTheme}
+        />
       )}
 
       {/* Bottom Navigation — liquid glass with the active tab's accent spreading across it */}
