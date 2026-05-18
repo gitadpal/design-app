@@ -1481,8 +1481,8 @@ export function AdCampaigns({
                     <div className="text-lg truncate">{activeCommitment.title}</div>
                   </div>
                   <div className="text-right flex-shrink-0 ml-3">
-                    <div className="flex items-center gap-1 justify-end mb-1">
-                      <Coins className="w-5 h-5" style={{ color: '#00FFC2' }} strokeWidth={1.75} />
+                    <div className="flex items-center gap-1 justify-end mb-1" style={{ color: 'var(--mint-on-surface)' }}>
+                      <Coins className="w-5 h-5" strokeWidth={1.75} />
                       <span className="text-lg tracking-tight">{activeCommitment.reward}</span>
                     </div>
                     <div className="text-xs text-soft-3">tokens</div>
@@ -1527,8 +1527,8 @@ export function AdCampaigns({
           onClick={() => setView('bonus-rewards')}
         >
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Gift className="w-3.5 h-3.5" style={{ color: '#00FFC2' }} strokeWidth={1.75} />
+            <div className="flex items-center gap-2" style={{ color: 'var(--mint-on-surface)' }}>
+              <Gift className="w-3.5 h-3.5" strokeWidth={1.75} />
               <span className="text-xs font-semibold">Bonus Rewards Available</span>
             </div>
             <ChevronRight className="w-3.5 h-3.5 text-soft-3" />

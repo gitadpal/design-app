@@ -18,7 +18,7 @@ export function EinkCasePrompt({ open, onClose }: EinkCasePromptProps) {
           {/* Icon */}
           <div className="w-14 h-14 rounded-2xl mx-auto flex items-center justify-center"
             style={{ background: 'linear-gradient(135deg, rgba(188,19,254,0.15) 0%, rgba(0,255,194,0.15) 100%)', border: '1px solid rgba(0,255,194,0.25)' }}>
-            <Frame className="w-7 h-7" style={{ color: '#00FFC2' }} />
+            <Frame className="w-7 h-7" style={{ color: 'var(--mint-on-surface)' }} />
           </div>
 
           <DialogHeader className="space-y-1.5">
@@ -29,7 +29,7 @@ export function EinkCasePrompt({ open, onClose }: EinkCasePromptProps) {
           </DialogHeader>
 
           {/* Steps */}
-          <div className="text-left space-y-3 rounded-xl p-4" style={{ background: '#2C2C2C' }}>
+          <div className="text-left space-y-3 rounded-xl p-4 bg-soft-1">
             {[
               'Attach the E-Ink case to your iPhone',
               'Enable NFC and Bluetooth in iOS Settings',
@@ -38,7 +38,7 @@ export function EinkCasePrompt({ open, onClose }: EinkCasePromptProps) {
               <div key={i} className="flex items-start gap-3">
                 <span
                   className="w-5 h-5 rounded-full text-xs flex items-center justify-center flex-shrink-0 mt-0.5 font-bold"
-                  style={{ background: 'rgba(0,255,194,0.15)', border: '1px solid rgba(0,255,194,0.35)', color: '#00FFC2' }}
+                  style={{ background: 'rgba(0,255,194,0.15)', border: '1px solid rgba(0,255,194,0.35)', color: 'var(--mint-on-surface)' }}
                 >
                   {i + 1}
                 </span>

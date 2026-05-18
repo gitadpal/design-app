@@ -24,7 +24,7 @@ export function WalletConnectPrompt({ open, onClose, onGoToWallet }: WalletConne
               border: '1px solid rgba(0,255,194,0.25)',
             }}
           >
-            <Wallet className="w-7 h-7" style={{ color: '#00FFC2' }} />
+            <Wallet className="w-7 h-7" style={{ color: 'var(--mint-on-surface)' }} />
           </div>
 
           <DialogHeader className="space-y-1.5">
@@ -35,7 +35,7 @@ export function WalletConnectPrompt({ open, onClose, onGoToWallet }: WalletConne
           </DialogHeader>
 
           {/* Steps */}
-          <div className="text-left space-y-3 rounded-xl p-4" style={{ background: '#2C2C2C' }}>
+          <div className="text-left space-y-3 rounded-xl p-4 bg-soft-1">
             {[
               'Go to the Assets tab to set up your wallet.',
               'Tap Connect Wallet and confirm your address.',
@@ -47,7 +47,7 @@ export function WalletConnectPrompt({ open, onClose, onGoToWallet }: WalletConne
                   style={{
                     background: 'rgba(0,255,194,0.15)',
                     border: '1px solid rgba(0,255,194,0.35)',
-                    color: '#00FFC2',
+                    color: 'var(--mint-on-surface)',
                   }}
                 >
                   {i + 1}
@@ -60,7 +60,7 @@ export function WalletConnectPrompt({ open, onClose, onGoToWallet }: WalletConne
           <div className="flex gap-2">
             <Button
               variant="outline"
-              className="flex-1 border-[#444] bg-transparent text-soft-5 hover:bg-[#2C2C2C] hover:text-foreground"
+              className="flex-1 border-soft-2 bg-transparent text-soft-3 hover:bg-soft-1 hover:text-foreground"
               onClick={onClose}
             >
               Cancel
