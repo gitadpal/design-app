@@ -2,17 +2,20 @@ import { useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { Sparkles, Image as ImageIcon, ArrowRight, Check } from 'lucide-react';
 import { pickRandomSample, type SamplePhoto } from './samplePhotos';
+import { getOnboardingTokens, type OnboardingTheme } from './onboardingTheme';
 
 interface StepFirstCastProps {
   onCast: (photo: SamplePhoto) => void;
+  theme: OnboardingTheme;
 }
 
 type Phase = 'choose' | 'preview' | 'casting' | 'done';
 
-export function StepFirstCast({ onCast }: StepFirstCastProps) {
+export function StepFirstCast({ onCast, theme }: StepFirstCastProps) {
   const [phase, setPhase] = useState<Phase>('choose');
   const [photo, setPhoto] = useState<SamplePhoto | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const tokens = getOnboardingTokens(theme);
 
   const handleSurprise = () => {
     setPhoto(pickRandomSample());
@@ -42,10 +45,16 @@ export function StepFirstCast({ onCast }: StepFirstCastProps) {
   };
 
   return (
-    <div className="w-full h-full flex flex-col px-7 pt-20 pb-10 bg-[#0A0A0A] relative overflow-hidden">
+    <div
+      className="w-full h-full flex flex-col px-7 pt-20 pb-10 relative overflow-hidden"
+      style={{ background: tokens.bg }}
+    >
       <header className="text-center space-y-2 relative z-10">
-        <h2 className="text-2xl font-semibold text-white">Cast your first photo</h2>
-        <p className="text-sm text-white/55 max-w-[280px] mx-auto leading-relaxed">
+        <h2 className="text-2xl font-semibold" style={{ color: tokens.text }}>Cast your first photo</h2>
+        <p
+          className="text-sm max-w-[280px] mx-auto leading-relaxed"
+          style={{ color: tokens.textMuted }}
+        >
           Send any image to your E-ink case. We&apos;ll dither it for the screen automatically.
         </p>
       </header>
@@ -67,6 +76,7 @@ export function StepFirstCast({ onCast }: StepFirstCastProps) {
                 icon={<Sparkles className="w-6 h-6" style={{ color: '#00FFC2' }} />}
                 accent="linear-gradient(135deg, rgba(0,255,194,0.18), rgba(0,255,194,0.04))"
                 onClick={handleSurprise}
+                theme={theme}
               />
               <ChoiceCard
                 title="From album"
@@ -74,6 +84,7 @@ export function StepFirstCast({ onCast }: StepFirstCastProps) {
                 icon={<ImageIcon className="w-6 h-6" style={{ color: '#BC13FE' }} />}
                 accent="linear-gradient(135deg, rgba(188,19,254,0.22), rgba(188,19,254,0.04))"
                 onClick={handleAlbumPick}
+                theme={theme}
               />
               <input
                 ref={fileInputRef}
@@ -93,10 +104,13 @@ export function StepFirstCast({ onCast }: StepFirstCastProps) {
               transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
               className="flex flex-col items-center"
             >
-              <CasePreview src={photo.src} phase={phase} />
+              <CasePreview src={photo.src} phase={phase} theme={theme} />
               <div className="mt-4 text-center">
-                <div className="text-sm font-semibold text-white">{photo.name}</div>
-                <div className="text-[11px] uppercase tracking-wider text-white/45 mt-0.5">
+                <div className="text-sm font-semibold" style={{ color: tokens.text }}>{photo.name}</div>
+                <div
+                  className="text-[11px] uppercase tracking-wider mt-0.5"
+                  style={{ color: tokens.textDim }}
+                >
                   {phase === 'done' ? 'Cast complete' : phase === 'casting' ? 'Transferring…' : 'Ready to cast'}
                 </div>
               </div>
@@ -151,51 +165,63 @@ function ChoiceCard({
   icon,
   accent,
   onClick,
+  theme,
 }: {
   title: string;
   subtitle: string;
   icon: React.ReactNode;
   accent: string;
   onClick: () => void;
+  theme: OnboardingTheme;
 }) {
+  const tokens = getOnboardingTokens(theme);
   return (
     <button
       onClick={onClick}
       className="rounded-2xl p-5 text-left flex flex-col gap-3 active:scale-[0.98] transition-transform"
       style={{
-        background: '#1C1C1E',
-        border: '1px solid rgba(255,255,255,0.08)',
+        background: tokens.cardBg,
+        border: `1px solid ${tokens.cardBorder}`,
         minHeight: 130,
       }}
     >
       <div
         className="w-11 h-11 rounded-xl flex items-center justify-center"
-        style={{ background: accent, border: '1px solid rgba(255,255,255,0.06)' }}
+        style={{
+          background: accent,
+          border: `1px solid ${theme === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'}`,
+        }}
       >
         {icon}
       </div>
       <div>
-        <div className="text-sm font-semibold text-white">{title}</div>
-        <div className="text-[11px] text-white/45 mt-0.5">{subtitle}</div>
+        <div className="text-sm font-semibold" style={{ color: tokens.text }}>{title}</div>
+        <div className="text-[11px] mt-0.5" style={{ color: tokens.textDim }}>{subtitle}</div>
       </div>
     </button>
   );
 }
 
-function CasePreview({ src, phase }: { src: string; phase: Phase }) {
+function CasePreview({ src, phase, theme }: { src: string; phase: Phase; theme: OnboardingTheme }) {
   const transferring = phase === 'casting';
   const done = phase === 'done';
   const W = 300;
   const H = 432;
+  const isDark = theme === 'dark';
 
   return (
     <div className="relative" style={{ width: W, height: H }}>
       {/* Phone+case frame */}
       <div
-        className="absolute inset-0 rounded-[40px] border border-white/15 overflow-hidden"
+        className="absolute inset-0 rounded-[40px] overflow-hidden"
         style={{
-          background: 'linear-gradient(160deg, rgba(255,255,255,0.05), transparent)',
-          boxShadow: '0 36px 90px -20px rgba(188,19,254,0.32), 0 12px 28px -10px rgba(0,255,194,0.18)',
+          border: `1px solid ${isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)'}`,
+          background: isDark
+            ? 'linear-gradient(160deg, rgba(255,255,255,0.05), transparent)'
+            : 'linear-gradient(160deg, rgba(0,0,0,0.04), transparent)',
+          boxShadow: isDark
+            ? '0 36px 90px -20px rgba(188,19,254,0.32), 0 12px 28px -10px rgba(0,255,194,0.18)'
+            : '0 36px 90px -20px rgba(188,19,254,0.20), 0 12px 28px -10px rgba(0,255,194,0.14)',
         }}
       >
         {/* The E-ink face */}

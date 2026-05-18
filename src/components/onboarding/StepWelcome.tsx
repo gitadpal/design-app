@@ -4,6 +4,7 @@ import type { MotionValue } from 'motion/react';
 import iphoneBackWhiteImg from 'figma:asset/771d461e7de4d0c40d4ef5fcc5c59768d30ec60e.png';
 import iphoneBackOrangeImg from '@/assets/iphone-case-orange.png';
 import { samplePhotosByCategory, type SampleCategory } from './samplePhotos';
+import { getOnboardingTokens, type OnboardingTheme } from './onboardingTheme';
 
 // Rotating headline copy. Two angles on the product, each paired with a case
 // color so the device shifts as the message shifts:
@@ -170,9 +171,10 @@ function ThemeColorProvider({
 interface StepWelcomeProps {
   onStart: () => void;
   onSkip: () => void;
+  theme: OnboardingTheme;
 }
 
-export function StepWelcome({ onStart, onSkip }: StepWelcomeProps) {
+export function StepWelcome({ onStart, onSkip, theme }: StepWelcomeProps) {
   // titleIdx is owned here (not in StepWelcomeInner) so ThemeColorProvider —
   // which wraps the inner — can read the current category and pick the
   // matching palette (earn → Prism violet/mint, play → orange spectrum).
@@ -194,7 +196,7 @@ export function StepWelcome({ onStart, onSkip }: StepWelcomeProps) {
 
   return (
     <ThemeColorProvider category={TITLES[titleIdx].category}>
-      <StepWelcomeInner titleIdx={titleIdx} onStart={onStart} onSkip={onSkip} />
+      <StepWelcomeInner titleIdx={titleIdx} onStart={onStart} onSkip={onSkip} theme={theme} />
     </ThemeColorProvider>
   );
 }
@@ -203,36 +205,42 @@ function StepWelcomeInner({
   titleIdx,
   onStart,
   onSkip,
+  theme,
 }: StepWelcomeProps & { titleIdx: number }) {
   const { gradient } = useThemeColors();
+  const tokens = getOnboardingTokens(theme);
+  const isDark = theme === 'dark';
+  // In light mode the headline glitch shadows (red+cyan chromatic split) would
+  // wash out on white. The orange "Play" title also needs darker contrast.
+  const titleColorOverride = !isDark
+    ? (TITLES[titleIdx].category === 'play' ? '#C0421A' : '#1A1A1A')
+    : TITLES[titleIdx].color;
+  const subtitleColor = isDark ? 'rgba(255,255,255,0.82)' : 'rgba(26,26,26,0.78)';
+  const subtitleShadow = isDark
+    ? '0 0 12px rgba(0,255,194,0.28), 0 1px 0 rgba(0,0,0,0.4)'
+    : '0 0 8px rgba(0,255,194,0.16)';
+  const skipColor = isDark ? 'rgba(255,255,255,0.55)' : 'rgba(26,26,26,0.55)';
 
   return (
     <div
-      className="relative w-full h-full overflow-hidden bg-[#0A0A0A]"
-      // `isolation: isolate` keeps every `mix-blend-mode` descendant compositing
-      // against siblings inside this root instead of bubbling up to whatever
-      // happens to be behind the SPA. On mobile Chrome that ambiguity is what
-      // makes the whole scene flash between composited and unrendered states.
-      style={{ isolation: 'isolate' }}
+      className="relative w-full h-full overflow-hidden"
+      style={{ isolation: 'isolate', background: tokens.bg }}
     >
-      <AnimatedBackdrop />
+      <AnimatedBackdrop theme={theme} />
 
       {/* Full-bleed hero device */}
       <PhoneCaseScene titleIdx={titleIdx} />
 
-      {/* Bottom legibility scrim — fades the device into a dark plate for the text */}
+      {/* Bottom legibility scrim — fades the device into a clean plate for the text */}
       <div
         className="absolute inset-x-0 bottom-0 h-[58%] pointer-events-none z-[5]"
-        style={{
-          background:
-            'linear-gradient(to bottom, transparent 0%, rgba(10,10,10,0.55) 38%, rgba(10,10,10,0.92) 72%, #0A0A0A 100%)',
-        }}
+        style={{ background: tokens.bottomScrim }}
       />
 
       {/* Text + CTAs overlay */}
       <div className="absolute inset-x-0 bottom-0 z-10 px-8 pb-10 pt-6 space-y-6">
         <div className="text-center space-y-3">
-          <RotatingTitle idx={titleIdx} />
+          <RotatingTitle idx={titleIdx} colorOverride={titleColorOverride} />
           <motion.p
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
@@ -240,16 +248,13 @@ function StepWelcomeInner({
             className="text-[11px] font-semibold uppercase"
             style={{
               letterSpacing: '0.42em',
-              // Trailing letter-spacing pushes the line off-center by half an em;
-              // a matching left padding re-centers it under the headline.
               paddingLeft: '0.42em',
-              color: 'rgba(255,255,255,0.82)',
-              textShadow:
-                '0 0 12px rgba(0,255,194,0.28), 0 1px 0 rgba(0,0,0,0.4)',
+              color: subtitleColor,
+              textShadow: subtitleShadow,
             }}
           >
-            Cast <span style={{ color: 'rgba(0,255,194,0.85)' }}>·</span> Earn{' '}
-            <span style={{ color: 'rgba(188,19,254,0.85)' }}>·</span> Play
+            Cast <span style={{ color: isDark ? 'rgba(0,255,194,0.85)' : '#00B589' }}>·</span> Earn{' '}
+            <span style={{ color: isDark ? 'rgba(188,19,254,0.85)' : '#7A0FA8' }}>·</span> Play
           </motion.p>
         </div>
 
@@ -272,7 +277,8 @@ function StepWelcomeInner({
           </motion.button>
           <button
             onClick={onSkip}
-            className="w-full h-10 text-sm font-medium text-white/55 hover:text-white/85 transition-colors"
+            className="w-full h-10 text-sm font-medium transition-colors"
+            style={{ color: skipColor }}
           >
             Skip for now
           </button>
@@ -282,13 +288,14 @@ function StepWelcomeInner({
   );
 }
 
-function RotatingTitle({ idx }: { idx: number }) {
+function RotatingTitle({ idx, colorOverride }: { idx: number; colorOverride?: string }) {
   // Headline cycles through TITLES with a glitch-scratch transition between each.
   // The h1 is absolutely positioned inside a fixed-height relative wrapper so the
   // enter/exit animation can overlap without shifting the layout below. The
   // `idx` is owned by `StepWelcomeInner` so this title and the phone-case
   // crossfade swap in lockstep.
-  const { lines: [lineA, lineB], color } = TITLES[idx];
+  const { lines: [lineA, lineB], color: defaultColor } = TITLES[idx];
+  const color = colorOverride ?? defaultColor;
 
   return (
     // Fixed height matches `text-[30px]` × leading-[1.1] × 2 lines ≈ 66px. We
@@ -443,7 +450,18 @@ function ThemedSilkTint() {
   );
 }
 
-function AnimatedBackdrop() {
+function AnimatedBackdrop({ theme }: { theme: OnboardingTheme }) {
+  const isDark = theme === 'dark';
+  // The silk/orbs/ribbon scene was tuned for `mix-blend-mode: screen` over a
+  // near-black base — bright colors brighten further. On a white base, screen
+  // pushes most pixels to pure white, so the scene vanishes. For light mode we
+  // wrap the whole composition in a single `mix-blend-mode: multiply` layer:
+  // the inner screen-blends still composite against the wrapper's own buffer
+  // (which is dark-ish where the colors land), and the final multiply paints
+  // those colored regions down onto the white page, producing the same hue
+  // motion as a soft watercolor wash.
+  const wrapperBlend = isDark ? ('normal' as const) : ('multiply' as const);
+  const wrapperOpacity = isDark ? 1 : 0.55;
   // Silk-river flow — wide diagonal ribbons translate continuously across the viewport.
   // Each ribbon carries multiple gradient "peaks" so a new peak always enters from one side
   // as another exits, giving a continuous, visibly-flowing river current.
@@ -491,16 +509,27 @@ function AnimatedBackdrop() {
       // rotating conic all blend against each other here, not against the page.
       // `translateZ(0)` promotes this subtree to its own compositor layer so
       // mobile Chrome can keep the blend buffer stable across frames.
-      style={{ isolation: 'isolate', transform: 'translateZ(0)' }}
+      // `mixBlendMode: multiply` only kicks in for light mode (see comment
+      // above) — in dark mode it stays at 'normal' so the original visuals
+      // composite unchanged.
+      style={{
+        isolation: 'isolate',
+        transform: 'translateZ(0)',
+        mixBlendMode: wrapperBlend,
+        opacity: wrapperOpacity,
+      }}
     >
-      {/* Deep base wash */}
-      <div
-        className="absolute inset-0"
-        style={{
-          background:
-            'radial-gradient(ellipse at 30% 20%, rgba(40,10,60,0.55) 0%, transparent 55%), radial-gradient(ellipse at 70% 80%, rgba(0,60,55,0.5) 0%, transparent 60%)',
-        }}
-      />
+      {/* Deep base wash — only needed in dark mode; in light mode a deep
+          violet/teal wash would multiply down to muddy plum across the page. */}
+      {isDark && (
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              'radial-gradient(ellipse at 30% 20%, rgba(40,10,60,0.55) 0%, transparent 55%), radial-gradient(ellipse at 70% 80%, rgba(0,60,55,0.5) 0%, transparent 60%)',
+          }}
+        />
+      )}
 
       {/* Ribbons: desktop gets the full four-ribbon parallax stack; touch
           devices get a single CSS-animated silk-flow layer (`MobileSilkFlow`
@@ -560,14 +589,18 @@ function AnimatedBackdrop() {
       {/* Live theme tint — pulls the whole silk-river into the page's current palette. */}
       <ThemedSilkTint />
 
-      {/* Stronger edge vignette so the corners darken and the BG recedes. */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background:
-            'radial-gradient(ellipse at 50% 40%, transparent 35%, rgba(0,0,0,0.55) 100%)',
-        }}
-      />
+      {/* Stronger edge vignette — corners darken in dark mode, but for light mode
+          a black vignette would multiply onto white and turn the edges grey, so
+          we skip it entirely (the page bg + scrim handle legibility there). */}
+      {isDark && (
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background:
+              'radial-gradient(ellipse at 50% 40%, transparent 35%, rgba(0,0,0,0.55) 100%)',
+          }}
+        />
+      )}
 
       {/* Silk shimmer — soft cross-cutting highlight that breathes for "fabric" feel.
           Skipped on touch devices: full-viewport screen-blend layer animating x/opacity

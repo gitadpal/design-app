@@ -1,30 +1,31 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
+  /* AdPal brand: Pure White + Matte Obsidian structure for bright mode. */
   --font-size: 16px;
   --background: #ffffff;
-  --foreground: oklch(0.145 0 0);
+  --foreground: #1A1A1A;
   --card: #ffffff;
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: #030213;
-  --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.95 0.0058 264.53);
-  --secondary-foreground: #030213;
-  --muted: #ececf0;
-  --muted-foreground: #717182;
-  --accent: #e9ebef;
-  --accent-foreground: #030213;
+  --card-foreground: #1A1A1A;
+  --popover: #ffffff;
+  --popover-foreground: #1A1A1A;
+  --primary: #1A1A1A;
+  --primary-foreground: #ffffff;
+  --secondary: #F5F5F5;
+  --secondary-foreground: #1A1A1A;
+  --muted: #F5F5F5;
+  --muted-foreground: rgba(26, 26, 26, 0.55);
+  --accent: #F0F0F0;
+  --accent-foreground: #1A1A1A;
   --destructive: #d4183d;
   --destructive-foreground: #ffffff;
-  --border: rgba(0, 0, 0, 0.1);
-  --input: transparent;
-  --input-background: #f3f3f5;
-  --switch-background: #cbced4;
+  --border: rgba(26, 26, 26, 0.10);
+  --input: rgba(26, 26, 26, 0.10);
+  --input-background: #F5F5F5;
+  --switch-background: rgba(26, 26, 26, 0.18);
   --font-weight-medium: 500;
   --font-weight-normal: 400;
-  --ring: oklch(0.708 0 0);
+  --ring: rgba(26, 26, 26, 0.30);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
@@ -39,28 +40,65 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+  /* Image-backdrop primitives (Cast gallery, campaign detail, etc.). Bright mode hides
+     the image with a heavy white wash so the page reads as white with subtle texture. */
+  --backdrop-base: #ffffff;
+  --backdrop-brightness: 1.10;
+  --backdrop-vignette: linear-gradient(to bottom, rgba(255, 255, 255, 0.78) 0%, rgba(255, 255, 255, 0.55) 30%, rgba(255, 255, 255, 0.65) 70%, rgba(255, 255, 255, 0.92) 100%);
+  --backdrop-grain-blend: multiply;
+  --backdrop-grain-opacity: 0.06;
+  --modal-scrim: rgba(0, 0, 0, 0.32);
+  /* Glass tiles over image-driven backdrops (campaign detail / status / cast preview).
+     Bright mode uses mostly-opaque white so tiles stand off the bright wash; dark mode
+     uses translucent white to feel like frosted glass over the dark image. */
+  --glass-bg: rgba(255, 255, 255, 0.72);
+  --glass-bg-strong: rgba(255, 255, 255, 0.86);
+  --glass-border: rgba(26, 26, 26, 0.10);
+  --scrim-bg: rgba(255, 255, 255, 0.55);
+  /* On-surface variants of the Prism brand colors. The pure brand neons
+     (#00FFC2 / #BC13FE) are tuned for dark surfaces; on white cards they glare
+     and lose legibility. Use these darker variants for body text on light. */
+  --mint-on-surface: #0AAE82;
+  --violet-on-surface: #8A0FC2;
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.145 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.145 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.985 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
+  /* AdPal brand: Matte Obsidian + Prism Gradient on dark surfaces */
+  --background: #0A0A0A;
+  --foreground: #ffffff;
+  --card: #1A1A1A;
+  --card-foreground: #ffffff;
+  --popover: #1A1A1A;
+  --popover-foreground: #ffffff;
+  --primary: #ffffff;
+  --primary-foreground: #0A0A0A;
+  --secondary: #1F1F1F;
+  --secondary-foreground: #ffffff;
+  --muted: #1A1A1A;
+  --muted-foreground: rgba(255, 255, 255, 0.55);
+  --accent: #262626;
+  --accent-foreground: #ffffff;
   --destructive: oklch(0.396 0.141 25.723);
   --destructive-foreground: oklch(0.637 0.237 25.331);
-  --border: oklch(0.269 0 0);
-  --input: oklch(0.269 0 0);
-  --ring: oklch(0.439 0 0);
+  --border: rgba(255, 255, 255, 0.10);
+  --input: rgba(255, 255, 255, 0.10);
+  --input-background: #1A1A1A;
+  --switch-background: rgba(255, 255, 255, 0.18);
+  --ring: rgba(255, 255, 255, 0.30);
+  /* Image-backdrop primitives — original dark recipe matched to Cast gallery. */
+  --backdrop-base: #0a0a0a;
+  --backdrop-brightness: 0.55;
+  --backdrop-vignette: linear-gradient(to bottom, rgba(10, 10, 10, 0.55) 0%, rgba(10, 10, 10, 0.25) 30%, rgba(10, 10, 10, 0.45) 70%, rgba(10, 10, 10, 0.85) 100%);
+  --backdrop-grain-blend: overlay;
+  --backdrop-grain-opacity: 0.25;
+  --modal-scrim: rgba(0, 0, 0, 0.72);
+  --glass-bg: rgba(255, 255, 255, 0.10);
+  --glass-bg-strong: rgba(255, 255, 255, 0.14);
+  --glass-border: rgba(255, 255, 255, 0.18);
+  --scrim-bg: rgba(0, 0, 0, 0.22);
+  /* Dark surfaces — full brand neons are legible at full brightness. */
+  --mint-on-surface: #00FFC2;
+  --violet-on-surface: #BC13FE;
   --font-weight-medium: 500;
   --font-weight-normal: 400;
   --chart-1: oklch(0.488 0.243 264.376);
@@ -188,59 +226,45 @@ html {
   font-size: var(--font-size);
 }
 
-/* Web3 Modern Gradients */
+/* Brand gradients — all derived from the Prism Gradient (Cyber Mint ↔ Electric Violet).
+   Legacy gradient-* utilities are kept as aliases so existing call sites stay valid. */
 @layer utilities {
-  .gradient-primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  }
-  
-  .gradient-secondary {
-    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-  }
-  
+  .gradient-primary,
+  .gradient-earn,
+  .gradient-cast,
+  .gradient-wallet,
   .gradient-success {
-    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    background: linear-gradient(135deg, #00FFC2 0%, #BC13FE 100%);
   }
-  
-  .gradient-earn {
-    background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
-  }
-  
-  .gradient-cast {
-    background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
-  }
-  
-  .gradient-wallet {
+
+  .gradient-secondary {
+    /* Prism reversed for differentiation against gradient-primary */
     background: linear-gradient(135deg, #BC13FE 0%, #00FFC2 100%);
   }
-  
+
   .gradient-settings {
-    background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+    /* Cooler Prism variant for utility surfaces */
+    background: linear-gradient(135deg, #4678FF 0%, #00FFC2 100%);
   }
-  
+
   .glass-effect {
-    background: rgba(255, 255, 255, 0.7);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(14px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
   }
-  
+
   .glow-primary {
-    box-shadow: 0 0 20px rgba(102, 126, 234, 0.5);
+    box-shadow: 0 0 24px -4px rgba(0, 255, 194, 0.45),
+                0 0 32px -10px rgba(188, 19, 254, 0.50);
   }
-  
+
   .glow-success {
-    box-shadow: 0 0 20px rgba(67, 233, 123, 0.5);
+    box-shadow: 0 0 20px rgba(0, 255, 194, 0.45);
   }
-  
-  .text-gradient-primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-  
+
+  .text-gradient-primary,
   .text-gradient-success {
-    background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+    background: linear-gradient(135deg, #00FFC2 0%, #BC13FE 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -258,5 +282,55 @@ html {
     text-transform: uppercase;
     letter-spacing: 0.05em;
     color: #9ca3af;
+  }
+
+  /* Theme-aware foreground tints — auto-flip between dark (white) and bright (Matte Obsidian) modes.
+     color-mix lets us derive each soft variant from --foreground without per-mode duplication. */
+  .text-soft-1 { color: color-mix(in srgb, var(--foreground) 90%, transparent); }
+  .text-soft-2 { color: color-mix(in srgb, var(--foreground) 70%, transparent); }
+  .text-soft-3 { color: color-mix(in srgb, var(--foreground) 55%, transparent); }
+  .text-soft-4 { color: color-mix(in srgb, var(--foreground) 40%, transparent); }
+  .text-soft-5 { color: color-mix(in srgb, var(--foreground) 30%, transparent); }
+
+  .bg-soft-1  { background-color: color-mix(in srgb, var(--foreground) 12%, transparent); }
+  .bg-soft-2  { background-color: color-mix(in srgb, var(--foreground) 8%, transparent); }
+  .bg-soft-3  { background-color: color-mix(in srgb, var(--foreground) 5%, transparent); }
+  .bg-soft-4  { background-color: color-mix(in srgb, var(--foreground) 3%, transparent); }
+
+  .border-soft-1 { border-color: color-mix(in srgb, var(--foreground) 22%, transparent); }
+  .border-soft-2 { border-color: color-mix(in srgb, var(--foreground) 14%, transparent); }
+  .border-soft-3 { border-color: color-mix(in srgb, var(--foreground) 10%, transparent); }
+
+  /* Frosted-glass tiles meant to sit over the blurred image backdrop sub-views.
+     These do NOT mirror the foreground tone — they always tint white, so cards
+     read as floating panels above the page atmosphere in both themes. */
+  .bg-glass-1 { background-color: var(--glass-bg); }
+  .bg-glass-2 { background-color: var(--glass-bg-strong); }
+  .border-glass { border-color: var(--glass-border); }
+  .bg-scrim { background-color: var(--scrim-bg); }
+  .hover\:bg-glass-1:hover { background-color: var(--glass-bg); }
+  .hover\:bg-glass-2:hover { background-color: var(--glass-bg-strong); }
+
+  .hover\:bg-soft-1:hover { background-color: color-mix(in srgb, var(--foreground) 12%, transparent); }
+  .hover\:bg-soft-2:hover { background-color: color-mix(in srgb, var(--foreground) 8%, transparent); }
+  .hover\:bg-soft-3:hover { background-color: color-mix(in srgb, var(--foreground) 5%, transparent); }
+  .active\:bg-soft-2:active { background-color: color-mix(in srgb, var(--foreground) 8%, transparent); }
+
+  /* Prism Gradient — brand signature: Cyber Mint → Electric Violet */
+  .prism-gradient {
+    background: linear-gradient(90deg, #00FFC2 0%, #BC13FE 100%);
+  }
+  .prism-gradient-135 {
+    background: linear-gradient(135deg, #00FFC2 0%, #BC13FE 100%);
+  }
+
+  /* 1px Prism Gradient ring around a card. Apply to a wrapper; child renders as the actual surface. */
+  .prism-ring {
+    position: relative;
+    border-radius: var(--radius-xl);
+    padding: 1px;
+    background: linear-gradient(135deg, #00FFC2 0%, #BC13FE 100%);
+    box-shadow: 0 0 24px -6px rgba(0, 255, 194, 0.35),
+                0 0 32px -12px rgba(188, 19, 254, 0.40);
   }
 }

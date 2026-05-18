@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { Wallet, Coins, Check, ArrowRight } from 'lucide-react';
 import type { SamplePhoto } from './samplePhotos';
+import { getOnboardingTokens, type OnboardingTheme } from './onboardingTheme';
 
 interface StepSimulatedEarnProps {
   castImage: SamplePhoto | null;
   onDone: () => void;
+  theme: OnboardingTheme;
 }
 
 type Beat = 'wallet' | 'campaign' | 'swap' | 'earning' | 'claim' | 'finale';
@@ -29,10 +31,11 @@ const CAMPAIGN = {
 
 const FAKE_ADDRESS = '0xA1c9...F3E2';
 
-export function StepSimulatedEarn({ castImage, onDone }: StepSimulatedEarnProps) {
+export function StepSimulatedEarn({ castImage, onDone, theme }: StepSimulatedEarnProps) {
   const [beatIndex, setBeatIndex] = useState(0);
   const [tokenCount, setTokenCount] = useState(0);
   const beat = BEAT_SEQUENCE[beatIndex].beat;
+  const tokens = getOnboardingTokens(theme);
 
   useEffect(() => {
     if (beat === 'finale') return;
@@ -59,14 +62,20 @@ export function StepSimulatedEarn({ castImage, onDone }: StepSimulatedEarnProps)
     BEAT_SEQUENCE.findIndex((b) => b.beat === target) <= beatIndex;
 
   return (
-    <div className="w-full h-full flex flex-col px-7 pt-20 pb-10 bg-[#0A0A0A] relative overflow-hidden">
-      <BackdropGlow active={beat !== 'wallet'} />
+    <div
+      className="w-full h-full flex flex-col px-7 pt-20 pb-10 relative overflow-hidden"
+      style={{ background: tokens.bg }}
+    >
+      <BackdropGlow active={beat !== 'wallet'} theme={theme} />
 
       <header className="text-center space-y-2 relative z-10">
-        <h2 className="text-2xl font-semibold text-white">
+        <h2 className="text-2xl font-semibold" style={{ color: tokens.text }}>
           {beat === 'finale' ? "You're all set" : 'Earn your first tokens'}
         </h2>
-        <p className="text-sm text-white/55 max-w-[280px] mx-auto leading-relaxed">
+        <p
+          className="text-sm max-w-[280px] mx-auto leading-relaxed"
+          style={{ color: tokens.textMuted }}
+        >
           {beat === 'finale'
             ? 'A welcome bonus is on its way to your wallet.'
             : "Sit back — we'll walk you through how a paid cast works."}
@@ -74,7 +83,7 @@ export function StepSimulatedEarn({ castImage, onDone }: StepSimulatedEarnProps)
       </header>
 
       <div className="flex-1 flex flex-col items-center justify-center relative z-10 gap-6">
-        <CaseStage castImage={castImage} beat={beat} />
+        <CaseStage castImage={castImage} beat={beat} theme={theme} />
 
         <div className="w-full space-y-2.5">
           <BeatRow
@@ -83,6 +92,7 @@ export function StepSimulatedEarn({ castImage, onDone }: StepSimulatedEarnProps)
             active={beat === 'wallet'}
             done={beatReached('campaign')}
             icon={<Wallet className="w-4 h-4" />}
+            theme={theme}
           />
           <BeatRow
             label="Join campaign"
@@ -90,6 +100,7 @@ export function StepSimulatedEarn({ castImage, onDone }: StepSimulatedEarnProps)
             active={beat === 'campaign'}
             done={beatReached('swap')}
             icon={<CampaignDot />}
+            theme={theme}
           />
           <BeatRow
             label="Earn"
@@ -98,6 +109,7 @@ export function StepSimulatedEarn({ castImage, onDone }: StepSimulatedEarnProps)
             done={beatReached('claim')}
             icon={<Coins className="w-4 h-4" />}
             valueAccent={beat === 'earning' || beatReached('claim')}
+            theme={theme}
           />
         </div>
       </div>
@@ -129,16 +141,22 @@ export function StepSimulatedEarn({ castImage, onDone }: StepSimulatedEarnProps)
   );
 }
 
-function CaseStage({ castImage, beat }: { castImage: SamplePhoto | null; beat: Beat }) {
+function CaseStage({ castImage, beat, theme }: { castImage: SamplePhoto | null; beat: Beat; theme: OnboardingTheme }) {
   const showCampaignCreative = beat === 'swap' || beat === 'earning' || beat === 'claim' || beat === 'finale';
+  const isDark = theme === 'dark';
 
   return (
     <div className="relative w-[170px] h-[250px]">
       <div
-        className="absolute inset-0 rounded-[28px] border border-white/15 overflow-hidden"
+        className="absolute inset-0 rounded-[28px] overflow-hidden"
         style={{
-          background: 'linear-gradient(160deg, rgba(255,255,255,0.05), transparent)',
-          boxShadow: '0 24px 64px -16px rgba(0,255,194,0.18)',
+          border: `1px solid ${isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)'}`,
+          background: isDark
+            ? 'linear-gradient(160deg, rgba(255,255,255,0.05), transparent)'
+            : 'linear-gradient(160deg, rgba(0,0,0,0.04), transparent)',
+          boxShadow: isDark
+            ? '0 24px 64px -16px rgba(0,255,194,0.18)'
+            : '0 24px 64px -16px rgba(0,255,194,0.14)',
         }}
       >
         <div
@@ -209,6 +227,7 @@ function BeatRow({
   done,
   icon,
   valueAccent,
+  theme,
 }: {
   label: string;
   value: string;
@@ -216,35 +235,44 @@ function BeatRow({
   done: boolean;
   icon: React.ReactNode;
   valueAccent?: boolean;
+  theme: OnboardingTheme;
 }) {
   const dim = !active && !done;
+  const isDark = theme === 'dark';
+  const tokens = getOnboardingTokens(theme);
   return (
     <motion.div
       animate={{ opacity: dim ? 0.35 : 1 }}
       transition={{ duration: 0.3 }}
       className="flex items-center gap-3 px-4 py-2.5 rounded-xl"
       style={{
-        background: active ? 'rgba(0,255,194,0.06)' : '#16161A',
-        border: `1px solid ${active ? 'rgba(0,255,194,0.25)' : 'rgba(255,255,255,0.06)'}`,
+        background: active
+          ? 'rgba(0,255,194,0.06)'
+          : (isDark ? '#16161A' : '#F4F4F5'),
+        border: `1px solid ${active ? 'rgba(0,255,194,0.25)' : tokens.cardBorder}`,
       }}
     >
       <div
         className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
         style={{
-          background: done ? 'rgba(0,255,194,0.18)' : 'rgba(255,255,255,0.06)',
-          color: done ? '#00FFC2' : 'rgba(255,255,255,0.7)',
+          background: done
+            ? 'rgba(0,255,194,0.18)'
+            : (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'),
+          color: done
+            ? '#00FFC2'
+            : (isDark ? 'rgba(255,255,255,0.7)' : 'rgba(26,26,26,0.7)'),
         }}
       >
         {done ? <Check className="w-4 h-4" strokeWidth={3} /> : icon}
       </div>
       <div className="flex-1 min-w-0 flex items-center justify-between gap-3">
-        <span className="text-xs text-white/55">{label}</span>
+        <span className="text-xs" style={{ color: tokens.textMuted }}>{label}</span>
         <motion.span
           key={value}
           initial={{ opacity: 0, y: 4 }}
           animate={{ opacity: 1, y: 0 }}
-          className={`text-sm font-semibold truncate ${valueAccent ? '' : 'text-white'}`}
-          style={valueAccent ? { color: '#00FFC2' } : undefined}
+          className="text-sm font-semibold truncate"
+          style={{ color: valueAccent ? '#00FFC2' : tokens.text }}
         >
           {value}
         </motion.span>
@@ -294,7 +322,8 @@ function TokenBurst() {
   );
 }
 
-function BackdropGlow({ active }: { active: boolean }) {
+function BackdropGlow({ active, theme }: { active: boolean; theme: OnboardingTheme }) {
+  const isDark = theme === 'dark';
   return (
     <motion.div
       className="absolute inset-0 pointer-events-none"
@@ -304,8 +333,9 @@ function BackdropGlow({ active }: { active: boolean }) {
       <div
         className="absolute top-[20%] left-1/2 -translate-x-1/2 w-[420px] h-[420px] rounded-full"
         style={{
-          background:
-            'radial-gradient(circle, rgba(0,255,194,0.18) 0%, rgba(188,19,254,0.08) 40%, transparent 70%)',
+          background: isDark
+            ? 'radial-gradient(circle, rgba(0,255,194,0.18) 0%, rgba(188,19,254,0.08) 40%, transparent 70%)'
+            : 'radial-gradient(circle, rgba(0,255,194,0.28) 0%, rgba(188,19,254,0.14) 40%, transparent 72%)',
           filter: 'blur(50px)',
         }}
       />
