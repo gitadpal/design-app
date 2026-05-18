@@ -50,6 +50,13 @@ export default function App() {
     return (window.localStorage.getItem('adpal-theme') as 'dark' | 'light') ?? 'dark';
   });
   const isDark = theme === 'dark';
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (isDark) root.classList.add('dark');
+    else root.classList.remove('dark');
+  }, [isDark]);
+
   const toggleTheme = () => {
     setTheme((t) => {
       const next = t === 'dark' ? 'light' : 'dark';
