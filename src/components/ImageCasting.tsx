@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { flushSync } from 'react-dom';
 import { motion, AnimatePresence, useMotionValue, useTransform, animate } from 'motion/react';
 import { Card, CardContent } from './ui/card';
@@ -222,12 +222,18 @@ const galleryCollections = [
     title: 'Featured',
     icon: <Sparkles className="w-4 h-4" />,
     images: [
-      galleryImage('101', 'landscape_amber_hot_balloons.png'),
-      galleryImage('102', 'chinese_gold_pagoda_clouds.png'),
-      galleryImage('103', 'animal_red_panda_leaf.png'),
-      galleryImage('104', 'landscape_red_cliff_lighthouse.png'),
-      galleryImage('105', 'animal_gold_chinese_dragon.png'),
-      galleryImage('106', 'landscape_pink_snowy_village.png'),
+      galleryImage('f01', 'landscape_amber_hot_balloons.png'),
+      galleryImage('f02', 'chinese_gold_pagoda_clouds.png'),
+      galleryImage('f03', 'animal_red_panda_leaf.png'),
+      galleryImage('f04', 'landscape_red_cliff_lighthouse.png'),
+      galleryImage('f05', 'animal_gold_chinese_dragon.png'),
+      galleryImage('f06', 'landscape_pink_snowy_village.png'),
+      galleryImage('f07', 'city_gold_shanghai_landmarks.png'),
+      galleryImage('f08', 'chinese_red_lion_dance.png'),
+      galleryImage('f09', 'animal_white_snowy_owl.png'),
+      galleryImage('f10', 'landscape_amber_harvest_moon.png'),
+      galleryImage('f11', 'city_cream_paris_landmarks.png'),
+      galleryImage('f12', 'chinese_yellow_river_lanterns.png'),
     ],
   },
   {
@@ -235,14 +241,33 @@ const galleryCollections = [
     title: 'Animals',
     icon: <PawPrint className="w-4 h-4" />,
     images: [
-      galleryImage('201', 'animal_orange_tabby_kitten.png'),
-      galleryImage('202', 'animal_red_shiba_puppy.png'),
-      galleryImage('203', 'animal_white_panda_cub.png'),
-      galleryImage('204', 'animal_orange_snowy_fox.png'),
-      galleryImage('205', 'animal_red_squirrel_acorn.png'),
-      galleryImage('206', 'animal_orange_onsen_capybara.png'),
-      galleryImage('207', 'animal_white_snowy_owl.png'),
-      galleryImage('208', 'animal_brown_bear_cub.png'),
+      galleryImage('a01', 'animal_orange_tabby_kitten.png'),
+      galleryImage('a02', 'animal_red_shiba_puppy.png'),
+      galleryImage('a03', 'animal_white_panda_cub.png'),
+      galleryImage('a04', 'animal_orange_snowy_fox.png'),
+      galleryImage('a05', 'animal_red_squirrel_acorn.png'),
+      galleryImage('a06', 'animal_orange_onsen_capybara.png'),
+      galleryImage('a07', 'animal_white_snowy_owl.png'),
+      galleryImage('a08', 'animal_brown_bear_cub.png'),
+      galleryImage('a09', 'animal_amber_collie_puppy.png'),
+      galleryImage('a10', 'animal_amber_field_mouse.png'),
+      galleryImage('a11', 'animal_black_dwarf_rabbit.png'),
+      galleryImage('a12', 'animal_brown_capuchin_monkey.png'),
+      galleryImage('a13', 'animal_caramel_hamster_seeds.png'),
+      galleryImage('a14', 'animal_cream_lamb_meadow.png'),
+      galleryImage('a15', 'animal_ginger_netherland_rabbit.png'),
+      galleryImage('a16', 'animal_gold_chinese_dragon.png'),
+      galleryImage('a17', 'animal_gray_donkey_foal.png'),
+      galleryImage('a18', 'animal_orange_baby_orangutan.png'),
+      galleryImage('a19', 'animal_orange_calico_cat.png'),
+      galleryImage('a20', 'animal_orange_retriever_puppy.png'),
+      galleryImage('a21', 'animal_red_baby_dragon.png'),
+      galleryImage('a22', 'animal_red_dragon_hatchling.png'),
+      galleryImage('a23', 'animal_red_highland_calf.png'),
+      galleryImage('a24', 'animal_red_panda_leaf.png'),
+      galleryImage('a25', 'animal_red_piglet_dandelion.png'),
+      galleryImage('a26', 'animal_red_scarlet_ibis.png'),
+      galleryImage('a27', 'animal_red_scarlet_rooster.png'),
     ],
   },
   {
@@ -250,14 +275,21 @@ const galleryCollections = [
     title: 'Landscapes',
     icon: <Mountain className="w-4 h-4" />,
     images: [
-      galleryImage('301', 'landscape_red_autumn_bridge.png'),
-      galleryImage('302', 'landscape_amber_harvest_moon.png'),
-      galleryImage('303', 'landscape_red_maple_child.png'),
-      galleryImage('304', 'landscape_amber_desert_saguaro.png'),
-      galleryImage('305', 'landscape_blue_campfire_hikers.png'),
-      galleryImage('306', 'landscape_red_snowy_traveler.png'),
-      galleryImage('307', 'landscape_orange_ice_fisherman.png'),
-      galleryImage('308', 'landscape_gold_wheat_scarecrow.png'),
+      galleryImage('l01', 'landscape_red_autumn_bridge.png'),
+      galleryImage('l02', 'landscape_amber_harvest_moon.png'),
+      galleryImage('l03', 'landscape_red_maple_child.png'),
+      galleryImage('l04', 'landscape_amber_desert_saguaro.png'),
+      galleryImage('l05', 'landscape_blue_campfire_hikers.png'),
+      galleryImage('l06', 'landscape_red_snowy_traveler.png'),
+      galleryImage('l07', 'landscape_orange_ice_fisherman.png'),
+      galleryImage('l08', 'landscape_gold_wheat_scarecrow.png'),
+      galleryImage('l09', 'landscape_amber_hot_balloons.png'),
+      galleryImage('l10', 'landscape_amber_majestic_stag.png'),
+      galleryImage('l11', 'landscape_pink_snowy_village.png'),
+      galleryImage('l12', 'landscape_red_autumn_river.png'),
+      galleryImage('l13', 'landscape_red_cliff_lighthouse.png'),
+      galleryImage('l14', 'landscape_red_desert_camels.png'),
+      galleryImage('l15', 'landscape_red_rainy_umbrella.png'),
     ],
   },
   {
@@ -265,14 +297,16 @@ const galleryCollections = [
     title: 'Cities',
     icon: <Building2 className="w-4 h-4" />,
     images: [
-      galleryImage('401', 'city_cream_tokyo_blocks.png'),
-      galleryImage('402', 'city_orange_beijing_landmarks.png'),
-      galleryImage('403', 'city_cream_paris_landmarks.png'),
-      galleryImage('404', 'city_cream_newyork_landmarks.png'),
-      galleryImage('405', 'city_gold_shanghai_landmarks.png'),
-      galleryImage('406', 'city_sand_istanbul_landmarks.png'),
-      galleryImage('407', 'city_cream_london_landmarks.png'),
-      galleryImage('408', 'city_cream_berlin_landmarks.png'),
+      galleryImage('c01', 'city_cream_tokyo_blocks.png'),
+      galleryImage('c02', 'city_orange_beijing_landmarks.png'),
+      galleryImage('c03', 'city_cream_paris_landmarks.png'),
+      galleryImage('c04', 'city_cream_newyork_landmarks.png'),
+      galleryImage('c05', 'city_gold_shanghai_landmarks.png'),
+      galleryImage('c06', 'city_sand_istanbul_landmarks.png'),
+      galleryImage('c07', 'city_cream_london_landmarks.png'),
+      galleryImage('c08', 'city_cream_berlin_landmarks.png'),
+      galleryImage('c09', 'city_sand_guangzhou_landmarks.png'),
+      galleryImage('c10', 'city_sand_tokyo_skyline.png'),
     ],
   },
   {
@@ -280,17 +314,36 @@ const galleryCollections = [
     title: 'Culture',
     icon: <Landmark className="w-4 h-4" />,
     images: [
-      galleryImage('501', 'chinese_red_lantern_alley.png'),
-      galleryImage('502', 'chinese_red_lion_dance.png'),
-      galleryImage('503', 'chinese_amber_tea_house.png'),
-      galleryImage('504', 'chinese_yellow_river_lanterns.png'),
-      galleryImage('505', 'chinese_red_fireworks_family.png'),
-      galleryImage('506', 'chinese_red_courtyard_cat.png'),
-      galleryImage('507', 'christmas_red_ribbon_cabin.png'),
-      galleryImage('508', 'christmas_red_santa_retriever.png'),
+      galleryImage('u01', 'chinese_red_lantern_alley.png'),
+      galleryImage('u02', 'chinese_red_lion_dance.png'),
+      galleryImage('u03', 'chinese_amber_tea_house.png'),
+      galleryImage('u04', 'chinese_yellow_river_lanterns.png'),
+      galleryImage('u05', 'chinese_red_fireworks_family.png'),
+      galleryImage('u06', 'chinese_red_courtyard_cat.png'),
+      galleryImage('u07', 'christmas_red_ribbon_cabin.png'),
+      galleryImage('u08', 'christmas_red_santa_retriever.png'),
+      galleryImage('u09', 'chinese_amber_mountain_temple.png'),
+      galleryImage('u10', 'chinese_dusk_fishing_village.png'),
+      galleryImage('u11', 'chinese_gold_pagoda_clouds.png'),
+      galleryImage('u12', 'chinese_gold_rooftop_cat.png'),
+      galleryImage('u13', 'chinese_red_bamboo_girl.png'),
+      galleryImage('u14', 'chinese_red_firecracker_family.png'),
+      galleryImage('u15', 'chinese_red_panda_envelope.png'),
+      galleryImage('u16', 'chinese_red_rabbit_mandarins.png'),
+      galleryImage('u17', 'chinese_red_sparkler_siblings.png'),
+      galleryImage('u18', 'christmas_red_mailbox_letter.png'),
+      galleryImage('u19', 'christmas_red_ornament_girl.png'),
     ],
   },
 ];
+
+const GALLERY_PAGE_SIZE = 6;
+// Fraction of the Recent Casting section that should remain visible when the
+// sticky header pins. Combined with a negative `top` offset of -(1 - this) * H,
+// it keeps the bottom slice of the carousel + dot pager onscreen with the tab
+// bar pinned directly beneath it, while everything above is allowed to scroll
+// out of view.
+const RECENT_VISIBLE_FRACTION = 0.25;
 
 export function ImageCasting({ activeCommitment, currentDisplay, setCurrentDisplay, einkCaseAttached, onViewActiveStatus }: CastProps) {
   const [showFaceId, setShowFaceId] = useState(false);
@@ -305,6 +358,29 @@ export function ImageCasting({ activeCommitment, currentDisplay, setCurrentDispl
   const [activeRecent, setActiveRecent] = useState(
     Math.floor(recentImages.length / 2)
   );
+  const [activeCollectionId, setActiveCollectionId] = useState<string>(
+    galleryCollections[0].id
+  );
+  const [loadedCounts, setLoadedCounts] = useState<Record<string, number>>(() =>
+    Object.fromEntries(galleryCollections.map((c) => [c.id, GALLERY_PAGE_SIZE]))
+  );
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const tabsScrollRef = useRef<HTMLDivElement | null>(null);
+  const tabButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  // The Recent Casting block lives inside the sticky header. We measure it so
+  // the wrapper's sticky `top` can be set to -(1 - VISIBLE_FRACTION) * height:
+  // when pinned, only the bottom slice of the carousel remains in view and
+  // everything above scrolls away cleanly.
+  const recentCastingRef = useRef<HTMLDivElement | null>(null);
+  const [recentCastingHeight, setRecentCastingHeight] = useState(0);
+  // Tab-bar height is measured live too so the gallery's own scroll container
+  // below can be sized as exactly viewport - (visible-when-pinned slice +
+  // bottom nav). The visible-when-pinned slice = bottom 1/4 of Recent Casting
+  // + the entire tab bar.
+  const tabBarRef = useRef<HTMLDivElement | null>(null);
+  const [tabBarHeight, setTabBarHeight] = useState(56);
+  // Bounded scroll container for the gallery grid — see the JSX below.
+  const galleryScrollRef = useRef<HTMLDivElement | null>(null);
   // Horizontal drag offset that drives the entire carousel. The case itself
   // counter-translates by `-dragX` so it stays still while everything else
   // follows the finger; each peek thumbnail derives its own position from its
@@ -321,26 +397,74 @@ export function ImageCasting({ activeCommitment, currentDisplay, setCurrentDispl
     if (url) setCenterImageUrl(url);
   }, [activeRecent]);
 
-  // Track which gallery image is centered in the viewport — drives the fluid backdrop.
-  useEffect(() => {
-    const node = rootRef.current;
+  // Keep `recentCastingHeight` in sync with the rendered carousel block so the
+  // sticky-header `top` offset adapts if the layout changes (e.g. font size,
+  // viewport resize, banner appearing/disappearing). useLayoutEffect so the
+  // measurement lands before the first paint — otherwise the sticky wrapper
+  // would briefly use top:0 (offset = -0 * .75) and snap to the viewport top
+  // before the height is known.
+  useLayoutEffect(() => {
+    const node = recentCastingRef.current;
     if (!node) return;
-    const scrollRoot = (node.closest('main') as Element | null) ?? null;
+    const update = () => setRecentCastingHeight(node.offsetHeight);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(node);
+    return () => ro.disconnect();
+  }, []);
+
+  useLayoutEffect(() => {
+    const node = tabBarRef.current;
+    if (!node) return;
+    const update = () => setTabBarHeight(node.offsetHeight);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(node);
+    return () => ro.disconnect();
+  }, []);
+
+  // Load more images for the active collection when the sentinel scrolls into
+  // view. Stops once every image in that collection is on screen — no truly
+  // infinite source, just lazy reveal until the set is exhausted. The
+  // IntersectionObserver root is the gallery's own scroll container (not the
+  // outer page) since the grid lives in its own bounded overflow-y-auto
+  // region — see the gallery scroll wrapper below.
+  useEffect(() => {
+    const node = sentinelRef.current;
+    const scrollRoot = galleryScrollRef.current;
+    if (!node || !scrollRoot) return;
+    const collection = galleryCollections.find((c) => c.id === activeCollectionId);
+    if (!collection) return;
+    const total = collection.images.length;
+    if ((loadedCounts[activeCollectionId] ?? 0) >= total) return;
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
           if (entry.isIntersecting) {
-            const url = (entry.target as HTMLElement).dataset.galleryImage;
-            if (url) setCenterImageUrl(url);
+            setLoadedCounts((prev) => {
+              const current = prev[activeCollectionId] ?? 0;
+              if (current >= total) return prev;
+              return {
+                ...prev,
+                [activeCollectionId]: Math.min(total, current + GALLERY_PAGE_SIZE),
+              };
+            });
           }
         }
       },
-      { root: scrollRoot, rootMargin: '-45% 0px -45% 0px', threshold: 0 }
+      { root: scrollRoot, rootMargin: '0px 0px 240px 0px', threshold: 0 }
     );
-    const targets = node.querySelectorAll<HTMLElement>('[data-gallery-image]');
-    targets.forEach((el) => observer.observe(el));
+    observer.observe(node);
     return () => observer.disconnect();
-  }, []);
+  }, [activeCollectionId, loadedCounts]);
+
+  // Note on the fluid backdrop: the backdrop image is driven solely by the
+  // Recent Casting carousel's active item now. A previous version also swapped
+  // the backdrop as gallery cards crossed the viewport center on scroll, but
+  // that caused the bg behind Quick Cast / Recent Casting / Featured to shift
+  // every few hundred pixels of scrolling, which read as visual noise — the
+  // user should only see the atmosphere change for an explicit gesture (a
+  // carousel swipe), not as a side effect of moving through the page.
 
   useEffect(() => {
     if (activeCommitment) {
@@ -398,6 +522,48 @@ export function ImageCasting({ activeCommitment, currentDisplay, setCurrentDispl
     setPreviewImage(null);
   };
 
+  const activeCollection =
+    galleryCollections.find((c) => c.id === activeCollectionId) ??
+    galleryCollections[0];
+  const galleryLoaded = loadedCounts[activeCollection.id] ?? GALLERY_PAGE_SIZE;
+  const galleryVisibleImages = activeCollection.images.slice(0, galleryLoaded);
+  const galleryHasMore = galleryLoaded < activeCollection.images.length;
+  const galleryDimmed = activeCommitment || !einkCaseAttached;
+  // When pinned, the sticky header keeps only the bottom slice of the Recent
+  // Casting section + the tab bar onscreen. Top offset is the negative of the
+  // portion we want to hide so the wrapper "absorbs" that distance as the page
+  // scrolls past it.
+  const stickyTopOffset = -recentCastingHeight * (1 - RECENT_VISIBLE_FRACTION);
+  // Height of the slice of the sticky header that remains onscreen once it
+  // pins — the visible 1/4 of Recent Casting plus the tab bar. Used to size
+  // the gallery's own inner scroll container so it fills the space between
+  // the pinned header and the bottom nav. The 80px tail matches the
+  // `pb-20` already on `<main>`, which is the reserved clearance for the
+  // fixed bottom nav — without that piece the gallery would otherwise
+  // either overlap the nav or leave a visible empty band above it.
+  const visibleStickyHeightPx =
+    recentCastingHeight * RECENT_VISIBLE_FRACTION + tabBarHeight;
+  const galleryScrollHeight = `calc(100dvh - ${visibleStickyHeightPx + 80}px)`;
+
+  const handleSelectCollection = (id: string) => {
+    setActiveCollectionId(id);
+    // Center the chosen tab inside the strip by writing to its scrollLeft
+    // directly. Using element.scrollIntoView walks up the ancestor chain —
+    // when the overflow-hidden wrapper can't satisfy the request it bubbles
+    // to the page's <main> scroller and slides the entire page sideways.
+    const btn = tabButtonRefs.current[id];
+    const strip = tabsScrollRef.current;
+    if (btn && strip) {
+      const target =
+        btn.offsetLeft - (strip.clientWidth - btn.offsetWidth) / 2;
+      const max = strip.scrollWidth - strip.clientWidth;
+      strip.scrollTo({
+        left: Math.max(0, Math.min(max, target)),
+        behavior: 'smooth',
+      });
+    }
+  };
+
   const handleUploadPhoto = () => {
     if (!einkCaseAttached) {
       setShowEinkPrompt(true);
@@ -411,7 +577,7 @@ export function ImageCasting({ activeCommitment, currentDisplay, setCurrentDispl
   };
 
   return (
-    <div ref={rootRef} className="relative pb-28 min-h-screen">
+    <div ref={rootRef} className="relative min-h-screen">
       {/* Fluid blurred backdrop — image driven by whichever gallery card is centered in the viewport */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none" style={{ background: "var(--backdrop-base)" }}>
         <AnimatePresence>
@@ -531,9 +697,55 @@ export function ImageCasting({ activeCommitment, currentDisplay, setCurrentDispl
         </div>
       </div>
 
-      {/* Recent Casting - cyclic carousel; case stays still; all items move as one strip */}
-      <div className="mb-6">
-        <h3 className="px-4 mb-3 text-foreground font-semibold tracking-tight">Recent Casting</h3>
+      {/* Sticky header — Recent Casting carousel + category tab bar travel
+          together. When the user scrolls down, this whole block scrolls with
+          the page until its `top` offset is reached; from then on, only the
+          bottom RECENT_VISIBLE_FRACTION of the carousel (plus the tab bar)
+          stays pinned. The gallery grid below scrolls underneath. */}
+      <div
+        className="sticky z-30 w-full"
+        style={{ top: stickyTopOffset, willChange: 'transform' }}
+      >
+        {/* Vertical-gradient backdrop. Instead of applying `bg-scrim` +
+            `backdrop-blur-md` to the entire sticky wrapper (which made the
+            whole Recent Casting block read as its own frosted panel,
+            distinct from Quick Cast above), the bg + blur live on this
+            absolutely-positioned child and are masked so they fade in only
+            toward the bottom of the sticky. Result:
+              - Top portion (most of the carousel) is fully transparent and
+                shares the same atmosphere as Quick Cast and the gallery
+                grid — no visible "section box".
+              - Bottom portion (dot pager → tabs, i.e. the slice that stays
+                onscreen once the header pins) has full scrim + blur, so
+                gallery cards scrolling underneath when stuck still get
+                properly obscured. */}
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: 'var(--scrim-bg)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            maskImage:
+              'linear-gradient(to bottom, transparent 0%, transparent 50%, black 72%, black 100%)',
+            WebkitMaskImage:
+              'linear-gradient(to bottom, transparent 0%, transparent 50%, black 72%, black 100%)',
+          }}
+        />
+      {/* Recent Casting - cyclic carousel; case stays still; all items move as one strip.
+          `touch-action: pan-y` reserves every vertical pan inside this block
+          for the page's main scroller — the visible bottom slice (carousel
+          tail + dot pager) is meant to act as a "grab handle" for scrolling
+          back to the top, so we don't want the carousel's horizontal drag or
+          any child pointer listener to compete with that gesture. Horizontal
+          pans still reach motion's drag handler because pan-y only excludes
+          the browser's built-in horizontal panning, not JS pointer events. */}
+      <div
+        ref={recentCastingRef}
+        className="relative pb-2"
+        style={{ touchAction: 'pan-y' }}
+      >
+        <h3 className="px-4 mb-3 pt-4 text-foreground font-semibold tracking-tight">Recent Casting</h3>
         {(() => {
           const N = recentImages.length;
           const image = recentImages[activeRecent];
@@ -822,45 +1034,134 @@ export function ImageCasting({ activeCommitment, currentDisplay, setCurrentDispl
         })()}
       </div>
 
-      {/* Gallery Collections */}
-      <div className="px-4 space-y-6">
-        {/* Collections */}
-        {galleryCollections.map((collection) => (
-          <div key={collection.id}>
-            <div className="flex items-center gap-2 mb-3 text-soft-2">
-              {collection.icon}
-              <h4 className="text-sm font-semibold tracking-wide uppercase">{collection.title}</h4>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              {collection.images.map((image) => (
-                <Card
-                  key={image.id}
-                  data-gallery-image={image.url}
-                  className={`overflow-hidden cursor-pointer transition-all bg-transparent border ${
-                    activeCommitment || !einkCaseAttached
-                      ? 'opacity-50 border-soft-3'
-                      : 'border-soft-2 hover:border-white/40 hover:shadow-lg'
+        {/* Category tab bar — sits at the bottom of the sticky header. No
+            top border: the sticky wrapper already supplies one continuous
+            `bg-scrim` + backdrop-blur surface across Recent Casting and the
+            tab strip, so the ~20px of empty scrim between the dot pager
+            (`pb-2`) and the tabs (`py-3`) reads as a soft tonal fade
+            instead of a hard divider line. `overflow-hidden` keeps the
+            scrollable strip clipped to the page width. */}
+        <div ref={tabBarRef} className="relative w-full overflow-hidden">
+          <div
+            ref={tabsScrollRef}
+            className="flex gap-2 overflow-x-auto px-4 py-3 [&::-webkit-scrollbar]:hidden"
+            style={{
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none',
+              WebkitOverflowScrolling: 'touch',
+              scrollSnapType: 'x proximity',
+            }}
+          >
+            {galleryCollections.map((collection) => {
+              const active = collection.id === activeCollection.id;
+              return (
+                <button
+                  key={collection.id}
+                  ref={(el) => {
+                    tabButtonRefs.current[collection.id] = el;
+                  }}
+                  onClick={() => handleSelectCollection(collection.id)}
+                  className={`relative flex-shrink-0 flex items-center gap-1.5 px-4 py-2 text-sm font-medium tracking-tight transition-colors ${
+                    active
+                      ? 'text-foreground'
+                      : 'text-soft-2 hover:text-soft-1'
                   }`}
-                  onClick={() => handleCastImage(image)}
+                  style={{ scrollSnapAlign: 'center' }}
                 >
-                  <div className="relative aspect-[5/7]">
-                    <ImageWithFallback
-                      src={image.url}
-                      alt={image.title}
-                      className="w-full h-full object-cover"
+                  {/* Active backdrop — the Cast tab's signature accent from
+                      the app's bottom nav (`#f43f5e`, see App.tsx
+                      tabAccents.cast) painted as an organic radial halo
+                      behind the label. No pill outline, no border: the
+                      gallery page doesn't use pill chrome anywhere, so the
+                      selected state is expressed purely as a soft glow
+                      behind the icon + label, echoing the bottom nav's
+                      colored-halo highlight idiom. */}
+                  {active && (
+                    <span
+                      aria-hidden="true"
+                      className="absolute pointer-events-none"
+                      style={{
+                        inset: -10,
+                        background:
+                          'radial-gradient(ellipse 70% 90% at center, rgba(244,63,94,0.70) 0%, rgba(244,63,94,0.35) 45%, rgba(244,63,94,0) 75%)',
+                        filter: 'blur(8px)',
+                      }}
                     />
-                    {currentDisplay?.data?.id === image.id && (
-                      <div className="absolute inset-0 border-2 border-[#00FFC2]" />
-                    )}
-                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2">
-                      <div className="text-sm text-foreground truncate font-medium">{image.title}</div>
-                    </div>
-                  </div>
-                </Card>
-              ))}
-            </div>
+                  )}
+                  <span className="relative">{collection.icon}</span>
+                  <span className="relative">{collection.title}</span>
+                </button>
+              );
+            })}
           </div>
-        ))}
+        </div>
+      </div>
+
+      {/* Gallery grid for the active category — lives in its OWN bounded
+          scroll container so the Cast page effectively has two scroll
+          regions: the outer `<main>` scroll (driven by gestures on Quick
+          Cast, Recent Casting, and the tab bar) and this inner one (driven
+          by gestures inside the grid). That way dragging on the visible
+          slice of Recent Casting above the tabs always scrolls the page
+          back toward the top, while paging through cards stays contained
+          here. `overscroll-behavior: contain` keeps grid edge scrolls from
+          chaining out to the page scroller. Height is sized to fill the
+          space between the pinned sticky header and the bottom nav. */}
+      <div
+        ref={galleryScrollRef}
+        className="px-4 pt-4 overflow-y-auto"
+        style={{
+          height: galleryScrollHeight,
+          overscrollBehavior: 'contain',
+          WebkitOverflowScrolling: 'touch',
+        }}
+      >
+        <div className="grid grid-cols-2 gap-3">
+          {galleryVisibleImages.map((image) => (
+            <Card
+              key={image.id}
+              data-gallery-image={image.url}
+              className={`overflow-hidden cursor-pointer transition-all bg-transparent border ${
+                galleryDimmed
+                  ? 'opacity-50 border-soft-3'
+                  : 'border-soft-2 hover:border-white/40 hover:shadow-lg'
+              }`}
+              onClick={() => handleCastImage(image)}
+            >
+              <div className="relative aspect-[5/7]">
+                <ImageWithFallback
+                  src={image.url}
+                  alt={image.title}
+                  className="w-full h-full object-cover"
+                />
+                {currentDisplay?.data?.id === image.id && (
+                  <div className="absolute inset-0 border-2 border-[#00FFC2]" />
+                )}
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2">
+                  <div className="text-sm text-foreground truncate font-medium">
+                    {image.title}
+                  </div>
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+
+        {galleryHasMore ? (
+          <div
+            ref={sentinelRef}
+            className="flex items-center justify-center py-6 text-soft-3 text-xs uppercase tracking-wider"
+          >
+            <span className="inline-flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#00FFC2] animate-pulse" />
+              Loading more
+            </span>
+          </div>
+        ) : (
+          <div className="text-center text-soft-3 text-xs uppercase tracking-wider py-6">
+            No more images
+          </div>
+        )}
       </div>
       </div>
 
