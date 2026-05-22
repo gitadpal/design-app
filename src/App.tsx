@@ -232,6 +232,7 @@ export default function App() {
             currentDisplay={currentDisplay}
             setCurrentDisplay={setCurrentDisplay}
             einkCaseAttached={einkCaseAttached}
+            isDark={isDark}
             onViewActiveStatus={() => {
               setActiveTab('ads');
               setAdView('active-commitment');
