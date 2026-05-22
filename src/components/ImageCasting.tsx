@@ -28,6 +28,7 @@ import { toast } from 'sonner@2.0.3';
 import { FaceIdPrompt } from './FaceIdPrompt';
 import { EinkCasePrompt } from './EinkCasePrompt';
 import phoneCaseImg from 'figma:asset/771d461e7de4d0c40d4ef5fcc5c59768d30ec60e.png';
+import phoneCaseImgDark from '@/assets/iphone-case-black.png';
 
 // Geometry of the welcome-step case PNG (862x1248) — the E-ink screen window as
 // fractions of the full case image. Source coordinates from StepWelcome's
@@ -185,6 +186,7 @@ interface CastProps {
   setCurrentDisplay: (display: any) => void;
   einkCaseAttached: boolean;
   onViewActiveStatus?: () => void;
+  isDark?: boolean;
 }
 
 const galleryAsset = (filename: string) => `${import.meta.env.BASE_URL}gallery/${filename}`;
@@ -345,7 +347,12 @@ const GALLERY_PAGE_SIZE = 6;
 // out of view.
 const RECENT_VISIBLE_FRACTION = 0.25;
 
-export function ImageCasting({ activeCommitment, currentDisplay, setCurrentDisplay, einkCaseAttached, onViewActiveStatus }: CastProps) {
+export function ImageCasting({ activeCommitment, currentDisplay, setCurrentDisplay, einkCaseAttached, onViewActiveStatus, isDark = true }: CastProps) {
+  // The Recent Casting carousel renders a black case in dark mode (matching the
+  // pre-order black case art) and the default white case in light mode. Both
+  // PNGs share the same 862×1248 geometry, so the screen-window overlay math is
+  // unchanged.
+  const caseImg = isDark ? phoneCaseImgDark : phoneCaseImg;
   const [showFaceId, setShowFaceId] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
   const [progress, setProgress] = useState<number>(0);
@@ -874,7 +881,7 @@ export function ImageCasting({ activeCommitment, currentDisplay, setCurrentDispl
                       end downward, ramping to transparent over TOP_FADE_BAND
                       ending at the visible top edge (CROP_TOP_FRACTION). */}
                   <img
-                    src={phoneCaseImg}
+                    src={caseImg}
                     alt=""
                     draggable={false}
                     className="absolute pointer-events-none select-none"
