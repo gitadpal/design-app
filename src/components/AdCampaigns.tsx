@@ -432,84 +432,116 @@ export function AdCampaigns({
     });
 
     return (
-      <div className="min-h-screen">
-        <div className="bg-card border-b border-[#E0E0E0] sticky top-0 z-10">
-          <div className="flex items-center justify-between px-4 py-3">
+      <div className="min-h-screen bg-background">
+        {/* Glassy emerald top bar — mirrors the Earnings gallery's top bar
+            (CampaignGallery.tsx) so navigating from there into history
+            feels like the same surface family. Borderless: the bar dissolves
+            into the page via a mask fade at the bottom, matching the
+            "blurry edges" treatment used by the bottom nav and gallery bar. */}
+        <div
+          className="sticky top-0 z-10"
+          style={{
+            background:
+              'radial-gradient(140% 200% at 12.5% 0%, rgba(34,197,94,0.16) 0%, rgba(34,197,94,0.05) 32%, transparent 70%), ' +
+              'linear-gradient(to bottom, rgba(10,10,10,0.18) 0%, transparent 100%)',
+            backdropFilter: 'blur(14px) saturate(1.5)',
+            WebkitBackdropFilter: 'blur(14px) saturate(1.5)',
+            maskImage: 'linear-gradient(to bottom, #000 0%, #000 70%, transparent 100%)',
+            WebkitMaskImage: 'linear-gradient(to bottom, #000 0%, #000 70%, transparent 100%)',
+          }}
+        >
+          <div className="flex items-center justify-between px-4 pt-3 pb-5">
             <button
               onClick={() => setView('main')}
-              className="flex items-center gap-1 text-sm font-medium transition-colors hover:opacity-80"
-              style={{ color: '#BC13FE' }}
+              className="flex items-center gap-1 text-sm font-medium text-foreground active:scale-95 transition"
             >
               <ChevronRight className="w-5 h-5 rotate-180" />
               <span>Back</span>
             </button>
-            <h2 className="text-base font-semibold tracking-tight text-[#1A1A1A]">Campaign History</h2>
+            <h2 className="text-base font-semibold tracking-tight text-foreground">Campaign History</h2>
             <div className="w-12"></div>
           </div>
         </div>
 
         <div className="px-4 py-4">
-          {/* Sorting Controls */}
+          {/* Sorting Controls — emerald accent pill matching the History
+              button on the gallery top bar. */}
           <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold tracking-tight text-[#1A1A1A]">Completed Campaigns</h3>
+            <h3 className="font-semibold tracking-tight text-foreground">Completed Campaigns</h3>
             <button
               onClick={() => setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')}
-              className="flex items-center gap-1 text-sm font-medium transition-colors hover:opacity-80"
-              style={{ color: '#BC13FE' }}
+              className="flex items-center gap-1 text-xs font-semibold active:scale-95 transition rounded-full px-3 py-1.5"
+              style={{
+                color: '#22c55e',
+                background: 'rgba(34,197,94,0.12)',
+                backdropFilter: 'blur(6px)',
+                WebkitBackdropFilter: 'blur(6px)',
+                boxShadow:
+                  '0 0 8px 2px rgba(34,197,94,0.14), 0 0 16px 4px rgba(34,197,94,0.07)',
+              }}
             >
               <span>{sortOrder === 'desc' ? 'Newest First' : 'Oldest First'}</span>
               <ChevronRight className={`w-4 h-4 transition-transform ${sortOrder === 'asc' ? 'rotate-90' : '-rotate-90'}`} />
             </button>
           </div>
 
-          <div className="space-y-3">
+          {/* Hairline-separated rows — uniform record shape doesn't need
+              card chrome. Hairlines fade to transparent at the left/right
+              edges (.hairline-fade-b/t) so the list reads as borderless,
+              matching the app's glassy/blurred-edge aesthetic. */}
+          <div className="hairline-fade-t">
             {sortedHistory.map((participation) => (
-              <Card key={participation.id}>
-                <CardContent className="p-0">
-                  <div className="flex gap-3 p-3">
-                    <div className="w-16 h-16 bg-soft-1 rounded-lg overflow-hidden flex-shrink-0">
-                      <img 
-                        src={participation.image} 
-                        alt={participation.campaignTitle}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2 mb-2">
-                        <div className="text-sm flex-1">{participation.campaignTitle}</div>
-                        <div className="text-xl text-[#00FFC2] flex-shrink-0">+{participation.reward}</div>
-                      </div>
-                      <div className="flex items-center gap-2 text-xs mb-2">
-                        <span className="flex items-center gap-1 text-soft-3">
-                          <Clock className="w-3 h-3" />
-                          {participation.duration}h
-                        </span>
-                        <span className="text-soft-4">•</span>
-                        <span className="text-soft-3">{participation.completedAt}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="secondary" className="text-xs text-[#00FFC2]">
-                          <CheckCircle2 className="w-3 h-3 mr-1" />
-                          Completed
-                        </Badge>
-                        <a 
-                          href={`https://etherscan.io/tx/${participation.txHash}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs text-soft-2 flex items-center gap-1 hover:underline"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            toast.success('Transaction link copied!');
-                          }}
-                        >
-                          {participation.txHash.slice(0, 6)}...{participation.txHash.slice(-4)}
-                          <ExternalLink className="w-3 h-3" />
-                        </a>
-                      </div>
-                    </div>
+              <div
+                key={participation.id}
+                className="flex gap-3 py-3 hairline-fade-b active:bg-soft-2 transition-colors"
+              >
+                <div className="w-14 h-14 bg-soft-1 rounded-md overflow-hidden flex-shrink-0">
+                  <img
+                    src={participation.image}
+                    alt={participation.campaignTitle}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-2 mb-1">
+                    <div className="text-sm text-foreground flex-1 truncate font-medium">{participation.campaignTitle}</div>
+                    <div className="text-base font-bold tabular-nums text-[#00FFC2] flex-shrink-0 leading-snug">+{participation.reward}</div>
                   </div>
-                </CardContent>
-              </Card>
+                  <div className="flex items-center gap-2 text-xs mb-1.5">
+                    <span className="flex items-center gap-1 text-soft-3">
+                      <Clock className="w-3 h-3" />
+                      {participation.duration}h
+                    </span>
+                    <span className="text-soft-4">•</span>
+                    <span className="text-soft-3">{participation.completedAt}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded"
+                      style={{
+                        background: 'rgba(34,197,94,0.14)',
+                        color: '#22c55e',
+                      }}
+                    >
+                      <CheckCircle2 className="w-3 h-3 mr-1" />
+                      Completed
+                    </span>
+                    <a
+                      href={`https://etherscan.io/tx/${participation.txHash}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-soft-3 flex items-center gap-1 hover:underline"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        toast.success('Transaction link copied!');
+                      }}
+                    >
+                      {participation.txHash.slice(0, 6)}...{participation.txHash.slice(-4)}
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                </div>
+              </div>
             ))}
           </div>
         </div>
@@ -553,9 +585,17 @@ export function AdCampaigns({
 
         {/* Foreground */}
         <div className="relative z-[1]">
-          {/* Transparent glass header */}
-          <div className="sticky top-0 z-20 backdrop-blur-md bg-scrim border-b border-glass">
-            <div className="flex items-center justify-between px-4 py-3">
+          {/* Transparent glass header — borderless: dissolves into the
+              blurred image backdrop via a mask fade at the bottom, matching
+              the bottom nav / gallery top bar treatment. */}
+          <div
+            className="sticky top-0 z-20 backdrop-blur-md bg-scrim"
+            style={{
+              maskImage: 'linear-gradient(to bottom, #000 0%, #000 70%, transparent 100%)',
+              WebkitMaskImage: 'linear-gradient(to bottom, #000 0%, #000 70%, transparent 100%)',
+            }}
+          >
+            <div className="flex items-center justify-between px-4 pt-3 pb-5">
               <button
                 onClick={() => setView('main')}
                 className="flex items-center gap-1 text-foreground"
@@ -783,9 +823,16 @@ export function AdCampaigns({
         </div>
 
         <div className="relative z-[1]">
-        {/* Header with Back Button — translucent over the blurred backdrop */}
-        <div className="sticky top-0 z-20 backdrop-blur-md bg-scrim border-b border-glass">
-          <div className="flex items-center justify-between px-4 py-3">
+        {/* Header with Back Button — borderless translucent over the
+            blurred backdrop; dissolves at the bottom via a mask fade. */}
+        <div
+          className="sticky top-0 z-20 backdrop-blur-md bg-scrim"
+          style={{
+            maskImage: 'linear-gradient(to bottom, #000 0%, #000 70%, transparent 100%)',
+            WebkitMaskImage: 'linear-gradient(to bottom, #000 0%, #000 70%, transparent 100%)',
+          }}
+        >
+          <div className="flex items-center justify-between px-4 pt-3 pb-5">
             <button
               onClick={() => setView('main')}
               className="flex items-center gap-1 text-foreground"
@@ -1088,7 +1135,7 @@ export function AdCampaigns({
           className="px-4 mt-5"
         >
           <div className="rounded-[10px] overflow-hidden bg-card border border-soft-3">
-            <div className="px-4 py-3 flex items-center gap-2 border-b border-soft-3">
+            <div className="px-4 py-3 flex items-center gap-2 hairline-fade-b">
               <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #00FFC2 0%, #BC13FE 100%)' }}>
                 <Info className="w-3.5 h-3.5 text-[#0A0A0A]" strokeWidth={2} />
               </div>
@@ -1184,8 +1231,14 @@ export function AdCampaigns({
           {/* Foreground content */}
           <div className="relative z-[1]">
           {/* Header */}
-          <div className="sticky top-0 z-20 backdrop-blur-md bg-scrim border-b border-glass">
-            <div className="flex items-center justify-between px-4 py-3">
+          <div
+            className="sticky top-0 z-20 backdrop-blur-md bg-scrim"
+            style={{
+              maskImage: 'linear-gradient(to bottom, #000 0%, #000 70%, transparent 100%)',
+              WebkitMaskImage: 'linear-gradient(to bottom, #000 0%, #000 70%, transparent 100%)',
+            }}
+          >
+            <div className="flex items-center justify-between px-4 pt-3 pb-5">
               <button
                 onClick={() => setView('campaign-detail')}
                 className="flex items-center gap-1 text-foreground"

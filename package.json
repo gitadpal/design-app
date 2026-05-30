@@ -58,7 +58,7 @@
     "vite": "^6.4.2"
   },
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --host 192.168.50.185",
     "build": "vite build"
   }
 }

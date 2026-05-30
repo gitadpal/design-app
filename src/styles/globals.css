@@ -301,6 +301,18 @@ html {
   .border-soft-2 { border-color: color-mix(in srgb, var(--foreground) 14%, transparent); }
   .border-soft-3 { border-color: color-mix(in srgb, var(--foreground) 10%, transparent); }
 
+  /* Borderless row separator: a soft 3px-tall gradient band drawn via
+     background-image. Fades to transparent at the left/right edges AND
+     vertically (via a low-peak alpha + thicker band), so the divider reads
+     as a diffuse glow rather than a hairline. Pairs with the app's
+     "blurry edges" treatment — list rows divide without hard lines. */
+  .hairline-fade-b {
+    border-bottom: 1px solid color-mix(in srgb, var(--foreground) 5%, transparent);
+  }
+  .hairline-fade-t {
+    border-top: 1px solid color-mix(in srgb, var(--foreground) 5%, transparent);
+  }
+
   /* Frosted-glass tiles meant to sit over the blurred image backdrop sub-views.
      These do NOT mirror the foreground tone — they always tint white, so cards
      read as floating panels above the page atmosphere in both themes. */
@@ -332,5 +344,16 @@ html {
     background: linear-gradient(135deg, #00FFC2 0%, #BC13FE 100%);
     box-shadow: 0 0 24px -6px rgba(0, 255, 194, 0.35),
                 0 0 32px -12px rgba(188, 19, 254, 0.40);
+  }
+
+  /* Slow horizontal shimmer sweep — used over the IN CAST stamp's image
+     background to signal "this is live" without flickering. */
+  .in-cast-shimmer {
+    animation: inCastShimmer 2.6s linear infinite;
+    left: -50%;
+  }
+  @keyframes inCastShimmer {
+    0%   { transform: translateX(0%); }
+    100% { transform: translateX(300%); }
   }
 }

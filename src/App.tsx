@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { AdCampaigns } from './components/AdCampaigns';
+import { CampaignGallery } from './components/CampaignGallery/CampaignGallery';
 import { ImageCasting } from './components/ImageCasting';
 import { Assets } from './components/Assets';
 import { Settings } from './components/Settings';
@@ -78,6 +79,10 @@ export default function App() {
 
   // Device state
   const [einkCaseAttached, setEinkCaseAttached] = useState(false);
+
+  // Tracks whether the gallery has zoomed into a single card. When true we
+  // hide the bottom nav so the focused card view feels like its own surface.
+  const [galleryCardOpen, setGalleryCardOpen] = useState(false);
 
   // Settings state
   const [settingsView, setSettingsView] = useState<SettingsView>('main');
@@ -210,11 +215,43 @@ export default function App() {
 
       {/* Main Content */}
       <main className={`relative flex-1 overflow-y-auto ${
-        (activeTab === 'ads' && adView !== 'main') || (activeTab === 'settings' && settingsView !== 'main') || (activeTab === 'assets' && assetsView !== 'main')
+        // Earnings: gallery owns its own bottom layout — wall should extend
+        // behind the nav strip so the nav's blur intersects the cards. Adding
+        // pb-20 here keeps content above the nav, defeating that.
+        activeTab === 'ads' && adView === 'main' && !galleryCardOpen
+          ? ''
+          : (activeTab === 'ads' && (adView !== 'main' || galleryCardOpen)) || (activeTab === 'settings' && settingsView !== 'main') || (activeTab === 'assets' && assetsView !== 'main')
           ? ''
           : 'pb-20'
       }`}>
-        {activeTab === 'ads' && (
+        {activeTab === 'ads' && adView === 'main' && (
+          <CampaignGallery
+            slottedCampaignId={activeCommitment?.campaignId ?? null}
+            onCardOpenChange={setGalleryCardOpen}
+            // Mirrors the dashboard's Total Earned tile in AdCampaigns.tsx
+            // (tokenBalance constant) so the gallery's headline matches the
+            // figure shown when the user enters detail views.
+            totalEarned={1247.5}
+            onShowHistory={() => setAdView('participation-history')}
+            onViewActiveStatus={() => setAdView('active-commitment')}
+            onCommitCampaign={(c, frameIdx) => {
+              // Press-and-hold cast sequence completed — register the
+              // commitment so the slotted card lights up and the rest of the
+              // app (Cast tab, status banner) sees the active campaign.
+              const frame = c.frames?.[frameIdx];
+              setActiveCommitment({
+                campaignId: c.id,
+                title: c.title,
+                reward: frame?.tokensPerCast ?? c.tokensPerCast,
+                duration: c.durationHours,
+                startTime: Date.now(),
+                image: frame?.image ?? c.image,
+              });
+              toast.success(`Cast! ${c.advertiser} is now in your case.`);
+            }}
+          />
+        )}
+        {activeTab === 'ads' && adView !== 'main' && (
           <AdCampaigns
             view={adView}
             setView={setAdView}
@@ -347,9 +384,10 @@ export default function App() {
         };
         const accent = tabAccents[activeTab];
         return (
-          <nav
+          <>
+            <nav
             className={`fixed bottom-0 left-0 right-0 max-w-md mx-auto transition-transform duration-200 ${
-              (activeTab === 'ads' && adView !== 'main') || (activeTab === 'settings' && settingsView !== 'main') || (activeTab === 'assets' && assetsView !== 'main')
+              (activeTab === 'ads' && (adView !== 'main' || galleryCardOpen)) || (activeTab === 'settings' && settingsView !== 'main') || (activeTab === 'assets' && assetsView !== 'main')
                 ? 'translate-y-full'
                 : ''
             }`}
@@ -421,6 +459,7 @@ export default function App() {
               })}
             </div>
           </nav>
+          </>
         );
       })()}
 
