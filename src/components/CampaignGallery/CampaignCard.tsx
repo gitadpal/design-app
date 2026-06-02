@@ -126,7 +126,11 @@ export function CampaignCard({ campaign, slotted, chrome, isLit, onTap }: Campai
           className="relative w-full overflow-hidden"
           style={{ aspectRatio: IMAGE_ASPECT, backgroundColor: '#0A0A0A' }}
         >
-          {/* Animated series cross-fade frames in place. */}
+          {/* Animated series cross-fade frames in place. objectFit:'cover' is
+              forced inline so the poster always fills the 5:7 cell without
+              stretching — posters in the wild may be 848×1264 (~0.67 ratio)
+              vs the cell's 5/7 (~0.71), so we crop a hair top/bottom rather
+              than distort. */}
           {hasFrames ? (
             campaign.frames!.map((f, i) => (
               <img
@@ -136,6 +140,7 @@ export function CampaignCard({ campaign, slotted, chrome, isLit, onTap }: Campai
                 className="absolute inset-0 w-full h-full object-cover transition-opacity duration-300"
                 loading="lazy"
                 style={{
+                  objectFit: 'cover',
                   filter: 'contrast(1.04) brightness(0.96)',
                   opacity: i === frameIdx ? 1 : 0,
                 }}
@@ -147,23 +152,23 @@ export function CampaignCard({ campaign, slotted, chrome, isLit, onTap }: Campai
               alt={campaign.title}
               className="absolute inset-0 w-full h-full object-cover"
               loading="lazy"
-              style={{ filter: 'contrast(1.04) brightness(0.96)' }}
+              style={{ objectFit: 'cover', filter: 'contrast(1.04) brightness(0.96)' }}
             />
           )}
 
-          {/* Bottom title overlay — small portion of the image, blurred, so the
-              title is legible over any artwork. The overlay sits *inside* the
-              image area so we don't change the 5:7 ratio. */}
+          {/* Bottom title overlay — small portion of the image so the title is
+              legible over any artwork. The overlay sits *inside* the image
+              area so we don't change the 5:7 ratio. Originally used
+              backdrop-filter blur for the glass effect, but at 54 simultaneous
+              cards (3 tile copies × ~18 campaigns) that's 54 blur regions —
+              the biggest paint cost on the wall. Swapped to a denser opaque
+              gradient + textShadow on the title for legibility at no GPU cost. */}
           <div
             className="absolute left-0 right-0 bottom-0 pointer-events-none flex items-end"
             style={{
               height: tight ? '34%' : '30%',
-              backdropFilter: 'blur(10px) saturate(1.2)',
-              WebkitBackdropFilter: 'blur(10px) saturate(1.2)',
               background:
-                'linear-gradient(to bottom, rgba(10,10,10,0) 0%, rgba(10,10,10,0.55) 55%, rgba(10,10,10,0.78) 100%)',
-              maskImage: 'linear-gradient(to bottom, transparent 0%, black 45%, black 100%)',
-              WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 45%, black 100%)',
+                'linear-gradient(to bottom, rgba(10,10,10,0) 0%, rgba(10,10,10,0.72) 55%, rgba(10,10,10,0.92) 100%)',
             }}
           >
             <div className="w-full px-1.5 pb-1 flex items-end gap-1">
@@ -188,17 +193,17 @@ export function CampaignCard({ campaign, slotted, chrome, isLit, onTap }: Campai
                 />
               )}
               {/* Duration chip — takes the spot the chain gem used to occupy
-                  on the title row. Borderless light glass pill; instead of
-                  a hard outline, a soft outer box-shadow in the same tint
-                  bleeds the chip's edge into the surrounding overlay so
-                  the pill dissolves at its perimeter. */}
+                  on the title row. Borderless light pill; a soft outer
+                  box-shadow bleeds the chip's edge into the surrounding
+                  overlay so it dissolves at its perimeter. Backdrop-blur was
+                  removed (another per-card cost at scale) — the chip sits
+                  on top of the opaque gradient anyway, so the blur was barely
+                  contributing visually. */}
               <div
                 className="flex items-center gap-0.5 shrink-0 rounded-full"
                 style={{
-                  background: 'rgba(255,255,255,0.14)',
+                  background: 'rgba(255,255,255,0.18)',
                   padding: tight ? '1.5px 5px' : '2px 6px',
-                  backdropFilter: 'blur(6px)',
-                  WebkitBackdropFilter: 'blur(6px)',
                   boxShadow:
                     '0 0 8px 2px rgba(255,255,255,0.12), 0 0 14px 4px rgba(255,255,255,0.06)',
                 }}

@@ -400,8 +400,11 @@ export default function App() {
                 background:
                   `radial-gradient(140% 200% at ${accent.pos} 100%, ${accent.color}1c 0%, ${accent.color}08 28%, transparent 65%), ` +
                   'linear-gradient(to bottom, transparent 0%, rgba(20,20,28,0.04) 38%, rgba(20,20,28,0.10) 100%)',
-                WebkitBackdropFilter: 'blur(18px) saturate(1.5)',
-                backdropFilter: 'blur(18px) saturate(1.5)',
+                // backdrop-filter removed from the bottom nav: it had to
+                // re-blur its backdrop on every scroll frame while the
+                // Earnings wall moved underneath. The gradient + accent
+                // glow carry the "glass shelf" feel without the per-frame
+                // GPU cost. (Kept the linear-gradient bg to compensate.)
                 maskImage: 'linear-gradient(to bottom, transparent 0%, black 38%, black 100%)',
                 WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 38%, black 100%)',
                 transition: 'background 400ms ease',

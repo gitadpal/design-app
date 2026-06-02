@@ -1,16 +1,12 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   motion,
   useMotionValue,
   useMotionValueEvent,
-  useTransform,
   animate,
 } from 'motion/react';
-import type { MotionValue } from 'motion/react';
 import type { GalleryCampaign } from '../../data/galleryCampaigns';
 import { CampaignCard, type ChromeLevel } from './CampaignCard';
-
-const LIT_THRESHOLD = 0.88;
 
 interface WallGridProps {
   campaigns: GalleryCampaign[];
@@ -54,39 +50,21 @@ function computeCellW(viewportW: number) {
 // no jitter, no waterfall stagger, no clipping when chrome changes.
 const IMAGE_ASPECT_H_OVER_W = 7 / 5; // 1.40
 
-// Slow continuous drift — each card bobs on its own phase so the wall looks
-// like stars in a slow galaxy river: never reorders, never collides, but never
-// truly still either. Frequencies in the ~10–25s range so motion is felt, not
-// noticed. Amplitudes ~half a gap so neighbors don't visibly touch.
-function driftFor(id: number) {
-  const h = (a: number, b: number) => ((id * a) + b) % 233280;
-  const u = (a: number, b: number) => h(a, b) / 233280; // 0..1
-  return {
-    ampX: 2 + u(7853, 2917) * 4,                  // 2..6 px
-    ampY: 4 + u(3571, 8123) * 6,                  // 4..10 px
-    phaseX: u(2143, 6271) * Math.PI * 2,
-    phaseY: u(5419, 1031) * Math.PI * 2,
-    freqY: 0.04 + u(4877, 5479) * 0.04,           // 12.5–25s period
-    freqX: 0.03 + u(1297, 9871) * 0.03,           // 16–33s period
-  };
-}
+// Drift animation (rAF time loop + per-cell sin/cos transforms) was removed —
+// at 60 Hz × 54 cells × 2 useTransforms it dominated the idle frame budget
+// for a 2–10px sub-pixel sway that wasn't visible at speed. Cards now sit
+// still at idle; pan/scale still animate as expected.
 
-function GridCell({
+const GridCell = ({
   campaign,
   slotted,
   baseX,
   baseY,
   cardW,
   cardH,
-  panX,
-  panY,
-  panYLane,
-  scale,
-  time,
   chromeLevel,
-  viewportW,
-  viewportH,
-  onTap,
+  registerCell,
+  onOpenCard,
 }: {
   campaign: GalleryCampaign;
   slotted: boolean;
@@ -94,60 +72,41 @@ function GridCell({
   baseY: number;
   cardW: number;
   cardH: number;
-  panX: MotionValue<number>;
-  panY: MotionValue<number>;
-  // Per-lane effective pan. World y of the cell = scale × baseY + panYLane.
-  // Equal to panY when no lane is leading; deviates when the touched lane
-  // pulls ahead.
-  panYLane: MotionValue<number>;
-  scale: MotionValue<number>;
-  time: MotionValue<number>;
   chromeLevel: ChromeLevel;
-  viewportW: number;
-  viewportH: number;
-  onTap: () => void;
-}) {
-  const d = driftFor(campaign.id);
+  // Registers the cell's DOM element with the parent's ref map. WallGrid
+  // mutates style.filter directly on these refs at scroll start / end —
+  // 54 imperative DOM writes per transition instead of 54 React reconciles.
+  registerCell: (id: string, el: HTMLElement | null, baseY: number, slotted: boolean) => void;
+  // Receives the stable parent callback; the per-cell tap closure is created
+  // here with useCallback so React.memo's shallow compare actually holds.
+  onOpenCard: (campaign: GalleryCampaign) => void;
+}) => {
+  // Position is static — `baseX` and `baseY` from layout, applied via plain
+  // CSS. The whole wall pans via the parent motion.div's translate.
+  //
+  // Spotlight filter is set imperatively by WallGrid (see `flushFilters`).
+  // The cell renders once with no filter; React never re-renders this cell
+  // for scroll-state changes, which is the only way to keep the start-of-
+  // drag and end-of-drag frames from spiking on throttled CPU.
+  const id = `${baseY}-${baseX}-${campaign.id}`;
+  const cellRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    registerCell(id, cellRef.current, baseY, slotted);
+    return () => registerCell(id, null, baseY, slotted);
+  }, [id, registerCell, baseY, slotted]);
 
-  // x position is just drift + base; the parent container's translate-x handles
-  // global pan (panX is locked to 0 anyway).
-  const x = useTransform(time, (t) => baseX + Math.sin(t * 2 * Math.PI * d.freqX + d.phaseX) * d.ampX);
-  // y combines resting position, drift, and the lane-vs-global pan delta. The
-  // delta is divided by scale because it's applied inside the scaled wrapper:
-  // the parent translate is `+panY` in world coords, but cells inside the
-  // scale wrapper need their own contribution in cell coords (pre-scale).
-  // Net world y = scale × (baseY + drift) + panYLane.
-  const y = useTransform([time, panY, panYLane, scale], (raw) => {
-    const [t, py, ply, s] = raw as [number, number, number, number];
-    const drift = Math.sin(t * 2 * Math.PI * d.freqY + d.phaseY) * d.ampY;
-    return baseY + drift + (ply - py) / s;
-  });
+  // Per-cell drift parameters — deterministic from campaign id so reshuffles
+  // don't make every card hop to a new phase. Period 7–13s, with a negative
+  // delay so cards start mid-cycle (no synchronized rise at mount).
+  const idHash = ((campaign.id * 1103515245 + 12345) >>> 0) % 1000;
+  const driftDuration = 7 + (idHash / 1000) * 6;
+  const driftDelay = -((idHash / 1000) * driftDuration);
 
-  const brightness = useTransform([panX, panYLane, scale], (raw) => {
-    const [px, ply, s] = raw as [number, number, number];
-    const screenX = viewportW / 2 + baseX * s + px;
-    const screenY = (baseY + cardH / 2) * s + ply;
-    const dx = screenX - viewportW / 2;
-    const dy = screenY - viewportH / 2;
-    const dist = Math.hypot(dx, dy);
-    // Spotlight radius — wider than the geometric centre so a broader band of
-    // cards passes the lit threshold and the viewport always carries a few
-    // bright neighbours, not just the dead-centre card.
-    const radius = Math.min(viewportW, viewportH) * 0.85;
-    const t = Math.min(1, dist / radius);
-    const floor = slotted ? 0.95 : 0.55;
-    return floor + (1 - floor) * (1 - t);
-  });
-  const filter = useTransform(brightness, (b) => `brightness(${b}) saturate(${0.5 + 0.5 * b})`);
-
-  const [isLit, setIsLit] = useState(false);
-  useMotionValueEvent(brightness, 'change', (v) => {
-    const lit = v >= LIT_THRESHOLD;
-    setIsLit((prev) => (prev === lit ? prev : lit));
-  });
+  const handleTap = useCallback(() => onOpenCard(campaign), [onOpenCard, campaign]);
 
   return (
-    <motion.div
+    <div
+      ref={cellRef}
       className="absolute"
       style={{
         left: '50%',
@@ -155,21 +114,40 @@ function GridCell({
         width: cardW,
         height: cardH,
         marginLeft: -cardW / 2,
-        x,
-        y,
-        filter,
+        transform: `translate(${baseX}px, ${baseY}px)`,
+        // Short opacity transition smooths the dim/bright pop without
+        // animating many frames of compositing (compositor-only — no
+        // per-layer rasterization, so the cost is negligible).
+        transition: 'opacity 120ms ease-out',
+        willChange: 'opacity',
       }}
     >
-      <CampaignCard
-        campaign={campaign}
-        slotted={slotted}
-        chrome={chromeLevel}
-        isLit={isLit}
-        onTap={onTap}
-      />
-    </motion.div>
+      {/* Drift wrapper — CSS animation runs only when the wall container's
+          data-scrolling="false". Animates a 1–4 px translate3d on a separate
+          DOM node so the parent's static position transform stays untouched. */}
+      <div
+        className="card-drift w-full h-full"
+        style={{
+          animationDuration: `${driftDuration.toFixed(2)}s`,
+          animationDelay: `${driftDelay.toFixed(2)}s`,
+        }}
+      >
+        <CampaignCard
+          campaign={campaign}
+          slotted={slotted}
+          chrome={chromeLevel}
+          isLit={slotted}
+          onTap={handleTap}
+        />
+      </div>
+    </div>
   );
-}
+};
+
+// Memoize: WallGrid re-renders on slottedId / zoom / viewport changes; without
+// memo all 54 cells reconcile every time. The shallow prop compare holds
+// because `registerCell` and `onOpenCard` are useCallback'd at the parent.
+const MemoGridCell = memo(GridCell);
 
 export function WallGrid({
   campaigns,
@@ -245,6 +223,134 @@ export function WallGrid({
   const panY = useMotionValue(-tileH);
   const scale = useMotionValue(1);
 
+  // Scroll-idle gate for the per-cell spotlight filter.
+  //
+  // Cells register their DOM element with `registerCell`. On the first
+  // panY/scale change after rest the wall is "scrolling" and `flushFilters`
+  // writes a uniform mid-bright filter directly to every cell element. After
+  // ~180 ms of quiet, the wall is "idle" again and `flushFilters` recomputes
+  // each cell's spotlight brightness from the current panY+scale and writes
+  // it back. Both sides bypass React entirely: 54 imperative style writes are
+  // an order of magnitude cheaper than 54 reconciliations on throttled CPU.
+  const cellsRef = useRef<Map<string, { el: HTMLElement; baseY: number; slotted: boolean }>>(
+    new Map(),
+  );
+  const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const scrollingRef = useRef(false);
+  // Ref to the wall container — used to toggle `data-scrolling` imperatively
+  // so the CSS `.card-drift` keyframes pause during scroll without touching
+  // React state. (Per-cell drift animations are GPU-only.)
+  const wallRef = useRef<HTMLDivElement>(null);
+  const setWallScrolling = (scrolling: boolean) => {
+    if (wallRef.current) {
+      wallRef.current.dataset.scrolling = scrolling ? 'true' : 'false';
+    }
+  };
+
+  // Visual cue uses opacity, not CSS filter. Opacity changes are compositor-
+  // only (alpha multiply per layer) — they don't force per-layer re-
+  // rasterization the way `filter: brightness/saturate` does. With 54 cells
+  // changing simultaneously at scroll-start/end, filter caused 54 paint jobs
+  // in one frame and tanked FPS to ~12 on throttled CPU. Opacity keeps the
+  // dim-during-scroll / spotlight-at-idle read with zero paint cost.
+  const writeCellOpacity = (el: HTMLElement, opacity: number) => {
+    el.style.opacity = opacity.toFixed(2);
+  };
+
+  const flushFiltersForScroll = () => {
+    cellsRef.current.forEach(({ el, slotted: s }) => {
+      writeCellOpacity(el, s ? 1 : 0.85);
+    });
+  };
+
+  const flushFiltersForIdle = () => {
+    const py = panY.get();
+    const s = scale.get();
+    const vw = viewportW;
+    const vh = viewportH;
+    const radius = Math.min(vw, vh) * 0.85;
+    cellsRef.current.forEach(({ el, baseY, slotted: isSlotted }) => {
+      // x is locked centred (panX = 0 and baseX feeds straight into transform),
+      // so distance only needs the y contribution to estimate spotlight fall-off.
+      const screenY = (baseY + (el.clientHeight || 0) / 2) * s + py;
+      const dy = screenY - vh / 2;
+      const dist = Math.abs(dy);
+      const t = Math.min(1, dist / radius);
+      const floor = isSlotted ? 1 : 0.55;
+      const opacity = floor + (1 - floor) * (1 - t);
+      writeCellOpacity(el, opacity);
+    });
+  };
+
+  const registerCell = useCallback(
+    (id: string, el: HTMLElement | null, baseY: number, slotted: boolean) => {
+      if (el) {
+        cellsRef.current.set(id, { el, baseY, slotted });
+        // New cell — paint its opacity once based on current state so it
+        // doesn't flash full-bright on mount.
+        if (scrollingRef.current) {
+          writeCellOpacity(el, slotted ? 1 : 0.85);
+        } else {
+          const py = panY.get();
+          const s = scale.get();
+          const radius = Math.min(viewportW, viewportH) * 0.85;
+          const screenY = (baseY + (el.clientHeight || 0) / 2) * s + py;
+          const dy = screenY - viewportH / 2;
+          const dist = Math.abs(dy);
+          const t = Math.min(1, dist / radius);
+          const floor = slotted ? 1 : 0.55;
+          writeCellOpacity(el, floor + (1 - floor) * (1 - t));
+        }
+      } else {
+        cellsRef.current.delete(id);
+      }
+    },
+    [panY, scale, viewportW, viewportH],
+  );
+
+  // Idle detection without per-frame timer churn.
+  //
+  // Naively `armIdle` cleared+set a 180 ms timeout on every panY change —
+  // that's ~120 timer ops/second during a drag. We now record the last motion
+  // time in a ref and use a *single* self-rearming timer that checks whether
+  // 180 ms of quiet have actually elapsed; if not, it sleeps for the
+  // remaining window and re-checks. One timer per scroll burst, not per
+  // frame.
+  const lastMotionAtRef = useRef(0);
+  const scheduleIdleCheck = (delay: number) => {
+    if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+    idleTimerRef.current = setTimeout(() => {
+      const elapsed = performance.now() - lastMotionAtRef.current;
+      if (elapsed >= 180) {
+        scrollingRef.current = false;
+        setWallScrolling(false);
+        flushFiltersForIdle();
+        idleTimerRef.current = null;
+      } else {
+        scheduleIdleCheck(180 - elapsed);
+      }
+    }, delay);
+  };
+
+  const noteMotion = () => {
+    lastMotionAtRef.current = performance.now();
+    if (!scrollingRef.current) {
+      scrollingRef.current = true;
+      setWallScrolling(true);
+      flushFiltersForScroll();
+      scheduleIdleCheck(180);
+    }
+  };
+
+  // Single listener on scale — used only for pinch, not for drag. Drag's
+  // panY listener below also calls noteMotion(), so we don't subscribe a
+  // separate second listener on panY just for idle tracking.
+  useMotionValueEvent(scale, 'change', noteMotion);
+
+  useEffect(() => () => {
+    if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+  }, []);
+
   // Per-lane y. Each lane carries its own scroll position, wrapped to the same
   // (-2T, 0] window panY uses. The drag updates panY; we mirror panY's delta
   // into each lane multiplied by that lane's speed and wrap independently.
@@ -262,8 +368,6 @@ export function WallGrid({
   const laneSpeed1 = useMotionValue(1);
   const laneSpeed2 = useMotionValue(1);
   const laneSpeeds = [laneSpeed0, laneSpeed1, laneSpeed2];
-
-  const panYLanes = laneYs;
 
   // Switch which lane leads. Just updates speed multipliers — no offset math
   // because lane y is its own state, not derived from panY × speed. The lane
@@ -302,24 +406,15 @@ export function WallGrid({
     return r;
   };
 
-  // Wrap panY across tile boundaries AND propagate the panY delta into each
-  // lane scaled by that lane's speed.
+  // Single panY listener — does both idle tracking (noteMotion) and tile
+  // wrap. Merging them avoids motion's per-listener overhead being paid
+  // twice per frame.
   useMotionValueEvent(panY, 'change', (v) => {
+    noteMotion();
     const s = scale.get();
     const T = tileH * s;
-    const delta = v - lastPanYRef.current;
     lastPanYRef.current = v;
 
-    // Feed delta × speed into each lane, then wrap each lane independently.
-    if (delta !== 0) {
-      for (let i = 0; i < COLS; i++) {
-        const next = laneYs[i].get() + delta * laneSpeeds[i].get();
-        laneYs[i].set(wrapLaneY(next, T));
-      }
-    }
-
-    // Wrap global panY. Pre-update lastPanYRef so the recursive call sees
-    // delta = 0 and doesn't re-feed lanes.
     if (v > 0) {
       lastPanYRef.current = v - T;
       panY.set(v - T);
@@ -328,20 +423,6 @@ export function WallGrid({
       panY.set(v + T);
     }
   });
-
-  // Shared clock for drift. rAF-driven so every cell reads the same t and stays
-  // in phase relationships across renders.
-  const time = useMotionValue(0);
-  useEffect(() => {
-    let raf = 0;
-    const start = performance.now();
-    const loop = (now: number) => {
-      time.set((now - start) / 1000);
-      raf = requestAnimationFrame(loop);
-    };
-    raf = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(raf);
-  }, [time]);
 
   const [zoomIdx, setZoomIdx] = useState(0);
   const chromeLevel = ZOOM_STEPS[zoomIdx].id;
@@ -460,13 +541,21 @@ export function WallGrid({
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
     >
+      {/* Spotlight overlay — pure CSS replacement for the per-cell brightness
+          filter that used to dim off-center cards. Three stacked layers:
+          (1) a soft cyan "stage light" at the centre, (2) a hard vignette that
+          fades to ~80% black at the corners so edge cards visibly recede, and
+          (3) a tighter inner ring that lifts the spotlight zone a touch above
+          the wall's ambient brightness. No subscribers, no per-frame work —
+          the GPU composites it once and rides scroll for free. */}
       <div
         aria-hidden
         className="absolute inset-0 pointer-events-none z-10"
         style={{
           background:
-            'radial-gradient(ellipse 60% 50% at 50% 50%, rgba(0,255,194,0.08) 0%, rgba(0,0,0,0) 55%),' +
-            'radial-gradient(ellipse 110% 90% at 50% 50%, rgba(0,0,0,0) 50%, rgba(0,0,0,0.55) 100%)',
+            'radial-gradient(ellipse 55% 45% at 50% 48%, rgba(0,255,194,0.10) 0%, rgba(0,0,0,0) 60%), ' +
+            'radial-gradient(ellipse 60% 55% at 50% 50%, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0) 55%), ' +
+            'radial-gradient(ellipse 95% 80% at 50% 50%, rgba(0,0,0,0) 30%, rgba(0,0,0,0.45) 75%, rgba(0,0,0,0.82) 100%)',
         }}
       />
 
@@ -489,6 +578,8 @@ export function WallGrid({
         style={{ x: panX, y: panY }}
       >
         <motion.div
+          ref={wallRef}
+          data-scrolling="false"
           className="absolute left-0 right-0"
           style={{
             top: 0,
@@ -499,7 +590,7 @@ export function WallGrid({
         >
           {[0, 1, 2].map((tileIdx) =>
             layout.items.map((it) => (
-              <GridCell
+              <MemoGridCell
                 key={`${tileIdx}-${it.campaign.id}`}
                 campaign={it.campaign}
                 slotted={it.campaign.id === slottedId}
@@ -507,15 +598,9 @@ export function WallGrid({
                 baseY={it.baseY + tileIdx * tileH}
                 cardW={it.cardW}
                 cardH={it.cardH}
-                panX={panX}
-                panY={panY}
-                panYLane={panYLanes[it.col]}
-                scale={scale}
-                time={time}
                 chromeLevel={chromeLevel}
-                viewportW={viewportW}
-                viewportH={viewportH}
-                onTap={() => onOpenCard(it.campaign)}
+                registerCell={registerCell}
+                onOpenCard={onOpenCard}
               />
             ))
           )}

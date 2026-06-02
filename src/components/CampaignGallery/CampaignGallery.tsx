@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { Sparkles, History } from 'lucide-react';
 import { WallGrid } from './WallGrid';
@@ -64,39 +64,27 @@ export function CampaignGallery({
   const [seed, setSeed] = useState(() => Math.floor(Math.random() * 1_000_000));
   const [openCampaign, setOpenCampaign] = useState<GalleryCampaign | null>(null);
 
-  // Rolling count-up for the headline earnings number. Runs once on mount —
-  // intentionally not re-triggered when totalEarned changes (subsequent
-  // increments should snap, not re-roll from zero). Uses an exponential
-  // decay curve so each successive moment is slower than the last by a
-  // fixed ratio — a continuously felt deceleration rather than an early
-  // sprint with a stalled tail.
-  const [displayedEarned, setDisplayedEarned] = useState(0);
-  useEffect(() => {
-    const target = totalEarned;
-    if (target <= 0) {
-      setDisplayedEarned(0);
-      return;
-    }
-    const duration = 2200;
-    // Normalized exponential decay: velocity is target*k*e^(-k*t), so every
-    // successive moment is slower than the last by a fixed ratio — the "each
-    // frame slower than the last" feel the user asked for. Gentler k (3.2)
-    // keeps the early part from blowing past the value too fast, so the
-    // gradual slowdown is felt across the whole 2.2s rather than concentrated
-    // at the tail. Denominator normalizes so t=1 lands exactly at 1.
-    const k = 3.2;
-    const norm = 1 - Math.exp(-k);
-    const start = performance.now();
-    let raf = 0;
-    const tick = (now: number) => {
-      const t = Math.min(1, (now - start) / duration);
-      const eased = t === 1 ? 1 : (1 - Math.exp(-k * t)) / norm;
-      setDisplayedEarned(target * eased);
-      if (t < 1) raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  // Headline earnings number — rendered directly, no count-up animation.
+  //
+  // Removed in favor of perf: the earlier rAF count-up updated textContent
+  // every frame on a node inside the top bar's backdrop-filtered layer,
+  // forcing that layer to re-rasterize 60×/sec. On a CPU-throttled mobile
+  // device that dropped the page from 75 fps to ~22 fps for the full 2.2 s
+  // duration of the count-up — by far the worst perf cost on the Earnings
+  // page. A static value + the bar's own fade-in carries enough motion.
+  const formatEarned = (v: number) =>
+    v.toLocaleString('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+
+  // Stable onOpenCard so WallGrid's prop identity doesn't shift on every
+  // render of CampaignGallery — otherwise any state churn here (zoom
+  // open/close, etc.) drags the 54-cell wall through reconciliation.
+  const handleOpenCard = useCallback((c: GalleryCampaign) => {
+    setOpenCampaign(c);
   }, []);
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -172,16 +160,15 @@ export function CampaignGallery({
       <div
         className="absolute top-0 left-0 right-0 z-20"
         style={{
+          // Top bar previously had `backdrop-filter: blur(14px) saturate(1.5)`
+          // sampling the wall behind it. With cards moving during drag, the
+          // browser had to re-blur the bar's backdrop every frame — one of
+          // the heaviest costs during scroll. Replaced with a denser opaque
+          // gradient so the bar still reads as a "glass plate" without the
+          // per-frame blur sampling.
           background:
-            // Soft emerald hint, sized so the blur + saturate behind it stays
-            // the dominant effect. The radial keeps a whisper of green at the
-            // top-left (the same spot the bottom-nav uses), and the bottom
-            // linear adds just enough darkening for legibility against bright
-            // images drifting underneath.
-            'radial-gradient(140% 200% at 12.5% 0%, rgba(34,197,94,0.16) 0%, rgba(34,197,94,0.05) 32%, transparent 70%), ' +
-            'linear-gradient(to bottom, rgba(10,10,10,0.18) 0%, transparent 100%)',
-          backdropFilter: 'blur(14px) saturate(1.5)',
-          WebkitBackdropFilter: 'blur(14px) saturate(1.5)',
+            'radial-gradient(140% 200% at 12.5% 0%, rgba(34,197,94,0.20) 0%, rgba(34,197,94,0.06) 32%, transparent 70%), ' +
+            'linear-gradient(to bottom, rgba(10,10,10,0.72) 0%, rgba(10,10,10,0.50) 60%, rgba(10,10,10,0) 100%)',
           borderBottom: '1px solid rgba(34,197,94,0.10)',
           maskImage: 'linear-gradient(to bottom, #000 0%, #000 70%, transparent 100%)',
           WebkitMaskImage: 'linear-gradient(to bottom, #000 0%, #000 70%, transparent 100%)',
@@ -200,20 +187,9 @@ export function CampaignGallery({
                 {/* Bump-in on first mount: spring scale with a touch of
                     overshoot, paired with the rAF rolling count-up above so
                     the number feels alive when the user lands on Earnings. */}
-                <motion.span
-                  className="text-2xl font-bold tabular-nums leading-none text-white inline-block origin-left"
-                  initial={{ scale: 0.6, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ type: 'spring', stiffness: 380, damping: 18, mass: 0.9 }}
-                  style={{ transformOrigin: 'left center' }}
-                >
-                  {displayedEarned.toLocaleString('en-US', {
-                    style: 'currency',
-                    currency: 'USD',
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}
-                </motion.span>
+                <span className="text-2xl font-bold tabular-nums leading-none text-white inline-block">
+                  {formatEarned(totalEarned)}
+                </span>
                 <span className="text-[11px] font-semibold text-white/80">
                   USD
                 </span>
@@ -292,7 +268,7 @@ export function CampaignGallery({
           slottedId={slottedCampaignId}
           viewportW={viewport.w}
           viewportH={viewport.h}
-          onOpenCard={(c) => setOpenCampaign(c)}
+          onOpenCard={handleOpenCard}
         />
       </div>
 

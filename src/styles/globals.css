@@ -356,4 +356,27 @@ html {
     0%   { transform: translateX(0%); }
     100% { transform: translateX(300%); }
   }
+
+  /* Per-card idle drift — a gentle bob applied to a wrapper element inside
+     each wall cell. Runs purely on the compositor (translate3d) with no JS.
+     Per-cell variation comes from inline `animation-duration` and
+     `animation-delay`; the play state is paused on the wall container while
+     scrolling and resumes when the wall sits idle. */
+  .card-drift {
+    animation-name: cardDrift;
+    animation-iteration-count: infinite;
+    animation-timing-function: ease-in-out;
+    animation-direction: alternate;
+    /* No `will-change: transform` — that would force permanent compositor
+       layer promotion on all 54 cells, costing GPU memory + composition
+       time even when paused during scroll. Letting the browser auto-promote
+       only while the animation runs keeps drag cheap. */
+  }
+  [data-scrolling="true"] .card-drift {
+    animation-play-state: paused;
+  }
+  @keyframes cardDrift {
+    from { transform: translate3d(-1px, -4px, 0); }
+    to   { transform: translate3d(1px,  4px, 0); }
+  }
 }
