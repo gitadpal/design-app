@@ -220,7 +220,7 @@ export function CardZoomView({ campaign, slotted, onClose, onCast }: CardZoomVie
                 src={displayImage}
                 alt={campaign.title}
                 className="w-full h-full object-cover"
-                style={{ filter: 'contrast(1.04) brightness(0.96)' }}
+                style={{ objectFit: 'cover', filter: 'contrast(1.04) brightness(0.96)' }}
               />
               {/* Subtle e-ink sheen */}
               <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-white/10 pointer-events-none" />

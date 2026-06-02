@@ -33,6 +33,9 @@ import { WalletConnectPrompt } from './WalletConnectPrompt';
 import { PullToRefresh } from './PullToRefresh';
 import { useWallets } from '../auth';
 import { FaceIdPrompt } from './FaceIdPrompt';
+import { ChainLogo } from './web3/ChainLogo';
+import { TokenLogo } from './web3/TokenLogo';
+import type { ChainId } from './CampaignGallery/chainColors';
 
 interface AdCampaignsProps {
   view: 'main' | 'campaign-detail' | 'cast-preview' | 'bonus-rewards' | 'active-commitment' | 'participation-history';
@@ -213,6 +216,7 @@ export function AdCampaigns({
       network: 'BNB Chain',
       networkColor: '#F0B90B',
       networkIcon: '⬡',
+      chainId: 'bnb' as ChainId,
     },
     {
       id: 2,
@@ -232,6 +236,7 @@ export function AdCampaigns({
       network: 'Base',
       networkColor: '#0052FF',
       networkIcon: '▣',
+      chainId: 'base' as ChainId,
     },
     {
       id: 3,
@@ -251,6 +256,7 @@ export function AdCampaigns({
       network: 'Arbitrum One',
       networkColor: '#28A0F0',
       networkIcon: '◆',
+      chainId: 'arbitrum' as ChainId,
     },
     {
       id: 4,
@@ -270,6 +276,7 @@ export function AdCampaigns({
       network: 'Ethereum',
       networkColor: '#627EEA',
       networkIcon: '◆',
+      chainId: 'ethereum' as ChainId,
     },
     {
       id: 5,
@@ -289,6 +296,7 @@ export function AdCampaigns({
       network: 'Bitcoin',
       networkColor: '#F7931A',
       networkIcon: '₿',
+      chainId: 'bitcoin' as ChainId,
     },
     {
       id: 6,
@@ -308,6 +316,7 @@ export function AdCampaigns({
       network: 'Ethereum',
       networkColor: '#B6509E',
       networkIcon: '◆',
+      chainId: 'ethereum' as ChainId,
     },
     {
       id: 7,
@@ -327,6 +336,7 @@ export function AdCampaigns({
       network: 'Multi-chain',
       networkColor: '#000000',
       networkIcon: '⬢',
+      chainId: 'multi' as ChainId,
     },
   ];
 
@@ -968,6 +978,7 @@ export function AdCampaigns({
                 </div>
                 <div className="flex items-baseline gap-1.5">
                   <span className="text-[32px] font-bold text-gradient-success leading-none">{selectedCampaign.reward}</span>
+                  <TokenLogo symbol={selectedCampaign.tokenSymbol} size={18} className="self-center" />
                   <span className="text-sm text-emerald-600 font-medium">{selectedCampaign.tokenSymbol}</span>
                 </div>
                 <div className="mt-2.5 pt-2.5 border-t border-emerald-100 flex items-center justify-between">
@@ -977,11 +988,11 @@ export function AdCampaigns({
                       <span className="font-semibold text-emerald-700">{selectedCampaign.completions.toLocaleString()}</span> casters joined
                     </span>
                   </div>
-                  <div 
+                  <div
                     className="flex items-center gap-1 px-1.5 py-0.5 rounded-full"
                     style={{ backgroundColor: `${selectedCampaign.networkColor}15`, border: `1px solid ${selectedCampaign.networkColor}30` }}
                   >
-                    <span className="text-[9px]" style={{ color: selectedCampaign.networkColor }}>{selectedCampaign.networkIcon}</span>
+                    <ChainLogo chainId={selectedCampaign.chainId} size={12} />
                     <span className="text-[8px] font-semibold" style={{ color: selectedCampaign.networkColor }}>{selectedCampaign.network}</span>
                   </div>
                 </div>
@@ -1309,9 +1320,10 @@ export function AdCampaigns({
             <div className="rounded-xl p-4 border border-glass bg-glass-1 backdrop-blur-md text-center">
               <Coins className="w-5 h-5 mx-auto mb-1.5 text-[#00FFC2]" />
               <div className="text-[10px] uppercase tracking-wider text-soft-3 mb-1">Reward</div>
-              <div className="text-lg font-bold text-foreground">
+              <div className="text-lg font-bold text-foreground inline-flex items-center justify-center gap-1.5">
                 {selectedCampaign.reward}
-                <span className="text-sm ml-1 text-[#00FFC2]">{selectedCampaign.tokenSymbol}</span>
+                <TokenLogo symbol={selectedCampaign.tokenSymbol} size={14} />
+                <span className="text-sm text-[#00FFC2]">{selectedCampaign.tokenSymbol}</span>
               </div>
             </div>
           </motion.div>
@@ -1634,12 +1646,15 @@ export function AdCampaigns({
                 <CardContent className="p-0">
                   <div className="relative">
                     <div className="flex gap-3 p-3 pb-2">
-                      <div className="w-20 h-20 bg-soft-3 rounded-lg overflow-hidden flex-shrink-0">
+                      <div className="relative w-20 h-20 bg-soft-3 rounded-lg overflow-hidden flex-shrink-0">
                         <img
                           src={campaign.image}
                           alt={campaign.title}
                           className="w-full h-full object-cover"
                         />
+                        <div className="absolute bottom-1 right-1">
+                          <ChainLogo chainId={campaign.chainId} size={18} ringed />
+                        </div>
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="mb-1 truncate text-foreground">{campaign.title}</div>
@@ -1648,6 +1663,10 @@ export function AdCampaigns({
                           <span className="flex items-center gap-1" style={{ color: 'var(--mint-on-surface)' }}>
                             <Coins className="w-3 h-3" strokeWidth={1.75} />
                             {campaign.reward}
+                          </span>
+                          <span className="flex items-center gap-1 text-soft-3">
+                            <TokenLogo symbol={campaign.tokenSymbol} size={12} />
+                            {campaign.tokenSymbol}
                           </span>
                           <span className="flex items-center gap-1 text-soft-3">
                             <Clock className="w-3 h-3" strokeWidth={1.75} />
