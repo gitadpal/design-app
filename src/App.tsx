@@ -45,6 +45,32 @@ export default function App() {
   const rootRef = useRef<HTMLDivElement>(null);
   useResponsiveScale(rootRef);
 
+  // Re-enable the nav's backdrop blur only while the page is idle. Blurring
+  // during motion forces a full-rect re-blur every frame and tanks smoothness
+  // — most visibly on the Earnings wall, which doesn't fire `scroll` because
+  // it uses Motion drag (panY) rather than native overflow scrolling. Listen
+  // at the document level for any motion signal: native scroll (Settings /
+  // Assets), wheel (desktop), and touchmove (the Earnings drag).
+  const [isScrolling, setIsScrolling] = useState(false);
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const bump = () => {
+      setIsScrolling(true);
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => setIsScrolling(false), 160);
+    };
+    // Capture so we catch scroll events on nested scrollers, not just window.
+    document.addEventListener('scroll', bump, { passive: true, capture: true });
+    document.addEventListener('wheel', bump, { passive: true });
+    document.addEventListener('touchmove', bump, { passive: true });
+    return () => {
+      document.removeEventListener('scroll', bump, { capture: true } as EventListenerOptions);
+      document.removeEventListener('wheel', bump);
+      document.removeEventListener('touchmove', bump);
+      if (timer) clearTimeout(timer);
+    };
+  }, []);
+
   const [activeTab, setActiveTab] = useState<TabValue>('ads');
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
     if (typeof window === 'undefined') return 'dark';
@@ -392,7 +418,10 @@ export default function App() {
                 : ''
             }`}
           >
-            {/* Edge-less glass layer — fades into the page above so there's no visible top boundary */}
+            {/* Edge-less glass layer — fades into the page above so there's no visible top boundary.
+                backdrop-filter is toggled off mid-scroll (it would re-blur the full rect every
+                frame as the Earnings wall moves underneath) and switched back on once the page
+                settles, so the menu reads clearly as glass when the user is reading it. */}
             <div
               aria-hidden="true"
               className="absolute inset-0 -top-10 pointer-events-none"
@@ -400,14 +429,17 @@ export default function App() {
                 background:
                   `radial-gradient(140% 200% at ${accent.pos} 100%, ${accent.color}1c 0%, ${accent.color}08 28%, transparent 65%), ` +
                   'linear-gradient(to bottom, transparent 0%, rgba(20,20,28,0.04) 38%, rgba(20,20,28,0.10) 100%)',
-                // backdrop-filter removed from the bottom nav: it had to
-                // re-blur its backdrop on every scroll frame while the
-                // Earnings wall moved underneath. The gradient + accent
-                // glow carry the "glass shelf" feel without the per-frame
-                // GPU cost. (Kept the linear-gradient bg to compensate.)
-                maskImage: 'linear-gradient(to bottom, transparent 0%, black 38%, black 100%)',
-                WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 38%, black 100%)',
-                transition: 'background 400ms ease',
+                backdropFilter: isScrolling ? undefined : 'blur(18px) saturate(1.4)',
+                WebkitBackdropFilter: isScrolling ? undefined : 'blur(18px) saturate(1.4)',
+                // Gradient mask drives both the gradient bg and the backdrop-filter,
+                // so blur intensity follows the mask's alpha. Result: clear (no blur)
+                // at the top edge where the nav meets scrolling content, and the
+                // blur ramps up gradually as you move down through the button row.
+                maskImage:
+                  'linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.18) 18%, rgba(0,0,0,0.55) 42%, rgba(0,0,0,0.85) 65%, black 100%)',
+                WebkitMaskImage:
+                  'linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.18) 18%, rgba(0,0,0,0.55) 42%, rgba(0,0,0,0.85) 65%, black 100%)',
+                transition: 'background 400ms ease, backdrop-filter 220ms ease, -webkit-backdrop-filter 220ms ease',
               }}
             />
             <div className="relative grid grid-cols-4 p-2">

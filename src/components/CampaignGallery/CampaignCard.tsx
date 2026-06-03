@@ -4,6 +4,8 @@ import { Play, Clock } from 'lucide-react';
 import type { GalleryCampaign } from '../../data/galleryCampaigns';
 import { PAYOUT_RANGE } from '../../data/galleryCampaigns';
 import { CHAINS } from './chainColors';
+import { ChainLogo } from './ChainLogo';
+import { formatPayout } from './formatPayout';
 
 export type ChromeLevel = 'out' | 'mid' | 'in';
 
@@ -156,6 +158,91 @@ export function CampaignCard({ campaign, slotted, chrome, isLit, onTap }: Campai
             />
           )}
 
+          {/* IN CAST overlay — slotted cards get a prominent, full-image stamp
+              so the user can spot which card is currently casting at a glance.
+              Mirrors the IN CAST language used elsewhere (ImageCasting,
+              CampaignGallery top bar): Prism-tinted scrim + shimmer sweep,
+              pulsing emerald dot, bold uppercase label centered over the
+              artwork. The original tiny "◆ IN CASE" chip in the reward footer
+              was easy to miss against the colorful Prism fill. */}
+          {slotted && (
+            <>
+              <div
+                aria-hidden="true"
+                className="absolute inset-0 pointer-events-none"
+                style={{
+                  background:
+                    'linear-gradient(135deg, rgba(0,255,194,0.30) 0%, rgba(188,19,254,0.34) 100%)',
+                  mixBlendMode: 'multiply',
+                }}
+              />
+              <div
+                aria-hidden="true"
+                className="absolute inset-0 pointer-events-none"
+                style={{
+                  background: 'rgba(0,0,0,0.62)',
+                }}
+              />
+              <div
+                aria-hidden="true"
+                className="absolute inset-0 pointer-events-none"
+                style={{
+                  background:
+                    'radial-gradient(60% 40% at 50% 42%, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0) 70%)',
+                }}
+              />
+              <div
+                aria-hidden="true"
+                className="absolute inset-0 pointer-events-none overflow-hidden"
+              >
+                <div
+                  className="absolute inset-y-0 w-1/2 in-cast-shimmer"
+                  style={{
+                    background:
+                      'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.22) 50%, transparent 100%)',
+                  }}
+                />
+              </div>
+              <div
+                className="absolute left-1/2 top-[42%] -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-1.5 pointer-events-none"
+              >
+                <span
+                  className="relative flex items-center justify-center"
+                  style={{
+                    width: tight ? 12 : chrome === 'mid' ? 16 : 20,
+                    height: tight ? 12 : chrome === 'mid' ? 16 : 20,
+                  }}
+                >
+                  <span
+                    className="absolute inset-0 rounded-full animate-ping"
+                    style={{ background: '#00FFC2', opacity: 0.75 }}
+                  />
+                  <span
+                    className="relative rounded-full"
+                    style={{
+                      width: tight ? 7 : chrome === 'mid' ? 9 : 11,
+                      height: tight ? 7 : chrome === 'mid' ? 9 : 11,
+                      background: '#00FFC2',
+                      boxShadow:
+                        '0 0 10px rgba(0,255,194,1), 0 0 18px rgba(0,255,194,0.7)',
+                    }}
+                  />
+                </span>
+                <span
+                  className="font-black uppercase text-white leading-none whitespace-nowrap"
+                  style={{
+                    fontSize: tight ? 22 : chrome === 'mid' ? 32 : 42,
+                    letterSpacing: '0.06em',
+                    textShadow:
+                      '0 2px 10px rgba(0,0,0,0.85), 0 0 14px rgba(0,255,194,0.6), 0 0 22px rgba(188,19,254,0.45)',
+                  }}
+                >
+                  IN CAST
+                </span>
+              </div>
+            </>
+          )}
+
           {/* Bottom title overlay — small portion of the image so the title is
               legible over any artwork. The overlay sits *inside* the image
               area so we don't change the 5:7 ratio. Originally used
@@ -280,16 +367,13 @@ function ProgressFooter({
   const symbolSize = tight ? 7.5 : chrome === 'mid' ? 9 : 10.5;
   const padX = tight ? 7 : chrome === 'mid' ? 8 : 10;
   const padY = tight ? 5 : chrome === 'mid' ? 6 : 7;
-  // Diameter of the chain logo disc that backs the token amount + symbol on
-  // the right of the footer. Bumped up since only the LEFT 3/4 of the disc
-  // is visible — the right 1/4 is clipped past the bar's right edge — so a
-  // larger disc keeps the visible portion's perceived size in proportion.
-  const discSize = (height - padY * 2) * 1.25;
-  // Fraction of the disc's width that's visible inside the bar. The rest
-  // extends past the right edge and is clipped by the footer's overflow.
-  // Tuned smaller so the disc reads more as a chain "cap" peeking in from
-  // the edge than a full badge — leaves more room for the text overlay.
-  const discVisibleFraction = 0.55;
+  // Chain logo medallion — large dim backdrop behind the reward amount.
+  // Anchored to the bar's TOP so it only spills downward (past the card's
+  // rounded bottom edge, clipped by the outer card overflow) and slightly
+  // past the right edge — never upward into the image above the bar.
+  const discSize = height * 1.9;
+  // How far the disc pokes past the bar's right edge.
+  const discRightOverflow = discSize * 0.18;
 
   return (
     <div
@@ -302,8 +386,38 @@ function ProgressFooter({
           : `1px solid ${chain.color}66`,
       }}
     >
+      {/* Chain logo medallion — rendered FIRST (lowest in stack order) so the
+          progress fill paints OVER it. When the remaining-pool fill reaches
+          across to the right side of the bar, it visually masks the disc in
+          the "remaining" zone and the user reads the progress at a glance.
+          The disc only shows through where the bar isn't filled (the
+          depleted portion). Monochrome inline SVG colored via Tailwind's
+          dark/light text classes, so it reads light on dark and dark on
+          light without swapping assets. Anchored to the bar's top so it
+          never spills upward over the image. */}
+      <div
+        className="absolute flex items-center justify-center"
+        style={{
+          width: discSize,
+          height: discSize,
+          right: -discRightOverflow,
+          top: -discSize * 0.2,
+          // The colored PNG already brings its own brand-color contrast; we
+          // dim it well below half so it reads as a quiet watermark behind
+          // the reward text rather than competing with it.
+          opacity: 0.35,
+        }}
+      >
+        <ChainLogo
+          chainId={campaign.chain}
+          className="rounded-full"
+          style={{ width: discSize, height: discSize }}
+        />
+      </div>
+
       {/* Progress fill — width = remaining percent. As the pool drains, the
-          colored area visibly retreats from the right. */}
+          colored area visibly retreats from the right, gradually exposing the
+          chain medallion behind it. */}
       <div
         className="absolute inset-y-0 left-0"
         style={{
@@ -342,78 +456,22 @@ function ProgressFooter({
         <span style={{ fontSize: bigSize * 0.55, marginLeft: 1 }}>%</span>
       </span>
 
-      {/* Chain logo disc — anchored to the right edge of the footer, only
-          its left `discVisibleFraction` portion shows (the rest is clipped
-          past the bar's right edge). Lightened versus the previous centered
-          treatment so the chain identity reads without overwhelming the
-          text overlay. No dark scrim now: relying on textShadow for
-          legibility keeps the disc bright. */}
-      {!slotted &&
-        (chain.logo ? (
-          <img
-            src={(chain as any).logo}
-            alt=""
-            loading="lazy"
-            className="absolute rounded-full"
-            style={{
-              width: discSize,
-              height: discSize,
-              right: -discSize * (1 - discVisibleFraction),
-              top: '50%',
-              transform: 'translateY(-50%)',
-              opacity: 0.7,
-              boxShadow: `0 0 0 ${tight ? 1 : 1.5}px ${chain.color}99, 0 0 10px ${chain.color}44`,
-            }}
-          />
-        ) : (
+      {/* Token amount + symbol — overlaid on the medallion, right-aligned to
+          the bar's inner edge with padX margin. `formatPayout` rescales the
+          amount so users always read a "many" number: sub-1 amounts get
+          bumped to mUSDC / μETH / nETH, and ≥1k amounts collapse to K / M
+          with the scale letter promoted to amount-size next to the number. */}
+      {(() => {
+        const { value, scale, unit } = formatPayout(payout, campaign.tokenSymbol);
+        return (
           <div
-            className="absolute rounded-full flex items-center justify-center"
+            className="absolute flex flex-col items-end leading-none"
             style={{
-              width: discSize,
-              height: discSize,
-              right: -discSize * (1 - discVisibleFraction),
+              right: padX,
               top: '50%',
               transform: 'translateY(-50%)',
-              background: chain.color,
-              opacity: 0.7,
-              boxShadow: `0 0 10px ${chain.color}44`,
             }}
           >
-            <span
-              className="font-bold text-white leading-none"
-              style={{ fontSize: amountSize, textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}
-            >
-              {chain.glyph}
-            </span>
-          </div>
-        ))}
-
-      {/* Token amount + symbol — centered over the VISIBLE portion of the
-          disc. Visible-portion center sits at `(discVisibleFraction/2) *
-          discSize` from the bar's right edge. */}
-      <div
-        className="absolute flex flex-col items-center leading-none"
-        style={{
-          right: discSize * discVisibleFraction * 0.5,
-          top: '50%',
-          transform: 'translate(50%, -50%)',
-        }}
-      >
-        {slotted ? (
-          <span
-            className="font-bold tracking-wider"
-            style={{
-              fontSize: amountSize * 0.55,
-              background: 'linear-gradient(90deg, #00FFC2, #BC13FE)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
-            }}
-          >
-            ◆ IN CASE
-          </span>
-        ) : (
-          <>
             <span
               className="font-bold text-white tabular-nums leading-none"
               style={{
@@ -423,7 +481,23 @@ function ProgressFooter({
                 letterSpacing: '-0.01em',
               }}
             >
-              {payout}
+              {value}
+              {scale && (
+                // Slightly larger, accent-colored, with a small glow so the
+                // K / M reads as "big number" punctuation rather than
+                // ordinary letter-sized text.
+                <span
+                  style={{
+                    fontSize: amountSize * 1.05,
+                    marginLeft: 1,
+                    color: accent,
+                    textShadow: `0 0 6px ${accent}66, 0 1px 2px rgba(0,0,0,0.8)`,
+                    fontWeight: 900,
+                  }}
+                >
+                  {scale}
+                </span>
+              )}
             </span>
             <span
               className="font-semibold text-white tracking-wider leading-none"
@@ -434,11 +508,11 @@ function ProgressFooter({
                   '0 1px 2px rgba(0,0,0,0.80), 0 0 4px rgba(0,0,0,0.50)',
               }}
             >
-              {campaign.tokenSymbol}
+              {unit}
             </span>
-          </>
-        )}
-      </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
