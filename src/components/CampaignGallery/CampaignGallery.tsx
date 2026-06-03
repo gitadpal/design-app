@@ -5,6 +5,7 @@ import { WallGrid } from './WallGrid';
 import { CardZoomView } from './CardZoomView';
 import { ReducedMotionList, usePrefersReducedMotion } from './ReducedMotionList';
 import { GALLERY_CAMPAIGNS, type GalleryCampaign } from '../../data/galleryCampaigns';
+import { EinkCasePrompt } from '../EinkCasePrompt';
 
 interface CampaignGalleryProps {
   // Slotted card = the campaign currently displayed on the user's case. Maps to
@@ -30,6 +31,11 @@ interface CampaignGalleryProps {
   // into the campaign's marketing detail, it should go to "how's this run
   // doing right now?".
   onViewActiveStatus: () => void;
+  // Whether the user's E-Ink case is currently active. When false, casting
+  // a campaign is blocked at the trigger point — children call
+  // `onNeedActivation` (or check `einkCaseAttached` directly) so the user
+  // sees an activate-the-device prompt instead of a confusing no-op.
+  einkCaseAttached: boolean;
 }
 
 // Default Fisher–Yates: deterministic from the time you shuffled, not the data
@@ -60,9 +66,16 @@ export function CampaignGallery({
   totalEarned,
   onShowHistory,
   onViewActiveStatus,
+  einkCaseAttached,
 }: CampaignGalleryProps) {
   const [seed, setSeed] = useState(() => Math.floor(Math.random() * 1_000_000));
   const [openCampaign, setOpenCampaign] = useState<GalleryCampaign | null>(null);
+  // Activation guard — `CardZoomView` and `ReducedMotionList` call
+  // `notifyNeedActivation` when the user tries to cast without an active
+  // device, surfacing the shared prompt below instead of letting the cast
+  // silently fail at App.tsx's commitment step.
+  const [showEinkPrompt, setShowEinkPrompt] = useState(false);
+  const notifyNeedActivation = useCallback(() => setShowEinkPrompt(true), []);
 
   // Headline earnings number — rendered directly, no count-up animation.
   //
@@ -145,7 +158,11 @@ export function CampaignGallery({
         campaigns={batch}
         slottedId={slottedCampaignId}
         onReshuffle={reshuffle}
-        onCastCampaign={(c) => onCommitCampaign(c, 0)}
+        onCastCampaign={(c) => {
+          if (!einkCaseAttached) { notifyNeedActivation(); return; }
+          onCommitCampaign(c, 0);
+        }}
+        einkCaseAttached={einkCaseAttached}
       />
     );
   }
@@ -296,6 +313,8 @@ export function CampaignGallery({
             key={openCampaign.id}
             campaign={openCampaign}
             slotted={openCampaign.id === slottedCampaignId}
+            einkCaseAttached={einkCaseAttached}
+            onNeedActivation={notifyNeedActivation}
             onClose={() => setOpenCampaign(null)}
             onCast={(c, frameIdx) => {
               // Cast sequence completed — close the open card and tell App.tsx
@@ -306,6 +325,8 @@ export function CampaignGallery({
           />
         )}
       </AnimatePresence>
+
+      <EinkCasePrompt open={showEinkPrompt} onClose={() => setShowEinkPrompt(false)} />
     </div>
   );
 }

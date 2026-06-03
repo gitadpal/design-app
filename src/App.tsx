@@ -254,6 +254,7 @@ export default function App() {
           <CampaignGallery
             slottedCampaignId={activeCommitment?.campaignId ?? null}
             onCardOpenChange={setGalleryCardOpen}
+            einkCaseAttached={einkCaseAttached}
             // Mirrors the dashboard's Total Earned tile in AdCampaigns.tsx
             // (tokenBalance constant) so the gallery's headline matches the
             // figure shown when the user enters detail views.
@@ -269,6 +270,7 @@ export default function App() {
                 campaignId: c.id,
                 title: c.title,
                 reward: frame?.tokensPerCast ?? c.tokensPerCast,
+                tokenSymbol: c.tokenSymbol,
                 duration: c.durationHours,
                 startTime: Date.now(),
                 image: frame?.image ?? c.image,

@@ -462,7 +462,7 @@ function ProgressFooter({
           bumped to mUSDC / μETH / nETH, and ≥1k amounts collapse to K / M
           with the scale letter promoted to amount-size next to the number. */}
       {(() => {
-        const { value, scale, unit } = formatPayout(payout, campaign.tokenSymbol);
+        const { value, scale, prefix, symbol } = formatPayout(payout, campaign.tokenSymbol);
         return (
           <div
             className="absolute flex flex-col items-end leading-none"
@@ -508,7 +508,8 @@ function ProgressFooter({
                   '0 1px 2px rgba(0,0,0,0.80), 0 0 4px rgba(0,0,0,0.50)',
               }}
             >
-              {unit}
+              {prefix}
+              {symbol}
             </span>
           </div>
         );

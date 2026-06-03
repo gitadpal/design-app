@@ -35,6 +35,7 @@ function useIsDark(): boolean {
 }
 import type { GalleryCampaign } from '../../data/galleryCampaigns';
 import { CHAINS } from './chainColors';
+import { formatPayout } from './formatPayout';
 import { ScrubStrip } from './ScrubStrip';
 import { CastSequence } from './CastSequence';
 
@@ -45,13 +46,25 @@ interface CardZoomViewProps {
   // Cast handoff carries the chosen frame index for animated series so the
   // commit step knows which still the user picked.
   onCast?: (campaign: GalleryCampaign, frameIdx: number) => void;
+  // Whether the user's E-Ink case is active. The CTA short-circuits to
+  // `onNeedActivation()` when this is false instead of starting the
+  // press-and-hold cast sequence the user can't complete anyway.
+  einkCaseAttached?: boolean;
+  onNeedActivation?: () => void;
 }
 
 // Detail view that opens when a user taps a card in the wall. Visually echoes
 // the main-branch campaign detail page (iPhone back photo, the chosen image
 // sitting in the e-ink display slot) but rebuilt in the gallery's dark Matte
 // Obsidian language so it doesn't whiplash from the wall behind it.
-export function CardZoomView({ campaign, slotted, onClose, onCast }: CardZoomViewProps) {
+export function CardZoomView({
+  campaign,
+  slotted,
+  onClose,
+  onCast,
+  einkCaseAttached,
+  onNeedActivation,
+}: CardZoomViewProps) {
   const chain = CHAINS[campaign.chain];
   const isDark = useIsDark();
   const iphoneBackImg = isDark ? iphoneBackBlack : iphoneBackWhite;
@@ -342,22 +355,39 @@ export function CardZoomView({ campaign, slotted, onClose, onCast }: CardZoomVie
                     Per Cast Reward
                   </span>
                 </div>
-                <div className="flex items-baseline gap-1.5">
-                  <span
-                    className="text-[32px] font-bold leading-none tabular-nums"
-                    style={{
-                      background: 'linear-gradient(90deg, #00FFC2, #BC13FE)',
-                      WebkitBackgroundClip: 'text',
-                      WebkitTextFillColor: 'transparent',
-                      backgroundClip: 'text',
-                    }}
-                  >
-                    {displayPayout}
-                  </span>
-                  <span className="text-sm font-medium" style={{ color: t.text2 }}>
-                    {campaign.tokenSymbol}
-                  </span>
-                </div>
+                {(() => {
+                  const fmt = formatPayout(displayPayout, campaign.tokenSymbol);
+                  return (
+                    <div className="flex items-baseline gap-1.5">
+                      <span
+                        className="text-[32px] font-bold leading-none tabular-nums"
+                        style={{
+                          background: 'linear-gradient(90deg, #00FFC2, #BC13FE)',
+                          WebkitBackgroundClip: 'text',
+                          WebkitTextFillColor: 'transparent',
+                          backgroundClip: 'text',
+                        }}
+                      >
+                        {fmt.value}
+                        {fmt.scale && (
+                          <span
+                            style={{
+                              fontWeight: 900,
+                              marginLeft: 1,
+                              textShadow: '0 0 12px rgba(0,255,194,0.45)',
+                            }}
+                          >
+                            {fmt.scale}
+                          </span>
+                        )}
+                      </span>
+                      <span className="text-sm font-medium" style={{ color: t.text2 }}>
+                        {fmt.prefix}
+                        {fmt.symbol}
+                      </span>
+                    </div>
+                  );
+                })()}
                 <div
                   className="mt-2.5 pt-2.5 flex items-center justify-between"
                   style={{ borderTop: `1px solid ${t.divider}` }}
@@ -507,20 +537,29 @@ export function CardZoomView({ campaign, slotted, onClose, onCast }: CardZoomVie
             whileTap={{ scale: 0.97 }}
             onClick={() => {
               if (slotted) return;
+              // Activation gate — without an attached E-Ink case the cast
+              // can't actually happen, so we never start the press-and-hold
+              // sequence; instead surface the activate-your-device prompt.
+              if (!einkCaseAttached) {
+                onNeedActivation?.();
+                return;
+              }
               setCastOpen(true);
             }}
             className="w-full h-14 rounded-xl font-bold text-base flex items-center justify-center gap-2"
             style={{
-              background: slotted
+              background: slotted || !einkCaseAttached
                 ? t.ctaMutedBg
                 : 'linear-gradient(135deg, #00FFC2 0%, #BC13FE 100%)',
-              color: slotted ? t.ctaMutedText : '#0A0A0A',
-              boxShadow: slotted ? 'none' : '0 0 32px rgba(0,255,194,0.35)',
+              color: slotted || !einkCaseAttached ? t.ctaMutedText : '#0A0A0A',
+              boxShadow: slotted || !einkCaseAttached ? 'none' : '0 0 32px rgba(0,255,194,0.35)',
             }}
           >
             <Nfc className="w-5 h-5" />
             {slotted
               ? 'Already in your case'
+              : !einkCaseAttached
+              ? 'Activate your case to cast'
               : hasFrames
               ? 'Cast this frame and start earning'
               : 'Cast this ad and start earning'}

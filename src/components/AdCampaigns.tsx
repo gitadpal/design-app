@@ -33,6 +33,7 @@ import { WalletConnectPrompt } from './WalletConnectPrompt';
 import { PullToRefresh } from './PullToRefresh';
 import { useWallets } from '../auth';
 import { FaceIdPrompt } from './FaceIdPrompt';
+import { formatPayout } from './CampaignGallery/formatPayout';
 import { ChainLogo } from './web3/ChainLogo';
 import { TokenLogo } from './web3/TokenLogo';
 import type { ChainId } from './CampaignGallery/chainColors';
@@ -147,7 +148,10 @@ export function AdCampaigns({
 
   const handleClaimTokens = () => {
     if (!activeCommitment) return;
-    toast.success(`+${activeCommitment.reward} tokens claimed!`, {
+    toast.success(`+${(() => {
+      const f = formatPayout(activeCommitment.reward, activeCommitment.tokenSymbol ?? 'USDC');
+      return `${f.value}${f.scale ?? ''} ${f.prefix ?? ''}${f.symbol}`;
+    })()} claimed!`, {
       description: 'Added to your wallet',
     });
     setActiveCommitment(null);
@@ -698,10 +702,24 @@ export function AdCampaigns({
               </div>
               <div className="text-right">
                 <div className="text-[10px] uppercase tracking-wider text-soft-3 mb-1">Reward</div>
-                <div className="text-2xl font-bold flex items-center gap-1 justify-end" style={{ color: '#00FFC2' }}>
-                  <Coins className="w-5 h-5" />
-                  {activeCommitment.reward}
-                </div>
+                {(() => {
+                  const fmt = formatPayout(activeCommitment.reward, activeCommitment.tokenSymbol ?? 'USDC');
+                  return (
+                    <div className="text-2xl font-bold flex items-baseline gap-1 justify-end" style={{ color: '#00FFC2' }}>
+                      <Coins className="w-5 h-5 self-center" />
+                      <span className="tabular-nums">{fmt.value}</span>
+                      {fmt.scale && (
+                        <span style={{ fontWeight: 900, fontSize: '1.05em', textShadow: '0 0 8px rgba(0,255,194,0.5)' }}>
+                          {fmt.scale}
+                        </span>
+                      )}
+                      <span className="text-sm opacity-80">
+                        {fmt.prefix}
+                        {fmt.symbol}
+                      </span>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
 
@@ -765,7 +783,17 @@ export function AdCampaigns({
                 style={{ background: 'linear-gradient(135deg, #00FFC2, #00d9a8)', color: '#0a0a0a', boxShadow: '0 0 32px rgba(0,255,194,0.35)' }}
               >
                 <Coins className="w-5 h-5" />
-                Claim {activeCommitment.reward} Tokens
+                {(() => {
+                  const fmt = formatPayout(activeCommitment.reward, activeCommitment.tokenSymbol ?? 'USDC');
+                  return (
+                    <span className="flex items-baseline gap-1">
+                      Claim
+                      <span className="tabular-nums">{fmt.value}</span>
+                      {fmt.scale && <span style={{ fontWeight: 900 }}>{fmt.scale}</span>}
+                      <span>{fmt.prefix}{fmt.symbol}</span>
+                    </span>
+                  );
+                })()}
               </button>
             ) : (
               <button
@@ -976,11 +1004,26 @@ export function AdCampaigns({
                   </div>
                   <span className="text-[10px] text-emerald-700 font-semibold uppercase tracking-wider">Per Cast Reward</span>
                 </div>
-                <div className="flex items-baseline gap-1.5">
-                  <span className="text-[32px] font-bold text-gradient-success leading-none">{selectedCampaign.reward}</span>
-                  <TokenLogo symbol={selectedCampaign.tokenSymbol} size={18} className="self-center" />
-                  <span className="text-sm text-emerald-600 font-medium">{selectedCampaign.tokenSymbol}</span>
-                </div>
+                {(() => {
+                  const fmt = formatPayout(selectedCampaign.reward, selectedCampaign.tokenSymbol);
+                  return (
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="text-[32px] font-bold text-gradient-success leading-none tabular-nums">
+                        {fmt.value}
+                        {fmt.scale && (
+                          <span style={{ fontWeight: 900, marginLeft: 1, textShadow: '0 0 10px rgba(16,185,129,0.45)' }}>
+                            {fmt.scale}
+                          </span>
+                        )}
+                      </span>
+                      <TokenLogo symbol={fmt.symbol} size={18} className="self-center" />
+                      <span className="text-sm text-emerald-600 font-medium">
+                        {fmt.prefix}
+                        {fmt.symbol}
+                      </span>
+                    </div>
+                  );
+                })()}
                 <div className="mt-2.5 pt-2.5 border-t border-emerald-100 flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
                     <Users className="w-3 h-3 text-emerald-500" />
@@ -1320,11 +1363,26 @@ export function AdCampaigns({
             <div className="rounded-xl p-4 border border-glass bg-glass-1 backdrop-blur-md text-center">
               <Coins className="w-5 h-5 mx-auto mb-1.5 text-[#00FFC2]" />
               <div className="text-[10px] uppercase tracking-wider text-soft-3 mb-1">Reward</div>
-              <div className="text-lg font-bold text-foreground inline-flex items-center justify-center gap-1.5">
-                {selectedCampaign.reward}
-                <TokenLogo symbol={selectedCampaign.tokenSymbol} size={14} />
-                <span className="text-sm text-[#00FFC2]">{selectedCampaign.tokenSymbol}</span>
-              </div>
+              {(() => {
+                const fmt = formatPayout(selectedCampaign.reward, selectedCampaign.tokenSymbol);
+                return (
+                  <div className="text-lg font-bold text-foreground inline-flex items-baseline justify-center gap-1.5">
+                    <span className="tabular-nums">
+                      {fmt.value}
+                      {fmt.scale && (
+                        <span style={{ fontWeight: 900, marginLeft: 1, color: '#00FFC2' }}>
+                          {fmt.scale}
+                        </span>
+                      )}
+                    </span>
+                    <TokenLogo symbol={fmt.symbol} size={14} className="self-center" />
+                    <span className="text-sm text-[#00FFC2]">
+                      {fmt.prefix}
+                      {fmt.symbol}
+                    </span>
+                  </div>
+                );
+              })()}
             </div>
           </motion.div>
 
@@ -1546,11 +1604,26 @@ export function AdCampaigns({
                     <div className="text-lg truncate">{activeCommitment.title}</div>
                   </div>
                   <div className="text-right flex-shrink-0 ml-3">
-                    <div className="flex items-center gap-1 justify-end mb-1" style={{ color: 'var(--mint-on-surface)' }}>
-                      <Coins className="w-5 h-5" strokeWidth={1.75} />
-                      <span className="text-lg tracking-tight">{activeCommitment.reward}</span>
-                    </div>
-                    <div className="text-xs text-soft-3">tokens</div>
+                    {(() => {
+                      const fmt = formatPayout(activeCommitment.reward, activeCommitment.tokenSymbol ?? 'USDC');
+                      return (
+                        <>
+                          <div className="flex items-baseline gap-1 justify-end mb-1" style={{ color: 'var(--mint-on-surface)' }}>
+                            <Coins className="w-5 h-5 self-center" strokeWidth={1.75} />
+                            <span className="text-lg tracking-tight tabular-nums">{fmt.value}</span>
+                            {fmt.scale && (
+                              <span className="text-lg tracking-tight" style={{ fontWeight: 900 }}>
+                                {fmt.scale}
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-xs text-soft-3">
+                            {fmt.prefix}
+                            {fmt.symbol}
+                          </div>
+                        </>
+                      );
+                    })()}
                   </div>
                 </div>
                 <div>

@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Nfc, Check } from 'lucide-react';
 import type { GalleryCampaign } from '../../data/galleryCampaigns';
 import { CHAINS } from './chainColors';
+import { formatPayout } from './formatPayout';
 import { useDitheredImage } from './dither';
 
 interface CastSequenceProps {
@@ -214,12 +215,19 @@ export function CastSequence({ campaign, frameImage, onCancel, onComplete }: Cas
               transition={{ duration: 0.3 }}
               className="p-3 space-y-0.5"
             >
-              <div className="flex items-baseline gap-1">
-                <span className="text-base font-bold tabular-nums" style={{ color: '#00FFC2' }}>
-                  {campaign.tokensPerCast}
-                </span>
-                <span className="text-[10px] text-white/65">◇ / cast</span>
-              </div>
+              {(() => {
+                const fmt = formatPayout(campaign.tokensPerCast, campaign.tokenSymbol);
+                return (
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-base font-bold tabular-nums" style={{ color: '#00FFC2' }}>
+                      {fmt.value}
+                      {fmt.scale && <span style={{ fontWeight: 900, marginLeft: 1 }}>{fmt.scale}</span>}
+                    </span>
+                    <span className="text-[10px] text-white/85">{fmt.prefix}{fmt.symbol}</span>
+                    <span className="text-[10px] text-white/55">/ cast</span>
+                  </div>
+                );
+              })()}
               <div className="text-[11px] text-white/85">{campaign.advertiser}</div>
             </motion.div>
           </div>

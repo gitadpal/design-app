@@ -30,6 +30,7 @@ import phoneCaseImg from 'figma:asset/771d461e7de4d0c40d4ef5fcc5c59768d30ec60e.p
 import phoneCaseImgDark from '@/assets/iphone-case-black.png';
 import { GALLERY_CAMPAIGNS } from '../data/galleryCampaigns';
 import { CHAINS } from './CampaignGallery/chainColors';
+import { formatPayout } from './CampaignGallery/formatPayout';
 
 // Geometry of the welcome-step case PNG (862x1248) — the E-ink screen window as
 // fractions of the full case image. Source coordinates from StepWelcome's
@@ -757,25 +758,20 @@ export function ImageCasting({ activeCommitment, currentDisplay, setCurrentDispl
                 <div className="relative h-full px-3 flex items-center justify-between gap-2">
                   <div className="flex flex-col leading-none">
                     {(() => {
-                      // Compact countdown — keeps the slot text-xl-sized
-                      // even with hours in play. Shows the two most
-                      // significant units only: hours → "2h 15m",
-                      // minutes → "45m 30s", under a minute → "12s".
-                      // When the timer reaches 0 the slot flips into a
-                      // "Ready · to Claim" call-to-action so the user knows
-                      // tapping the card now takes them to the claim flow.
+                      // Live countdown with seconds always visible — the
+                      // timer ticks every 1s (see useEffect above) so the
+                      // user gets the satisfying "time moving" feel even
+                      // when there are still hours left on the commitment.
+                      // Layout: hours/minutes at full text-xl weight,
+                      // seconds at a smaller size so the trailing ":SS"
+                      // reads as a sub-unit and doesn't make the line
+                      // overflow the card half.
                       const total = Math.max(0, Math.floor(timeRemaining / 1000));
                       const h = Math.floor(total / 3600);
                       const m = Math.floor((total % 3600) / 60);
                       const s = total % 60;
                       const ready = total === 0;
-                      const bigText = ready
-                        ? 'Ready'
-                        : h > 0
-                          ? `${h}h ${m}m`
-                          : m > 0
-                            ? `${m}m ${s.toString().padStart(2, '0')}s`
-                            : `${s}s`;
+                      const pad = (n: number) => n.toString().padStart(2, '0');
                       const label = ready ? 'To Claim' : 'Claim In';
                       return (
                         <>
@@ -783,23 +779,59 @@ export function ImageCasting({ activeCommitment, currentDisplay, setCurrentDispl
                             {label}
                           </span>
                           <span className="text-xl font-bold tabular-nums tracking-tight text-white drop-shadow-sm">
-                            {bigText}
+                            {ready ? (
+                              'Ready'
+                            ) : h > 0 ? (
+                              <>
+                                {h}h {pad(m)}m
+                                <span className="text-[60%] font-semibold text-white/80 ml-1">
+                                  {pad(s)}s
+                                </span>
+                              </>
+                            ) : m > 0 ? (
+                              <>
+                                {m}m
+                                <span className="text-[70%] font-semibold text-white/85 ml-1">
+                                  {pad(s)}s
+                                </span>
+                              </>
+                            ) : (
+                              `${s}s`
+                            )}
                           </span>
                         </>
                       );
                     })()}
                   </div>
-                  <div className="flex flex-col items-end leading-none">
-                    <span className="text-xl font-bold tabular-nums tracking-tight text-white">
-                      {activeCommitment.reward}
-                    </span>
-                    <span
-                      className="text-[10px] font-semibold mt-1.5 tracking-wider"
-                      style={{ color: chainColor }}
-                    >
-                      {tokenSymbol}
-                    </span>
-                  </div>
+                  {(() => {
+                    const fmt = formatPayout(activeCommitment.reward, tokenSymbol || 'USDC');
+                    return (
+                      <div className="flex flex-col items-end leading-none">
+                        <span className="text-xl font-bold tabular-nums tracking-tight text-white">
+                          {fmt.value}
+                          {fmt.scale && (
+                            <span
+                              style={{
+                                fontWeight: 900,
+                                marginLeft: 1,
+                                color: chainColor,
+                                textShadow: `0 0 8px ${chainColor}66`,
+                              }}
+                            >
+                              {fmt.scale}
+                            </span>
+                          )}
+                        </span>
+                        <span
+                          className="text-[10px] font-semibold mt-1.5 tracking-wider"
+                          style={{ color: chainColor }}
+                        >
+                          {fmt.prefix}
+                          {fmt.symbol}
+                        </span>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             </button>
@@ -982,7 +1014,14 @@ export function ImageCasting({ activeCommitment, currentDisplay, setCurrentDispl
                   );
                 })}
 
-                {/* Center case — counter-translates by -dragX so it stays still on page */}
+                {/* Center case — counter-translates by -dragX so it stays still on page.
+                    Dim treatment is applied via `filter` (brightness/saturate) rather
+                    than `opacity`: the slot-0 PeekItem sits at the same center behind
+                    this container (zIndex < 2). If we drop the case's opacity, that
+                    peek bleeds through as a ghost copy of the screen image — visible
+                    only in the not-activated / active-commitment state. Filter-based
+                    dimming keeps the case fully opaque so the peek stays occluded,
+                    while still reading as "inactive". */}
                 <motion.div
                   className="absolute bottom-0"
                   style={{
@@ -992,8 +1031,9 @@ export function ImageCasting({ activeCommitment, currentDisplay, setCurrentDispl
                     width: CASE_WIDTH_PX,
                     height: VISIBLE_H_PX,
                     overflow: 'hidden',
-                    filter: 'drop-shadow(0 22px 30px rgba(0,0,0,0.55))',
-                    opacity: dimmed ? 0.55 : 1,
+                    filter: dimmed
+                      ? 'drop-shadow(0 22px 30px rgba(0,0,0,0.55)) brightness(0.55) saturate(0.6)'
+                      : 'drop-shadow(0 22px 30px rgba(0,0,0,0.55))',
                     zIndex: 2,
                     willChange: 'transform',
                     backfaceVisibility: 'hidden',

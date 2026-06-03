@@ -2,12 +2,19 @@ import { useEffect, useState } from 'react';
 import { ChevronDown, RefreshCw, Sparkles } from 'lucide-react';
 import type { GalleryCampaign } from '../../data/galleryCampaigns';
 import { CHAINS } from './chainColors';
+import { formatPayout } from './formatPayout';
 
 interface ReducedMotionListProps {
   campaigns: GalleryCampaign[];
   slottedId: number | null;
   onReshuffle: () => void;
   onCastCampaign: (c: GalleryCampaign) => void;
+  // When the user's E-Ink case isn't activated, the cast button on each row
+  // turns into an "Activate your case" call-to-action. The parent
+  // (`CampaignGallery`) already short-circuits `onCastCampaign` to surface
+  // the EinkCasePrompt — this prop just lets us style the button so the
+  // user knows why the cast button looks muted before they tap it.
+  einkCaseAttached?: boolean;
 }
 
 // Reduced-motion alternative to the panning wall. Vertical single-column list,
@@ -21,6 +28,7 @@ export function ReducedMotionList({
   slottedId,
   onReshuffle,
   onCastCampaign,
+  einkCaseAttached = true,
 }: ReducedMotionListProps) {
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
@@ -95,12 +103,19 @@ export function ReducedMotionList({
                         ◆ IN CASE
                       </span>
                     ) : (
-                      <>
-                        <span className="text-base font-bold tabular-nums" style={{ color: '#00FFC2' }}>
-                          {c.tokensPerCast}
-                        </span>
-                        <span className="text-[10px] text-white/65">◇/cast</span>
-                      </>
+                      (() => {
+                        const fmt = formatPayout(c.tokensPerCast, c.tokenSymbol);
+                        return (
+                          <>
+                            <span className="text-base font-bold tabular-nums" style={{ color: '#00FFC2' }}>
+                              {fmt.value}
+                              {fmt.scale && <span style={{ fontWeight: 900, marginLeft: 1 }}>{fmt.scale}</span>}
+                            </span>
+                            <span className="text-[10px] text-white/80">{fmt.prefix}{fmt.symbol}</span>
+                            <span className="text-[10px] text-white/55">/cast</span>
+                          </>
+                        );
+                      })()
                     )}
                     <span className="ml-auto text-[10px] text-white/55">{c.durationHours}h</span>
                   </div>
@@ -145,11 +160,13 @@ export function ReducedMotionList({
                       }}
                       className="w-full h-11 rounded-lg font-bold text-sm mt-1.5"
                       style={{
-                        background: 'linear-gradient(135deg, #00FFC2 0%, #BC13FE 100%)',
-                        color: '#0A0A0A',
+                        background: einkCaseAttached
+                          ? 'linear-gradient(135deg, #00FFC2 0%, #BC13FE 100%)'
+                          : 'rgba(255,255,255,0.08)',
+                        color: einkCaseAttached ? '#0A0A0A' : 'rgba(255,255,255,0.7)',
                       }}
                     >
-                      Cast this card
+                      {einkCaseAttached ? 'Cast this card' : 'Activate your case to cast'}
                     </button>
                   )}
                 </div>

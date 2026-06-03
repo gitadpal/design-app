@@ -27,13 +27,6 @@ const GAP_Y = 14;
 // laid-out cells, so a single estimate is fine.
 const STATS_STRIP_EST = 44;
 
-// Per-lane drag-speed multipliers. Whichever lane the user's touch lands in
-// becomes the "leader" — it scrolls faster than the other two so each column
-// reads as its own current with the touched one out front. Small delta keeps
-// the wall coherent (the touched lane doesn't run away).
-const LANE_SPEED_LEAD = 1.18;
-const LANE_SPEED_FOLLOW = 0.9;
-
 const ZOOM_STEPS: { id: ChromeLevel; scale: number }[] = [
   { id: 'out', scale: 1 },
   { id: 'mid', scale: 1.5 },
@@ -351,60 +344,12 @@ export function WallGrid({
     if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
   }, []);
 
-  // Per-lane y. Each lane carries its own scroll position, wrapped to the same
-  // (-2T, 0] window panY uses. The drag updates panY; we mirror panY's delta
-  // into each lane multiplied by that lane's speed and wrap independently.
-  // Storing lane y directly (instead of deriving it as `speed × panY + offset`)
-  // is what keeps the wall coherent: drift between lanes is bounded by the
-  // wrap, so the rendered tile copies always cover the viewport.
-  const laneY0 = useMotionValue(-tileH);
-  const laneY1 = useMotionValue(-tileH);
-  const laneY2 = useMotionValue(-tileH);
-  const laneYs = [laneY0, laneY1, laneY2];
-
-  // Per-lane speed multipliers — touched lane gets LANE_SPEED_LEAD, others
-  // LANE_SPEED_FOLLOW, released back to 1 on pointer-up.
-  const laneSpeed0 = useMotionValue(1);
-  const laneSpeed1 = useMotionValue(1);
-  const laneSpeed2 = useMotionValue(1);
-  const laneSpeeds = [laneSpeed0, laneSpeed1, laneSpeed2];
-
-  // Switch which lane leads. Just updates speed multipliers — no offset math
-  // because lane y is its own state, not derived from panY × speed. The lane
-  // simply starts consuming subsequent panY deltas at the new rate.
-  const setFocusedLane = (lead: number | null) => {
-    for (let i = 0; i < COLS; i++) {
-      const target =
-        lead == null ? 1 : i === lead ? LANE_SPEED_LEAD : LANE_SPEED_FOLLOW;
-      laneSpeeds[i].set(target);
-    }
-  };
-
-  // Track the last panY value we've consumed so we can compute deltas inside
-  // the change handler. The wrap branches pre-update this ref so the recursive
-  // change handler triggered by panY.set sees delta = 0 and doesn't re-feed
-  // the lanes.
-  const lastPanYRef = useRef(-tileH);
-
   // Re-anchor pan into the middle tile when tileH changes (e.g., reshuffle or
   // viewport resize changed card heights). Without this, the wrap thresholds
   // would mismatch the rendered tiles and the wall would jump.
   useEffect(() => {
     panY.set(-tileH);
-    laneY0.set(-tileH);
-    laneY1.set(-tileH);
-    laneY2.set(-tileH);
-    lastPanYRef.current = -tileH;
-  }, [tileH, panY, laneY0, laneY1, laneY2]);
-
-  // Wrap a lane y back into the (-2T, 0] window. Cheap fixed-iteration loop —
-  // a single drag event can never overshoot by more than a few tiles.
-  const wrapLaneY = (y: number, T: number): number => {
-    let r = y;
-    while (r > 0) r -= T;
-    while (r < -2 * T) r += T;
-    return r;
-  };
+  }, [tileH, panY]);
 
   // Single panY listener — does both idle tracking (noteMotion) and tile
   // wrap. Merging them avoids motion's per-listener overhead being paid
@@ -413,13 +358,10 @@ export function WallGrid({
     noteMotion();
     const s = scale.get();
     const T = tileH * s;
-    lastPanYRef.current = v;
 
     if (v > 0) {
-      lastPanYRef.current = v - T;
       panY.set(v - T);
     } else if (v < -2 * T) {
-      lastPanYRef.current = v + T;
       panY.set(v + T);
     }
   });
@@ -441,21 +383,6 @@ export function WallGrid({
   const tapStartRef = useRef<{ x: number; y: number; t: number } | null>(null);
   const pointersRef = useRef<Map<number, { x: number; y: number }>>(new Map());
   const pinchStartRef = useRef<{ dist: number; scale: number } | null>(null);
-  const containerRef = useRef<HTMLDivElement | null>(null);
-
-  // Translate a viewport-space clientX into a column index (0..COLS-1). The
-  // wall is centered horizontally inside the container and may be scaled.
-  const laneFromClientX = (clientX: number): number => {
-    const el = containerRef.current;
-    if (!el) return 0;
-    const rect = el.getBoundingClientRect();
-    const s = scale.get();
-    const xRelMid = (clientX - (rect.left + rect.width / 2)) / s;
-    const cellW = layout.cellW;
-    const xFromWallStart = xRelMid + layout.wallW / 2;
-    const lane = Math.floor(xFromWallStart / (cellW + GAP_X));
-    return Math.max(0, Math.min(COLS - 1, lane));
-  };
 
   const onPointerDown = (e: { clientX: number; clientY: number; pointerId?: number }) => {
     tapStartRef.current = { x: e.clientX, y: e.clientY, t: Date.now() };
@@ -465,14 +392,8 @@ export function WallGrid({
         const pts: { x: number; y: number }[] = Array.from(pointersRef.current.values()) as any;
         const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
         pinchStartRef.current = { dist, scale: scale.get() };
-        // Pinch in progress — don't bias lanes.
-        setFocusedLane(null);
-        return;
       }
     }
-    // First-finger touch sets the lead lane. Subsequent drags inherit it until
-    // pointerup or another pointerdown changes it.
-    setFocusedLane(laneFromClientX(e.clientX));
   };
   const onPointerMove = (e: { clientX: number; clientY: number; pointerId?: number }) => {
     if (e.pointerId == null) return;
@@ -507,9 +428,6 @@ export function WallGrid({
         return;
       }
     }
-    // When no fingers remain, release the lane bias. The continuity math means
-    // the wall doesn't snap; lanes just stop diverging from the global pan.
-    if (pointersRef.current.size === 0) setFocusedLane(null);
     if (!start || pinchStartRef.current) return;
     const moved = Math.hypot(e.clientX - start.x, e.clientY - start.y);
     if (moved > 6 || Date.now() - start.t > 220) return;
@@ -533,7 +451,6 @@ export function WallGrid({
 
   return (
     <div
-      ref={containerRef}
       className="relative overflow-hidden touch-none select-none"
       style={{ width: viewportW, height: viewportH }}
       onPointerDown={onPointerDown}
