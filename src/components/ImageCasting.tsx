@@ -1155,7 +1155,7 @@ export function ImageCasting({ activeCommitment, currentDisplay, setCurrentDispl
                             '0 1px 0 rgba(255,255,255,0.10), 0 -1px 0 rgba(0,0,0,0.45)',
                         }}
                       >
-                        Click to cast
+                        Tap to cast
                       </span>
                       <ChevronDown
                         style={{
