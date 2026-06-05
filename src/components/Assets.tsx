@@ -42,6 +42,7 @@ import {
 import { toast } from 'sonner@2.0.3';
 import { usePrivy, useWallets } from '../auth';
 import { PullToRefresh } from './PullToRefresh';
+import { TokenLogo } from './web3/TokenLogo';
 
 interface AssetsProps {
   view: 'main' | 'all-assets' | 'all-activity';
@@ -340,9 +341,7 @@ export function Assets({ view, setView }: AssetsProps) {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className={`w-12 h-12 rounded-full ${token.color} bg-opacity-10 flex items-center justify-center`}>
-                    <span className={`text-lg ${token.color}`}>{token.symbol.charAt(0)}</span>
-                  </div>
+                  <TokenLogo symbol={token.symbol} size={48} />
                   <div>
                     <div className="mb-1">{token.symbol}</div>
                     <div className="text-sm text-soft-3">{token.name}</div>
@@ -687,9 +686,7 @@ export function Assets({ view, setView }: AssetsProps) {
                             <img src={token.image} alt={token.symbol} className="w-full h-full object-cover" />
                           </div>
                         ) : (
-                          <div className="w-10 h-10 rounded-full flex items-center justify-center text-foreground" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.10)' }}>
-                            <span>{token.symbol.charAt(0)}</span>
-                          </div>
+                          <TokenLogo symbol={token.symbol} size={40} />
                         )}
                         <div>
                           <div className="mb-0.5 text-foreground">{token.symbol}</div>
@@ -860,9 +857,7 @@ export function Assets({ view, setView }: AssetsProps) {
                                 <img src={token.image} alt={token.symbol} className="w-full h-full object-cover" />
                               </div>
                             ) : (
-                              <div className={`w-10 h-10 rounded-full ${token.color} bg-opacity-10 flex items-center justify-center`}>
-                                <span className={`${token.color}`}>{token.symbol.charAt(0)}</span>
-                              </div>
+                              <TokenLogo symbol={token.symbol} size={40} />
                             )}
                             <div className="text-left">
                               <div className="mb-0.5">{token.symbol}</div>
@@ -993,9 +988,7 @@ export function Assets({ view, setView }: AssetsProps) {
                                 <img src={token.image} alt={token.symbol} className="w-full h-full object-cover" />
                               </div>
                             ) : (
-                              <div className={`w-12 h-12 rounded-full ${token.color} bg-opacity-10 flex items-center justify-center`}>
-                                <span className={`${token.color}`}>{token.symbol.charAt(0)}</span>
-                              </div>
+                              <TokenLogo symbol={token.symbol} size={48} />
                             )}
                             <div className="text-left">
                               <div className="mb-0.5">{token.symbol}</div>

@@ -33,6 +33,10 @@ import { WalletConnectPrompt } from './WalletConnectPrompt';
 import { PullToRefresh } from './PullToRefresh';
 import { useWallets } from '../auth';
 import { FaceIdPrompt } from './FaceIdPrompt';
+import { formatPayout } from './CampaignGallery/formatPayout';
+import { ChainLogo } from './web3/ChainLogo';
+import { TokenLogo } from './web3/TokenLogo';
+import type { ChainId } from './CampaignGallery/chainColors';
 
 interface AdCampaignsProps {
   view: 'main' | 'campaign-detail' | 'cast-preview' | 'bonus-rewards' | 'active-commitment' | 'participation-history';
@@ -144,7 +148,10 @@ export function AdCampaigns({
 
   const handleClaimTokens = () => {
     if (!activeCommitment) return;
-    toast.success(`+${activeCommitment.reward} tokens claimed!`, {
+    toast.success(`+${(() => {
+      const f = formatPayout(activeCommitment.reward, activeCommitment.tokenSymbol ?? 'USDC');
+      return `${f.value}${f.scale ?? ''} ${f.prefix ?? ''}${f.symbol}`;
+    })()} claimed!`, {
       description: 'Added to your wallet',
     });
     setActiveCommitment(null);
@@ -213,6 +220,7 @@ export function AdCampaigns({
       network: 'BNB Chain',
       networkColor: '#F0B90B',
       networkIcon: '⬡',
+      chainId: 'bnb' as ChainId,
     },
     {
       id: 2,
@@ -232,6 +240,7 @@ export function AdCampaigns({
       network: 'Base',
       networkColor: '#0052FF',
       networkIcon: '▣',
+      chainId: 'base' as ChainId,
     },
     {
       id: 3,
@@ -251,6 +260,7 @@ export function AdCampaigns({
       network: 'Arbitrum One',
       networkColor: '#28A0F0',
       networkIcon: '◆',
+      chainId: 'arbitrum' as ChainId,
     },
     {
       id: 4,
@@ -270,6 +280,7 @@ export function AdCampaigns({
       network: 'Ethereum',
       networkColor: '#627EEA',
       networkIcon: '◆',
+      chainId: 'ethereum' as ChainId,
     },
     {
       id: 5,
@@ -289,6 +300,7 @@ export function AdCampaigns({
       network: 'Bitcoin',
       networkColor: '#F7931A',
       networkIcon: '₿',
+      chainId: 'bitcoin' as ChainId,
     },
     {
       id: 6,
@@ -308,6 +320,7 @@ export function AdCampaigns({
       network: 'Ethereum',
       networkColor: '#B6509E',
       networkIcon: '◆',
+      chainId: 'ethereum' as ChainId,
     },
     {
       id: 7,
@@ -327,6 +340,7 @@ export function AdCampaigns({
       network: 'Multi-chain',
       networkColor: '#000000',
       networkIcon: '⬢',
+      chainId: 'multi' as ChainId,
     },
   ];
 
@@ -432,84 +446,116 @@ export function AdCampaigns({
     });
 
     return (
-      <div className="min-h-screen">
-        <div className="bg-card border-b border-[#E0E0E0] sticky top-0 z-10">
-          <div className="flex items-center justify-between px-4 py-3">
+      <div className="min-h-screen bg-background">
+        {/* Glassy emerald top bar — mirrors the Earnings gallery's top bar
+            (CampaignGallery.tsx) so navigating from there into history
+            feels like the same surface family. Borderless: the bar dissolves
+            into the page via a mask fade at the bottom, matching the
+            "blurry edges" treatment used by the bottom nav and gallery bar. */}
+        <div
+          className="sticky top-0 z-10"
+          style={{
+            background:
+              'radial-gradient(140% 200% at 12.5% 0%, rgba(34,197,94,0.16) 0%, rgba(34,197,94,0.05) 32%, transparent 70%), ' +
+              'linear-gradient(to bottom, rgba(10,10,10,0.18) 0%, transparent 100%)',
+            backdropFilter: 'blur(14px) saturate(1.5)',
+            WebkitBackdropFilter: 'blur(14px) saturate(1.5)',
+            maskImage: 'linear-gradient(to bottom, #000 0%, #000 70%, transparent 100%)',
+            WebkitMaskImage: 'linear-gradient(to bottom, #000 0%, #000 70%, transparent 100%)',
+          }}
+        >
+          <div className="flex items-center justify-between px-4 pt-3 pb-5">
             <button
               onClick={() => setView('main')}
-              className="flex items-center gap-1 text-sm font-medium transition-colors hover:opacity-80"
-              style={{ color: '#BC13FE' }}
+              className="flex items-center gap-1 text-sm font-medium text-foreground active:scale-95 transition"
             >
               <ChevronRight className="w-5 h-5 rotate-180" />
               <span>Back</span>
             </button>
-            <h2 className="text-base font-semibold tracking-tight text-[#1A1A1A]">Campaign History</h2>
+            <h2 className="text-base font-semibold tracking-tight text-foreground">Campaign History</h2>
             <div className="w-12"></div>
           </div>
         </div>
 
         <div className="px-4 py-4">
-          {/* Sorting Controls */}
+          {/* Sorting Controls — emerald accent pill matching the History
+              button on the gallery top bar. */}
           <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold tracking-tight text-[#1A1A1A]">Completed Campaigns</h3>
+            <h3 className="font-semibold tracking-tight text-foreground">Completed Campaigns</h3>
             <button
               onClick={() => setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')}
-              className="flex items-center gap-1 text-sm font-medium transition-colors hover:opacity-80"
-              style={{ color: '#BC13FE' }}
+              className="flex items-center gap-1 text-xs font-semibold active:scale-95 transition rounded-full px-3 py-1.5"
+              style={{
+                color: '#22c55e',
+                background: 'rgba(34,197,94,0.12)',
+                backdropFilter: 'blur(6px)',
+                WebkitBackdropFilter: 'blur(6px)',
+                boxShadow:
+                  '0 0 8px 2px rgba(34,197,94,0.14), 0 0 16px 4px rgba(34,197,94,0.07)',
+              }}
             >
               <span>{sortOrder === 'desc' ? 'Newest First' : 'Oldest First'}</span>
               <ChevronRight className={`w-4 h-4 transition-transform ${sortOrder === 'asc' ? 'rotate-90' : '-rotate-90'}`} />
             </button>
           </div>
 
-          <div className="space-y-3">
+          {/* Hairline-separated rows — uniform record shape doesn't need
+              card chrome. Hairlines fade to transparent at the left/right
+              edges (.hairline-fade-b/t) so the list reads as borderless,
+              matching the app's glassy/blurred-edge aesthetic. */}
+          <div className="hairline-fade-t">
             {sortedHistory.map((participation) => (
-              <Card key={participation.id}>
-                <CardContent className="p-0">
-                  <div className="flex gap-3 p-3">
-                    <div className="w-16 h-16 bg-soft-1 rounded-lg overflow-hidden flex-shrink-0">
-                      <img 
-                        src={participation.image} 
-                        alt={participation.campaignTitle}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2 mb-2">
-                        <div className="text-sm flex-1">{participation.campaignTitle}</div>
-                        <div className="text-xl text-[#00FFC2] flex-shrink-0">+{participation.reward}</div>
-                      </div>
-                      <div className="flex items-center gap-2 text-xs mb-2">
-                        <span className="flex items-center gap-1 text-soft-3">
-                          <Clock className="w-3 h-3" />
-                          {participation.duration}h
-                        </span>
-                        <span className="text-soft-4">•</span>
-                        <span className="text-soft-3">{participation.completedAt}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="secondary" className="text-xs text-[#00FFC2]">
-                          <CheckCircle2 className="w-3 h-3 mr-1" />
-                          Completed
-                        </Badge>
-                        <a 
-                          href={`https://etherscan.io/tx/${participation.txHash}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs text-soft-2 flex items-center gap-1 hover:underline"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            toast.success('Transaction link copied!');
-                          }}
-                        >
-                          {participation.txHash.slice(0, 6)}...{participation.txHash.slice(-4)}
-                          <ExternalLink className="w-3 h-3" />
-                        </a>
-                      </div>
-                    </div>
+              <div
+                key={participation.id}
+                className="flex gap-3 py-3 hairline-fade-b active:bg-soft-2 transition-colors"
+              >
+                <div className="w-14 h-14 bg-soft-1 rounded-md overflow-hidden flex-shrink-0">
+                  <img
+                    src={participation.image}
+                    alt={participation.campaignTitle}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-2 mb-1">
+                    <div className="text-sm text-foreground flex-1 truncate font-medium">{participation.campaignTitle}</div>
+                    <div className="text-base font-bold tabular-nums text-[#00FFC2] flex-shrink-0 leading-snug">+{participation.reward}</div>
                   </div>
-                </CardContent>
-              </Card>
+                  <div className="flex items-center gap-2 text-xs mb-1.5">
+                    <span className="flex items-center gap-1 text-soft-3">
+                      <Clock className="w-3 h-3" />
+                      {participation.duration}h
+                    </span>
+                    <span className="text-soft-4">•</span>
+                    <span className="text-soft-3">{participation.completedAt}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded"
+                      style={{
+                        background: 'rgba(34,197,94,0.14)',
+                        color: '#22c55e',
+                      }}
+                    >
+                      <CheckCircle2 className="w-3 h-3 mr-1" />
+                      Completed
+                    </span>
+                    <a
+                      href={`https://etherscan.io/tx/${participation.txHash}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-soft-3 flex items-center gap-1 hover:underline"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        toast.success('Transaction link copied!');
+                      }}
+                    >
+                      {participation.txHash.slice(0, 6)}...{participation.txHash.slice(-4)}
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                </div>
+              </div>
             ))}
           </div>
         </div>
@@ -553,9 +599,17 @@ export function AdCampaigns({
 
         {/* Foreground */}
         <div className="relative z-[1]">
-          {/* Transparent glass header */}
-          <div className="sticky top-0 z-20 backdrop-blur-md bg-scrim border-b border-glass">
-            <div className="flex items-center justify-between px-4 py-3">
+          {/* Transparent glass header — borderless: dissolves into the
+              blurred image backdrop via a mask fade at the bottom, matching
+              the bottom nav / gallery top bar treatment. */}
+          <div
+            className="sticky top-0 z-20 backdrop-blur-md bg-scrim"
+            style={{
+              maskImage: 'linear-gradient(to bottom, #000 0%, #000 70%, transparent 100%)',
+              WebkitMaskImage: 'linear-gradient(to bottom, #000 0%, #000 70%, transparent 100%)',
+            }}
+          >
+            <div className="flex items-center justify-between px-4 pt-3 pb-5">
               <button
                 onClick={() => setView('main')}
                 className="flex items-center gap-1 text-foreground"
@@ -648,10 +702,24 @@ export function AdCampaigns({
               </div>
               <div className="text-right">
                 <div className="text-[10px] uppercase tracking-wider text-soft-3 mb-1">Reward</div>
-                <div className="text-2xl font-bold flex items-center gap-1 justify-end" style={{ color: '#00FFC2' }}>
-                  <Coins className="w-5 h-5" />
-                  {activeCommitment.reward}
-                </div>
+                {(() => {
+                  const fmt = formatPayout(activeCommitment.reward, activeCommitment.tokenSymbol ?? 'USDC');
+                  return (
+                    <div className="text-2xl font-bold flex items-baseline gap-1 justify-end" style={{ color: '#00FFC2' }}>
+                      <Coins className="w-5 h-5 self-center" />
+                      <span className="tabular-nums">{fmt.value}</span>
+                      {fmt.scale && (
+                        <span style={{ fontWeight: 900, fontSize: '1.05em', textShadow: '0 0 8px rgba(0,255,194,0.5)' }}>
+                          {fmt.scale}
+                        </span>
+                      )}
+                      <span className="text-sm opacity-80">
+                        {fmt.prefix}
+                        {fmt.symbol}
+                      </span>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
 
@@ -715,7 +783,17 @@ export function AdCampaigns({
                 style={{ background: 'linear-gradient(135deg, #00FFC2, #00d9a8)', color: '#0a0a0a', boxShadow: '0 0 32px rgba(0,255,194,0.35)' }}
               >
                 <Coins className="w-5 h-5" />
-                Claim {activeCommitment.reward} Tokens
+                {(() => {
+                  const fmt = formatPayout(activeCommitment.reward, activeCommitment.tokenSymbol ?? 'USDC');
+                  return (
+                    <span className="flex items-baseline gap-1">
+                      Claim
+                      <span className="tabular-nums">{fmt.value}</span>
+                      {fmt.scale && <span style={{ fontWeight: 900 }}>{fmt.scale}</span>}
+                      <span>{fmt.prefix}{fmt.symbol}</span>
+                    </span>
+                  );
+                })()}
               </button>
             ) : (
               <button
@@ -783,9 +861,16 @@ export function AdCampaigns({
         </div>
 
         <div className="relative z-[1]">
-        {/* Header with Back Button — translucent over the blurred backdrop */}
-        <div className="sticky top-0 z-20 backdrop-blur-md bg-scrim border-b border-glass">
-          <div className="flex items-center justify-between px-4 py-3">
+        {/* Header with Back Button — borderless translucent over the
+            blurred backdrop; dissolves at the bottom via a mask fade. */}
+        <div
+          className="sticky top-0 z-20 backdrop-blur-md bg-scrim"
+          style={{
+            maskImage: 'linear-gradient(to bottom, #000 0%, #000 70%, transparent 100%)',
+            WebkitMaskImage: 'linear-gradient(to bottom, #000 0%, #000 70%, transparent 100%)',
+          }}
+        >
+          <div className="flex items-center justify-between px-4 pt-3 pb-5">
             <button
               onClick={() => setView('main')}
               className="flex items-center gap-1 text-foreground"
@@ -919,10 +1004,26 @@ export function AdCampaigns({
                   </div>
                   <span className="text-[10px] text-emerald-700 font-semibold uppercase tracking-wider">Per Cast Reward</span>
                 </div>
-                <div className="flex items-baseline gap-1.5">
-                  <span className="text-[32px] font-bold text-gradient-success leading-none">{selectedCampaign.reward}</span>
-                  <span className="text-sm text-emerald-600 font-medium">{selectedCampaign.tokenSymbol}</span>
-                </div>
+                {(() => {
+                  const fmt = formatPayout(selectedCampaign.reward, selectedCampaign.tokenSymbol);
+                  return (
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="text-[32px] font-bold text-gradient-success leading-none tabular-nums">
+                        {fmt.value}
+                        {fmt.scale && (
+                          <span style={{ fontWeight: 900, marginLeft: 1, textShadow: '0 0 10px rgba(16,185,129,0.45)' }}>
+                            {fmt.scale}
+                          </span>
+                        )}
+                      </span>
+                      <TokenLogo symbol={fmt.symbol} size={18} className="self-center" />
+                      <span className="text-sm text-emerald-600 font-medium">
+                        {fmt.prefix}
+                        {fmt.symbol}
+                      </span>
+                    </div>
+                  );
+                })()}
                 <div className="mt-2.5 pt-2.5 border-t border-emerald-100 flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
                     <Users className="w-3 h-3 text-emerald-500" />
@@ -930,11 +1031,11 @@ export function AdCampaigns({
                       <span className="font-semibold text-emerald-700">{selectedCampaign.completions.toLocaleString()}</span> casters joined
                     </span>
                   </div>
-                  <div 
+                  <div
                     className="flex items-center gap-1 px-1.5 py-0.5 rounded-full"
                     style={{ backgroundColor: `${selectedCampaign.networkColor}15`, border: `1px solid ${selectedCampaign.networkColor}30` }}
                   >
-                    <span className="text-[9px]" style={{ color: selectedCampaign.networkColor }}>{selectedCampaign.networkIcon}</span>
+                    <ChainLogo chainId={selectedCampaign.chainId} size={12} />
                     <span className="text-[8px] font-semibold" style={{ color: selectedCampaign.networkColor }}>{selectedCampaign.network}</span>
                   </div>
                 </div>
@@ -1088,7 +1189,7 @@ export function AdCampaigns({
           className="px-4 mt-5"
         >
           <div className="rounded-[10px] overflow-hidden bg-card border border-soft-3">
-            <div className="px-4 py-3 flex items-center gap-2 border-b border-soft-3">
+            <div className="px-4 py-3 flex items-center gap-2 hairline-fade-b">
               <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #00FFC2 0%, #BC13FE 100%)' }}>
                 <Info className="w-3.5 h-3.5 text-[#0A0A0A]" strokeWidth={2} />
               </div>
@@ -1184,8 +1285,14 @@ export function AdCampaigns({
           {/* Foreground content */}
           <div className="relative z-[1]">
           {/* Header */}
-          <div className="sticky top-0 z-20 backdrop-blur-md bg-scrim border-b border-glass">
-            <div className="flex items-center justify-between px-4 py-3">
+          <div
+            className="sticky top-0 z-20 backdrop-blur-md bg-scrim"
+            style={{
+              maskImage: 'linear-gradient(to bottom, #000 0%, #000 70%, transparent 100%)',
+              WebkitMaskImage: 'linear-gradient(to bottom, #000 0%, #000 70%, transparent 100%)',
+            }}
+          >
+            <div className="flex items-center justify-between px-4 pt-3 pb-5">
               <button
                 onClick={() => setView('campaign-detail')}
                 className="flex items-center gap-1 text-foreground"
@@ -1256,10 +1363,26 @@ export function AdCampaigns({
             <div className="rounded-xl p-4 border border-glass bg-glass-1 backdrop-blur-md text-center">
               <Coins className="w-5 h-5 mx-auto mb-1.5 text-[#00FFC2]" />
               <div className="text-[10px] uppercase tracking-wider text-soft-3 mb-1">Reward</div>
-              <div className="text-lg font-bold text-foreground">
-                {selectedCampaign.reward}
-                <span className="text-sm ml-1 text-[#00FFC2]">{selectedCampaign.tokenSymbol}</span>
-              </div>
+              {(() => {
+                const fmt = formatPayout(selectedCampaign.reward, selectedCampaign.tokenSymbol);
+                return (
+                  <div className="text-lg font-bold text-foreground inline-flex items-baseline justify-center gap-1.5">
+                    <span className="tabular-nums">
+                      {fmt.value}
+                      {fmt.scale && (
+                        <span style={{ fontWeight: 900, marginLeft: 1, color: '#00FFC2' }}>
+                          {fmt.scale}
+                        </span>
+                      )}
+                    </span>
+                    <TokenLogo symbol={fmt.symbol} size={14} className="self-center" />
+                    <span className="text-sm text-[#00FFC2]">
+                      {fmt.prefix}
+                      {fmt.symbol}
+                    </span>
+                  </div>
+                );
+              })()}
             </div>
           </motion.div>
 
@@ -1481,11 +1604,26 @@ export function AdCampaigns({
                     <div className="text-lg truncate">{activeCommitment.title}</div>
                   </div>
                   <div className="text-right flex-shrink-0 ml-3">
-                    <div className="flex items-center gap-1 justify-end mb-1" style={{ color: 'var(--mint-on-surface)' }}>
-                      <Coins className="w-5 h-5" strokeWidth={1.75} />
-                      <span className="text-lg tracking-tight">{activeCommitment.reward}</span>
-                    </div>
-                    <div className="text-xs text-soft-3">tokens</div>
+                    {(() => {
+                      const fmt = formatPayout(activeCommitment.reward, activeCommitment.tokenSymbol ?? 'USDC');
+                      return (
+                        <>
+                          <div className="flex items-baseline gap-1 justify-end mb-1" style={{ color: 'var(--mint-on-surface)' }}>
+                            <Coins className="w-5 h-5 self-center" strokeWidth={1.75} />
+                            <span className="text-lg tracking-tight tabular-nums">{fmt.value}</span>
+                            {fmt.scale && (
+                              <span className="text-lg tracking-tight" style={{ fontWeight: 900 }}>
+                                {fmt.scale}
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-xs text-soft-3">
+                            {fmt.prefix}
+                            {fmt.symbol}
+                          </div>
+                        </>
+                      );
+                    })()}
                   </div>
                 </div>
                 <div>
@@ -1581,12 +1719,15 @@ export function AdCampaigns({
                 <CardContent className="p-0">
                   <div className="relative">
                     <div className="flex gap-3 p-3 pb-2">
-                      <div className="w-20 h-20 bg-soft-3 rounded-lg overflow-hidden flex-shrink-0">
+                      <div className="relative w-20 h-20 bg-soft-3 rounded-lg overflow-hidden flex-shrink-0">
                         <img
                           src={campaign.image}
                           alt={campaign.title}
                           className="w-full h-full object-cover"
                         />
+                        <div className="absolute bottom-1 right-1">
+                          <ChainLogo chainId={campaign.chainId} size={18} ringed />
+                        </div>
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="mb-1 truncate text-foreground">{campaign.title}</div>
@@ -1595,6 +1736,10 @@ export function AdCampaigns({
                           <span className="flex items-center gap-1" style={{ color: 'var(--mint-on-surface)' }}>
                             <Coins className="w-3 h-3" strokeWidth={1.75} />
                             {campaign.reward}
+                          </span>
+                          <span className="flex items-center gap-1 text-soft-3">
+                            <TokenLogo symbol={campaign.tokenSymbol} size={12} />
+                            {campaign.tokenSymbol}
                           </span>
                           <span className="flex items-center gap-1 text-soft-3">
                             <Clock className="w-3 h-3" strokeWidth={1.75} />

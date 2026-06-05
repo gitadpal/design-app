@@ -13,7 +13,6 @@ import {
   Upload,
   Clock,
   Coins,
-  AlertCircle,
   Sparkles,
   Frame,
   ChevronLeft,
@@ -29,6 +28,9 @@ import { FaceIdPrompt } from './FaceIdPrompt';
 import { EinkCasePrompt } from './EinkCasePrompt';
 import phoneCaseImg from 'figma:asset/771d461e7de4d0c40d4ef5fcc5c59768d30ec60e.png';
 import phoneCaseImgDark from '@/assets/iphone-case-black.png';
+import { GALLERY_CAMPAIGNS } from '../data/galleryCampaigns';
+import { CHAINS } from './CampaignGallery/chainColors';
+import { formatPayout } from './CampaignGallery/formatPayout';
 
 // Geometry of the welcome-step case PNG (862x1248) — the E-ink screen window as
 // fractions of the full case image. Source coordinates from StepWelcome's
@@ -626,82 +628,240 @@ export function ImageCasting({ activeCommitment, currentDisplay, setCurrentDispl
 
       {/* Foreground content sits above the backdrop (DOM order — no z so the fixed bottom nav can still paint on top) */}
       <div className="relative">
-      {/* Active Commitment Banner */}
-      {activeCommitment && (
-        <div className="px-4 pt-4 mb-4">
-          <div className="prism-ring">
-          <Card
-            className={`relative overflow-hidden bg-card text-foreground border-0 transition-all ${
-              onViewActiveStatus ? 'cursor-pointer active:scale-[0.99]' : ''
-            }`}
-            onClick={onViewActiveStatus}
-          >
-            <CardContent className="p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-xs uppercase tracking-wider text-soft-3 mb-1">Active Campaign</div>
-                  <div className="text-lg">{activeCommitment.title}</div>
-                </div>
-                <div className="text-right">
-                  <div className="flex items-center gap-1 justify-end mb-1">
-                    <Coins className="w-5 h-5" style={{ color: '#00FFC2' }} strokeWidth={1.75} />
-                    <span className="text-lg tracking-tight">{activeCommitment.reward}</span>
-                  </div>
-                  <div className="text-xs text-soft-3">tokens</div>
-                </div>
-              </div>
-              <div>
-                <div className="flex items-center justify-between text-sm mb-2">
-                  <span className="text-soft-2">Time Remaining</span>
-                  <span className="tabular-nums">{formatTime(timeRemaining)}</span>
-                </div>
-                <div className="relative h-1.5 w-full rounded-full bg-soft-1 overflow-hidden">
+      {/* Quick Cast / Active Campaign. When a campaign is in flight the two
+          Quick Cast buttons are swapped for a compact active-campaign card at
+          the SAME h-24 height — the user can't cast anything else anyway, so
+          the slot is repurposed as the live status surface (title, reward,
+          progress, time remaining) instead of two greyed-out CTAs. Heading
+          flips to "Active Campaign" so the slot's purpose is explicit. */}
+      <div className="px-4 mt-4 mb-6">
+        <h3 className="mb-3 text-foreground font-semibold tracking-tight">
+          {activeCommitment ? 'Active Campaign' : 'Quick Cast'}
+        </h3>
+        {activeCommitment ? (() => {
+          // Look up the originating campaign to surface chain + token symbol.
+          // activeCommitment carries the user-facing essentials (title, reward,
+          // image, timing) but not the chain affinity — for the cast card we
+          // want the chain color + ticker too, so we resolve it from the same
+          // gallery dataset that produced the commitment.
+          const campaign = GALLERY_CAMPAIGNS.find((c) => c.id === activeCommitment.campaignId);
+          const chain = campaign ? CHAINS[campaign.chain] : null;
+          const chainColor = chain?.color ?? '#00FFC2';
+          const tokenSymbol = campaign?.tokenSymbol ?? '';
+          // Percentage of the commitment window still remaining. Drives the
+          // whole right-half progress fill — full-width when freshly cast,
+          // ticking down to 0 as the campaign approaches completion.
+          const remainingPct = Math.max(0, 100 - progress);
+          return (
+            <button
+              type="button"
+              onClick={onViewActiveStatus}
+              className={`relative w-full h-24 rounded-xl overflow-hidden border border-glass shadow-lg text-left flex transition-all ${
+                onViewActiveStatus ? 'cursor-pointer active:scale-[0.99]' : ''
+              }`}
+            >
+              {/* LEFT — campaign image as bg with animated IN CAST stamp.
+                  Fixed width so the right-side progress has stable geometry
+                  regardless of viewport width. */}
+              <div className="relative shrink-0 h-full" style={{ width: 132 }}>
+                {activeCommitment.image && (
+                  <ImageWithFallback
+                    src={activeCommitment.image}
+                    alt=""
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                )}
+                {/* Cast-theme rose tint over the campaign image. #f43f5e is
+                    the Cast tab's accent (see App.tsx tabAccents.cast and the
+                    category tab halos elsewhere on this page) — using it here
+                    re-skins the image as a "this is the Cast surface" while
+                    keeping the underlying art legible. A second darker stop
+                    at the bottom adds the legibility floor the IN CAST stamp
+                    needs. */}
+                <div
+                  aria-hidden="true"
+                  className="absolute inset-0"
+                  style={{
+                    background:
+                      'linear-gradient(180deg, rgba(244,63,94,0.55) 0%, rgba(244,63,94,0.70) 100%)',
+                    mixBlendMode: 'multiply',
+                  }}
+                />
+                <div
+                  aria-hidden="true"
+                  className="absolute inset-0"
+                  style={{
+                    background:
+                      'linear-gradient(180deg, rgba(0,0,0,0.10) 0%, rgba(0,0,0,0.35) 100%)',
+                  }}
+                />
+                {/* Scanline shimmer — slow sweep across the image, signalling
+                    that something is actively running. Keeps the card "alive"
+                    even between the discrete pulses of the dot. */}
+                <div
+                  aria-hidden="true"
+                  className="absolute inset-0 pointer-events-none overflow-hidden"
+                >
                   <div
-                    className="absolute inset-y-0 left-0 rounded-full transition-[width] duration-300"
+                    className="absolute inset-y-0 w-1/2 in-cast-shimmer"
                     style={{
-                      width: `${progress}%`,
-                      background: 'linear-gradient(90deg, #00FFC2 0%, #BC13FE 100%)',
+                      background:
+                        'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.18) 50%, transparent 100%)',
                     }}
                   />
                 </div>
+                {/* IN CAST live indicator — pulsing emerald dot + label */}
+                <div className="relative h-full flex items-center justify-center gap-1.5 px-2">
+                  <span
+                    className="relative flex items-center justify-center"
+                    style={{ width: 10, height: 10 }}
+                  >
+                    <span
+                      className="absolute inset-0 rounded-full animate-ping"
+                      style={{ background: '#00FFC2', opacity: 0.7 }}
+                    />
+                    <span
+                      className="relative rounded-full"
+                      style={{
+                        width: 6,
+                        height: 6,
+                        background: '#00FFC2',
+                        boxShadow: '0 0 8px rgba(0,255,194,0.9)',
+                      }}
+                    />
+                  </span>
+                  <span
+                    className="text-[11px] font-bold tracking-[0.22em] uppercase text-white"
+                    style={{ textShadow: '0 1px 4px rgba(0,0,0,0.6)' }}
+                  >
+                    In Cast
+                  </span>
+                </div>
               </div>
-              <div className="flex items-center gap-2 text-sm text-soft-2">
-                <AlertCircle className="w-4 h-4" strokeWidth={1.75} />
-                <span>Display locked until campaign completes</span>
-              </div>
-            </CardContent>
-          </Card>
-          </div>
-        </div>
-      )}
 
-      {/* Quick Actions */}
-      <div className="px-4 mt-4 mb-6">
-        <h3 className="mb-3 text-foreground font-semibold tracking-tight">Quick Cast</h3>
-        <div className="grid grid-cols-2 gap-3">
-          <button
-            className={`h-24 flex flex-col items-center justify-center gap-2 rounded-xl transition-all backdrop-blur-sm ${
-              activeCommitment || !einkCaseAttached
-                ? 'bg-glass-1 text-soft-4 border border-glass cursor-pointer opacity-60'
-                : 'bg-glass-1 border border-glass text-foreground shadow-lg hover:bg-glass-2 active:scale-95'
-            }`}
-            onClick={handleUploadPhoto}
-          >
-            <Camera className="w-6 h-6" />
-            <span className="text-sm">Take Photo</span>
-          </button>
-          <button
-            className={`h-24 flex flex-col items-center justify-center gap-2 rounded-xl transition-all backdrop-blur-sm ${
-              activeCommitment || !einkCaseAttached
-                ? 'bg-glass-1 text-soft-4 border border-glass cursor-pointer opacity-60'
-                : 'bg-glass-1 border border-glass text-foreground shadow-lg hover:bg-glass-2 active:scale-95'
-            }`}
-            onClick={handleUploadPhoto}
-          >
-            <Upload className="w-6 h-6" />
-            <span className="text-sm">Upload Image</span>
-          </button>
-        </div>
+              {/* RIGHT — chain-themed progress; whole half is the bar.
+                  remainingPct fills from the left in the chain's brand color.
+                  Big percentage sits left, reward + token symbol sits right. */}
+              <div
+                className="relative flex-1 h-full overflow-hidden"
+                style={{ background: 'rgba(20,20,22,0.6)' }}
+              >
+                <div
+                  aria-hidden="true"
+                  className="absolute inset-y-0 left-0 pointer-events-none transition-[width] duration-300 ease-linear"
+                  style={{
+                    width: `${remainingPct}%`,
+                    background: `linear-gradient(90deg, ${chainColor}33 0%, ${chainColor}66 100%)`,
+                    boxShadow: `inset -1px 0 0 ${chainColor}cc, 0 0 18px ${chainColor}55`,
+                  }}
+                />
+                <div className="relative h-full px-3 flex items-center justify-between gap-2">
+                  <div className="flex flex-col leading-none">
+                    {(() => {
+                      // Live countdown with seconds always visible — the
+                      // timer ticks every 1s (see useEffect above) so the
+                      // user gets the satisfying "time moving" feel even
+                      // when there are still hours left on the commitment.
+                      // Layout: hours/minutes at full text-xl weight,
+                      // seconds at a smaller size so the trailing ":SS"
+                      // reads as a sub-unit and doesn't make the line
+                      // overflow the card half.
+                      const total = Math.max(0, Math.floor(timeRemaining / 1000));
+                      const h = Math.floor(total / 3600);
+                      const m = Math.floor((total % 3600) / 60);
+                      const s = total % 60;
+                      const ready = total === 0;
+                      const pad = (n: number) => n.toString().padStart(2, '0');
+                      const label = ready ? 'To Claim' : 'Claim In';
+                      return (
+                        <>
+                          <span className="text-[9px] uppercase tracking-[0.18em] text-white/60 mb-1.5">
+                            {label}
+                          </span>
+                          <span className="text-xl font-bold tabular-nums tracking-tight text-white drop-shadow-sm">
+                            {ready ? (
+                              'Ready'
+                            ) : h > 0 ? (
+                              <>
+                                {h}h {pad(m)}m
+                                <span className="text-[60%] font-semibold text-white/80 ml-1">
+                                  {pad(s)}s
+                                </span>
+                              </>
+                            ) : m > 0 ? (
+                              <>
+                                {m}m
+                                <span className="text-[70%] font-semibold text-white/85 ml-1">
+                                  {pad(s)}s
+                                </span>
+                              </>
+                            ) : (
+                              `${s}s`
+                            )}
+                          </span>
+                        </>
+                      );
+                    })()}
+                  </div>
+                  {(() => {
+                    const fmt = formatPayout(activeCommitment.reward, tokenSymbol || 'USDC');
+                    return (
+                      <div className="flex flex-col items-end leading-none">
+                        <span className="text-xl font-bold tabular-nums tracking-tight text-white">
+                          {fmt.value}
+                          {fmt.scale && (
+                            <span
+                              style={{
+                                fontWeight: 900,
+                                marginLeft: 1,
+                                color: chainColor,
+                                textShadow: `0 0 8px ${chainColor}66`,
+                              }}
+                            >
+                              {fmt.scale}
+                            </span>
+                          )}
+                        </span>
+                        <span
+                          className="text-[10px] font-semibold mt-1.5 tracking-wider"
+                          style={{ color: chainColor }}
+                        >
+                          {fmt.prefix}
+                          {fmt.symbol}
+                        </span>
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+            </button>
+          );
+        })() : (
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              className={`h-24 flex flex-col items-center justify-center gap-2 rounded-xl transition-all backdrop-blur-sm ${
+                !einkCaseAttached
+                  ? 'bg-glass-1 text-soft-4 border border-glass cursor-pointer opacity-60'
+                  : 'bg-glass-1 border border-glass text-foreground shadow-lg hover:bg-glass-2 active:scale-95'
+              }`}
+              onClick={handleUploadPhoto}
+            >
+              <Camera className="w-6 h-6" />
+              <span className="text-sm">Take Photo</span>
+            </button>
+            <button
+              className={`h-24 flex flex-col items-center justify-center gap-2 rounded-xl transition-all backdrop-blur-sm ${
+                !einkCaseAttached
+                  ? 'bg-glass-1 text-soft-4 border border-glass cursor-pointer opacity-60'
+                  : 'bg-glass-1 border border-glass text-foreground shadow-lg hover:bg-glass-2 active:scale-95'
+              }`}
+              onClick={handleUploadPhoto}
+            >
+              <Upload className="w-6 h-6" />
+              <span className="text-sm">Upload Image</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Sticky header — Recent Casting carousel + category tab bar travel
@@ -854,7 +1014,14 @@ export function ImageCasting({ activeCommitment, currentDisplay, setCurrentDispl
                   );
                 })}
 
-                {/* Center case — counter-translates by -dragX so it stays still on page */}
+                {/* Center case — counter-translates by -dragX so it stays still on page.
+                    Dim treatment is applied via `filter` (brightness/saturate) rather
+                    than `opacity`: the slot-0 PeekItem sits at the same center behind
+                    this container (zIndex < 2). If we drop the case's opacity, that
+                    peek bleeds through as a ghost copy of the screen image — visible
+                    only in the not-activated / active-commitment state. Filter-based
+                    dimming keeps the case fully opaque so the peek stays occluded,
+                    while still reading as "inactive". */}
                 <motion.div
                   className="absolute bottom-0"
                   style={{
@@ -864,8 +1031,9 @@ export function ImageCasting({ activeCommitment, currentDisplay, setCurrentDispl
                     width: CASE_WIDTH_PX,
                     height: VISIBLE_H_PX,
                     overflow: 'hidden',
-                    filter: 'drop-shadow(0 22px 30px rgba(0,0,0,0.55))',
-                    opacity: dimmed ? 0.55 : 1,
+                    filter: dimmed
+                      ? 'drop-shadow(0 22px 30px rgba(0,0,0,0.55)) brightness(0.55) saturate(0.6)'
+                      : 'drop-shadow(0 22px 30px rgba(0,0,0,0.55))',
                     zIndex: 2,
                     willChange: 'transform',
                     backfaceVisibility: 'hidden',
@@ -987,7 +1155,7 @@ export function ImageCasting({ activeCommitment, currentDisplay, setCurrentDispl
                             '0 1px 0 rgba(255,255,255,0.10), 0 -1px 0 rgba(0,0,0,0.45)',
                         }}
                       >
-                        Click to cast
+                        Tap to cast
                       </span>
                       <ChevronDown
                         style={{

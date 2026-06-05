@@ -26,6 +26,8 @@ import {
   WifiOff
 } from 'lucide-react';
 import { toast } from 'sonner@2.0.3';
+import { ChainLogo } from './web3/ChainLogo';
+import type { ChainId } from './CampaignGallery/chainColors';
 
 interface SettingsProps {
   view: 'main' | 'currency' | 'language' | 'network' | 'recovery' | 'device-info' | 'tos' | 'privacy';
@@ -74,13 +76,13 @@ export function Settings({ view, setView, currency, setCurrency, language, setLa
     { value: 'ja', label: '日本語' },
   ];
 
-  const networks = [
-    { value: 'ethereum', label: 'Ethereum' },
-    { value: 'polygon', label: 'Polygon' },
-    { value: 'bsc', label: 'BSC' },
-    { value: 'arbitrum', label: 'Arbitrum' },
-    { value: 'optimism', label: 'Optimism' },
-    { value: 'base', label: 'Base' },
+  const networks: Array<{ value: string; label: string; chainId: ChainId }> = [
+    { value: 'ethereum', label: 'Ethereum', chainId: 'ethereum' },
+    { value: 'polygon', label: 'Polygon', chainId: 'polygon' },
+    { value: 'bsc', label: 'BNB Chain', chainId: 'bnb' },
+    { value: 'arbitrum', label: 'Arbitrum', chainId: 'arbitrum' },
+    { value: 'optimism', label: 'Optimism', chainId: 'optimism' },
+    { value: 'base', label: 'Base', chainId: 'base' },
   ];
 
   const handleSave = () => {
@@ -184,7 +186,10 @@ export function Settings({ view, setView, currency, setCurrency, language, setLa
                 setView('main');
               }}
             >
-              <span>{item.label}</span>
+              <div className="flex items-center gap-3">
+                <ChainLogo chainId={item.chainId} size={28} />
+                <span>{item.label}</span>
+              </div>
               {network === item.value && (
                 <Check className="w-5 h-5 text-blue-600" />
               )}
@@ -710,9 +715,16 @@ export function Settings({ view, setView, currency, setCurrency, language, setLa
         >
           <Label className="cursor-pointer">Active Network</Label>
           <div className="flex items-center gap-2">
-            <span className="text-sm text-soft-3">
-              {networks.find(n => n.value === network)?.label}
-            </span>
+            {(() => {
+              const active = networks.find(n => n.value === network);
+              if (!active) return null;
+              return (
+                <>
+                  <ChainLogo chainId={active.chainId} size={20} />
+                  <span className="text-sm text-soft-3">{active.label}</span>
+                </>
+              );
+            })()}
             <ChevronRight className="w-4 h-4 text-soft-4" />
           </div>
         </div>

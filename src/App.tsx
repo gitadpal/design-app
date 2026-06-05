@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { AdCampaigns } from './components/AdCampaigns';
+import { CampaignGallery } from './components/CampaignGallery/CampaignGallery';
 import { ImageCasting } from './components/ImageCasting';
 import { Assets } from './components/Assets';
 import { Settings } from './components/Settings';
@@ -44,6 +45,32 @@ export default function App() {
   const rootRef = useRef<HTMLDivElement>(null);
   useResponsiveScale(rootRef);
 
+  // Re-enable the nav's backdrop blur only while the page is idle. Blurring
+  // during motion forces a full-rect re-blur every frame and tanks smoothness
+  // — most visibly on the Earnings wall, which doesn't fire `scroll` because
+  // it uses Motion drag (panY) rather than native overflow scrolling. Listen
+  // at the document level for any motion signal: native scroll (Settings /
+  // Assets), wheel (desktop), and touchmove (the Earnings drag).
+  const [isScrolling, setIsScrolling] = useState(false);
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const bump = () => {
+      setIsScrolling(true);
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => setIsScrolling(false), 160);
+    };
+    // Capture so we catch scroll events on nested scrollers, not just window.
+    document.addEventListener('scroll', bump, { passive: true, capture: true });
+    document.addEventListener('wheel', bump, { passive: true });
+    document.addEventListener('touchmove', bump, { passive: true });
+    return () => {
+      document.removeEventListener('scroll', bump, { capture: true } as EventListenerOptions);
+      document.removeEventListener('wheel', bump);
+      document.removeEventListener('touchmove', bump);
+      if (timer) clearTimeout(timer);
+    };
+  }, []);
+
   const [activeTab, setActiveTab] = useState<TabValue>('ads');
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
     if (typeof window === 'undefined') return 'dark';
@@ -78,6 +105,10 @@ export default function App() {
 
   // Device state
   const [einkCaseAttached, setEinkCaseAttached] = useState(false);
+
+  // Tracks whether the gallery has zoomed into a single card. When true we
+  // hide the bottom nav so the focused card view feels like its own surface.
+  const [galleryCardOpen, setGalleryCardOpen] = useState(false);
 
   // Settings state
   const [settingsView, setSettingsView] = useState<SettingsView>('main');
@@ -210,11 +241,45 @@ export default function App() {
 
       {/* Main Content */}
       <main className={`relative flex-1 overflow-y-auto ${
-        (activeTab === 'ads' && adView !== 'main') || (activeTab === 'settings' && settingsView !== 'main') || (activeTab === 'assets' && assetsView !== 'main')
+        // Earnings: gallery owns its own bottom layout — wall should extend
+        // behind the nav strip so the nav's blur intersects the cards. Adding
+        // pb-20 here keeps content above the nav, defeating that.
+        activeTab === 'ads' && adView === 'main' && !galleryCardOpen
+          ? ''
+          : (activeTab === 'ads' && (adView !== 'main' || galleryCardOpen)) || (activeTab === 'settings' && settingsView !== 'main') || (activeTab === 'assets' && assetsView !== 'main')
           ? ''
           : 'pb-20'
       }`}>
-        {activeTab === 'ads' && (
+        {activeTab === 'ads' && adView === 'main' && (
+          <CampaignGallery
+            slottedCampaignId={activeCommitment?.campaignId ?? null}
+            onCardOpenChange={setGalleryCardOpen}
+            einkCaseAttached={einkCaseAttached}
+            // Mirrors the dashboard's Total Earned tile in AdCampaigns.tsx
+            // (tokenBalance constant) so the gallery's headline matches the
+            // figure shown when the user enters detail views.
+            totalEarned={1247.5}
+            onShowHistory={() => setAdView('participation-history')}
+            onViewActiveStatus={() => setAdView('active-commitment')}
+            onCommitCampaign={(c, frameIdx) => {
+              // Press-and-hold cast sequence completed — register the
+              // commitment so the slotted card lights up and the rest of the
+              // app (Cast tab, status banner) sees the active campaign.
+              const frame = c.frames?.[frameIdx];
+              setActiveCommitment({
+                campaignId: c.id,
+                title: c.title,
+                reward: frame?.tokensPerCast ?? c.tokensPerCast,
+                tokenSymbol: c.tokenSymbol,
+                duration: c.durationHours,
+                startTime: Date.now(),
+                image: frame?.image ?? c.image,
+              });
+              toast.success(`Cast! ${c.advertiser} is now in your case.`);
+            }}
+          />
+        )}
+        {activeTab === 'ads' && adView !== 'main' && (
           <AdCampaigns
             view={adView}
             setView={setAdView}
@@ -347,14 +412,18 @@ export default function App() {
         };
         const accent = tabAccents[activeTab];
         return (
-          <nav
+          <>
+            <nav
             className={`fixed bottom-0 left-0 right-0 max-w-md mx-auto transition-transform duration-200 ${
-              (activeTab === 'ads' && adView !== 'main') || (activeTab === 'settings' && settingsView !== 'main') || (activeTab === 'assets' && assetsView !== 'main')
+              (activeTab === 'ads' && (adView !== 'main' || galleryCardOpen)) || (activeTab === 'settings' && settingsView !== 'main') || (activeTab === 'assets' && assetsView !== 'main')
                 ? 'translate-y-full'
                 : ''
             }`}
           >
-            {/* Edge-less glass layer — fades into the page above so there's no visible top boundary */}
+            {/* Edge-less glass layer — fades into the page above so there's no visible top boundary.
+                backdrop-filter is toggled off mid-scroll (it would re-blur the full rect every
+                frame as the Earnings wall moves underneath) and switched back on once the page
+                settles, so the menu reads clearly as glass when the user is reading it. */}
             <div
               aria-hidden="true"
               className="absolute inset-0 -top-10 pointer-events-none"
@@ -362,11 +431,17 @@ export default function App() {
                 background:
                   `radial-gradient(140% 200% at ${accent.pos} 100%, ${accent.color}1c 0%, ${accent.color}08 28%, transparent 65%), ` +
                   'linear-gradient(to bottom, transparent 0%, rgba(20,20,28,0.04) 38%, rgba(20,20,28,0.10) 100%)',
-                WebkitBackdropFilter: 'blur(18px) saturate(1.5)',
-                backdropFilter: 'blur(18px) saturate(1.5)',
-                maskImage: 'linear-gradient(to bottom, transparent 0%, black 38%, black 100%)',
-                WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 38%, black 100%)',
-                transition: 'background 400ms ease',
+                backdropFilter: isScrolling ? undefined : 'blur(18px) saturate(1.4)',
+                WebkitBackdropFilter: isScrolling ? undefined : 'blur(18px) saturate(1.4)',
+                // Gradient mask drives both the gradient bg and the backdrop-filter,
+                // so blur intensity follows the mask's alpha. Result: clear (no blur)
+                // at the top edge where the nav meets scrolling content, and the
+                // blur ramps up gradually as you move down through the button row.
+                maskImage:
+                  'linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.18) 18%, rgba(0,0,0,0.55) 42%, rgba(0,0,0,0.85) 65%, black 100%)',
+                WebkitMaskImage:
+                  'linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.18) 18%, rgba(0,0,0,0.55) 42%, rgba(0,0,0,0.85) 65%, black 100%)',
+                transition: 'background 400ms ease, backdrop-filter 220ms ease, -webkit-backdrop-filter 220ms ease',
               }}
             />
             <div className="relative grid grid-cols-4 p-2">
@@ -421,6 +496,7 @@ export default function App() {
               })}
             </div>
           </nav>
+          </>
         );
       })()}
 
