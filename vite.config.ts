@@ -5,7 +5,28 @@
   import path from 'path';
 
   export default defineConfig({
-    plugins: [react(), tailwindcss()],
+    plugins: [
+      react(),
+      tailwindcss(),
+      {
+        // When tunnelling through cloudflared, its origin connection pool keeps
+        // idle sockets for 90s but Node closes them after 5s. cloudflared then
+        // reuses a dead socket, producing spurious "Unsolicited response ... 400
+        // Bad Request" logs. Disabling Node's keep-alive timeout lets cloudflared
+        // own the socket lifecycle, so the reuse race can't happen.
+        name: 'keepalive-for-cloudflared',
+        configureServer(server) {
+          server.httpServer?.on('listening', () => {
+            server.httpServer!.keepAliveTimeout = 0;
+          });
+        },
+        configurePreviewServer(server) {
+          server.httpServer?.on('listening', () => {
+            server.httpServer.keepAliveTimeout = 0;
+          });
+        },
+      },
+    ],
     resolve: {
       extensions: ['.js', '.jsx', '.ts', '.tsx', '.json'],
       alias: {
@@ -59,5 +80,11 @@
     server: {
       port: 3000,
       open: true,
+      allowedHosts: ['.sigworld.io'],
+    },
+    preview: {
+      port: 4173,
+      strictPort: true,
+      allowedHosts: ['.sigworld.io'],
     },
   });

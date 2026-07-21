@@ -1,22 +1,27 @@
 import { useState, useEffect, useRef } from 'react';
 import { AdCampaigns } from './components/AdCampaigns';
 import { CampaignGallery } from './components/CampaignGallery/CampaignGallery';
+import { CHAINS } from './components/CampaignGallery/chainColors';
 import { ImageCasting } from './components/ImageCasting';
 import { Assets } from './components/Assets';
 import { Settings } from './components/Settings';
+import { Circle } from './components/Circle/Circle';
+import type { CircleView } from './components/Circle/constants';
 import {
   Coins,
   Frame,
   Wallet,
   Settings as SettingsIcon,
+  Users,
 } from 'lucide-react';
 import { Toaster } from './components/ui/sonner';
 import { toast } from 'sonner@2.0.3';
 import { OnboardingFlow, ONBOARDING_STORAGE_KEY } from './components/onboarding/OnboardingFlow';
 
-type TabValue = 'ads' | 'cast' | 'assets' | 'settings';
+type TabValue = 'ads' | 'cast' | 'circle' | 'assets' | 'settings';
 type AdView = 'main' | 'campaign-detail' | 'cast-preview' | 'bonus-rewards' | 'active-commitment' | 'participation-history';
 type SettingsView = 'main' | 'currency' | 'language' | 'network' | 'recovery' | 'device-info' | 'tos' | 'privacy';
+type AssetsView = 'main' | 'all-assets' | 'all-activity';
 
 const DESIGN_WIDTH = 448;
 
@@ -98,10 +103,23 @@ export default function App() {
   const [activeCommitment, setActiveCommitment] = useState<any>(null);
 
   // Assets state
-  const [assetsView, setAssetsView] = useState<'main' | 'all-assets' | 'all-activity'>('main');
+  const [assetsView, setAssetsView] = useState<AssetsView>('main');
+
+  // Circle state
+  const [circleView, setCircleView] = useState<CircleView>('main');
+  const [selectedSubHandle, setSelectedSubHandle] = useState<string | null>(null);
+  const [selectedFriendHandle, setSelectedFriendHandle] = useState<string | null>(null);
+  const [initialQueueKey, setInitialQueueKey] = useState<string | null>(null);
+  // The Circle sub-view a cast was launched from, so the Cast Preview's Back
+  // button can return there instead of stranding the user on the Cast tab.
+  const [castOrigin, setCastOrigin] = useState<CircleView | null>(null);
 
   // Cast state
   const [currentDisplay, setCurrentDisplay] = useState<any>(null);
+  // An image handed off from the Circle tab (sub poster / queue card / friend
+  // gift) that should open the Cast tab's preview-then-cast flow rather than
+  // casting straight to the display. Consumed by ImageCasting on the Cast tab.
+  const [pendingCast, setPendingCast] = useState<{ url: string; title: string; queueKey?: string } | null>(null);
 
   // Device state
   const [einkCaseAttached, setEinkCaseAttached] = useState(false);
@@ -155,6 +173,7 @@ export default function App() {
   const VIOLET = '#BC13FE';
   const EMERALD = '#22c55e';
   const CYAN = '#06b6d4';
+  const AMBER = '#f59e0b';
   const tabBackdrops: Record<'dark' | 'light', Record<TabValue, string | null>> = {
     dark: {
       ads:
@@ -163,6 +182,11 @@ export default function App() {
         `radial-gradient(circle at 72% 96%, ${VIOLET} 0%, transparent 34%),` +
         `radial-gradient(circle at 28% 72%, ${MINT} 0%, transparent 18%)`,
       cast: null,
+      circle:
+        `radial-gradient(circle at 20% 15%, ${AMBER} 0%, transparent 30%),` +
+        `radial-gradient(circle at 82% 30%, ${AMBER} 0%, transparent 24%),` +
+        `radial-gradient(circle at 30% 88%, ${VIOLET} 0%, transparent 28%),` +
+        `radial-gradient(circle at 84% 96%, ${AMBER} 0%, transparent 20%)`,
       assets:
         `radial-gradient(circle at 50% 14%, ${VIOLET} 0%, transparent 32%),` +
         `radial-gradient(circle at 8% 48%, ${VIOLET} 0%, transparent 28%),` +
@@ -181,6 +205,11 @@ export default function App() {
         `radial-gradient(circle at 72% 96%, ${MINT} 0%, transparent 32%),` +
         `radial-gradient(circle at 28% 72%, ${EMERALD} 0%, transparent 20%)`,
       cast: null,
+      circle:
+        `radial-gradient(circle at 20% 15%, ${AMBER} 0%, transparent 32%),` +
+        `radial-gradient(circle at 82% 30%, ${AMBER} 0%, transparent 26%),` +
+        `radial-gradient(circle at 30% 88%, ${VIOLET} 0%, transparent 22%),` +
+        `radial-gradient(circle at 84% 96%, ${AMBER} 0%, transparent 22%)`,
       assets:
         `radial-gradient(circle at 50% 14%, ${VIOLET} 0%, transparent 32%),` +
         `radial-gradient(circle at 8% 48%, ${VIOLET} 0%, transparent 28%),` +
@@ -239,14 +268,20 @@ export default function App() {
         </div>
       )}
 
-      {/* Main Content */}
-      <main className={`relative flex-1 overflow-y-auto ${
+      {/* Main Content — overflow-x-hidden clips any child that runs past the
+          448px design width (e.g. the Cast tab's Recent Casting peek
+          thumbnails, positioned just outside the case body). Without it,
+          overflow-y-auto makes the browser compute overflow-x to `auto`, which
+          turns <main> into a horizontal scroller and lets the whole page slide
+          sideways. The carousel's own swipe is a Motion transform, not native
+          scroll, so clipping here doesn't affect it. */}
+      <main className={`relative flex-1 overflow-y-auto overflow-x-hidden ${
         // Earnings: gallery owns its own bottom layout — wall should extend
         // behind the nav strip so the nav's blur intersects the cards. Adding
         // pb-20 here keeps content above the nav, defeating that.
         activeTab === 'ads' && adView === 'main' && !galleryCardOpen
           ? ''
-          : (activeTab === 'ads' && (adView !== 'main' || galleryCardOpen)) || (activeTab === 'settings' && settingsView !== 'main') || (activeTab === 'assets' && assetsView !== 'main')
+          : (activeTab === 'ads' && (adView !== 'main' || galleryCardOpen)) || (activeTab === 'settings' && settingsView !== 'main') || (activeTab === 'assets' && assetsView !== 'main') || (activeTab === 'circle' && circleView !== 'main')
           ? ''
           : 'pb-20'
       }`}>
@@ -271,6 +306,11 @@ export default function App() {
                 title: c.title,
                 reward: frame?.tokensPerCast ?? c.tokensPerCast,
                 tokenSymbol: c.tokenSymbol,
+                // Carry the settlement network so the Campaign Status card can
+                // name it (and tint it) — ids collide across the gallery and
+                // dashboard datasets, so the network can't be looked up later.
+                network: CHAINS[c.chain]?.label,
+                networkColor: CHAINS[c.chain]?.color,
                 duration: c.durationHours,
                 startTime: Date.now(),
                 image: frame?.image ?? c.image,
@@ -298,9 +338,66 @@ export default function App() {
             setCurrentDisplay={setCurrentDisplay}
             einkCaseAttached={einkCaseAttached}
             isDark={isDark}
+            pendingCast={pendingCast}
+            onConsumePendingCast={() => setPendingCast(null)}
+            onCastBack={() => {
+              // Return from the Cast Preview to the Circle sub-view the image
+              // came from (queue browser / subscription / friend history).
+              setActiveTab('circle');
+              setCircleView(castOrigin ?? 'main');
+              setCastOrigin(null);
+            }}
             onViewActiveStatus={() => {
               setActiveTab('ads');
               setAdView('active-commitment');
+            }}
+            onOpenCircleQueue={(key: string | null) => {
+              // Both the top-bar button and the amber ribbon tiles route here.
+              // Hop into the Circle tab and open the queue browser preloaded on
+              // this entry (or the first entry if key is null).
+              setInitialQueueKey(key);
+              setCircleView('queue-browser');
+              setActiveTab('circle');
+            }}
+          />
+        )}
+        {activeTab === 'circle' && (
+          <Circle
+            view={circleView}
+            setView={setCircleView}
+            selectedSubHandle={selectedSubHandle}
+            setSelectedSubHandle={setSelectedSubHandle}
+            selectedFriendHandle={selectedFriendHandle}
+            setSelectedFriendHandle={setSelectedFriendHandle}
+            initialQueueKey={initialQueueKey}
+            castLocked={!!activeCommitment}
+            onCastItem={(previewUrl, title, queueKey) => {
+              // While a campaign is committed to the case, casting anything else
+              // (sub poster, queue image, friend gift, drop) is disabled — same
+              // rule as the Cast tab's local images. Block it with the same
+              // message rather than opening the preview.
+              if (activeCommitment) {
+                toast.error('Cannot switch - active campaign in progress');
+                return;
+              }
+              // "Cast flow" = hand the image to the Cast tab's preview screen so
+              // the user reviews it and confirms via the hold-to-cast NFC write —
+              // not a silent direct cast. ImageCasting picks up pendingCast on
+              // mount. Remember the current Circle sub-view so Preview → Back
+              // returns there; for a queue card also stash its key so Back
+              // re-opens the browser on that item.
+              setCastOrigin(circleView);
+              if (queueKey) setInitialQueueKey(queueKey);
+              setPendingCast({ url: previewUrl, title, queueKey });
+              setActiveTab('cast');
+            }}
+            onExitQueue={() => {
+              // Queue browser was launched from the Cast tab — Back returns
+              // there, and the Circle view resets so a later Circle visit lands
+              // on the hub rather than the queue.
+              setInitialQueueKey(null);
+              setCircleView('main');
+              setActiveTab('cast');
             }}
           />
         )}
@@ -354,6 +451,8 @@ export default function App() {
         //   - different off-center pad (where the finger pressed hardest)
         //   - different rotation (angle of impression)
         //   - slightly different ridge spacing (whose finger)
+        // Nav is a 5-cell grid now (Earn · Cast · Circle · Assets · Settings).
+        // Each `pos` sits at the cell center: 10%, 30%, 50%, 70%, 90%.
         const tabAccents: Record<TabValue, {
           color: string;
           pos: string;
@@ -363,7 +462,7 @@ export default function App() {
         }> = {
           ads: {
             color: '#22c55e',
-            pos: '12.5%',
+            pos: '10%',
             inactiveText: 'text-emerald-400',
             rotate: 14,
             haloStyle: (c) => ({
@@ -375,7 +474,7 @@ export default function App() {
           },
           cast: {
             color: '#f43f5e',
-            pos: '37.5%',
+            pos: '30%',
             inactiveText: 'text-rose-400',
             rotate: -22,
             haloStyle: (c) => ({
@@ -385,9 +484,25 @@ export default function App() {
               WebkitMaskImage: fingerprintMask,
             }),
           },
+          circle: {
+            // Amber #f59e0b — completes the warm-to-cool spectrum across the
+            // nav bar (emerald → rose → amber → violet → cyan). The halo tilts
+            // opposite to Cast's -22° so adjacent tabs read as distinct
+            // fingerprints, not a mirrored pair.
+            color: '#f59e0b',
+            pos: '50%',
+            inactiveText: 'text-amber-400',
+            rotate: 8,
+            haloStyle: (c) => ({
+              background:
+                `radial-gradient(ellipse 66% 74% at 50% 50%, ${c}e6 0%, ${c}66 55%, transparent 92%)`,
+              maskImage: fingerprintMask,
+              WebkitMaskImage: fingerprintMask,
+            }),
+          },
           assets: {
             color: '#BC13FE',
-            pos: '62.5%',
+            pos: '70%',
             inactiveText: 'text-fuchsia-400',
             rotate: 32,
             haloStyle: (c) => ({
@@ -399,7 +514,7 @@ export default function App() {
           },
           settings: {
             color: '#06b6d4',
-            pos: '87.5%',
+            pos: '90%',
             inactiveText: 'text-cyan-300',
             rotate: -6,
             haloStyle: (c) => ({
@@ -415,7 +530,7 @@ export default function App() {
           <>
             <nav
             className={`fixed bottom-0 left-0 right-0 max-w-md mx-auto transition-transform duration-200 ${
-              (activeTab === 'ads' && (adView !== 'main' || galleryCardOpen)) || (activeTab === 'settings' && settingsView !== 'main') || (activeTab === 'assets' && assetsView !== 'main')
+              (activeTab === 'ads' && (adView !== 'main' || galleryCardOpen)) || (activeTab === 'settings' && settingsView !== 'main') || (activeTab === 'assets' && assetsView !== 'main') || (activeTab === 'circle' && circleView !== 'main')
                 ? 'translate-y-full'
                 : ''
             }`}
@@ -444,12 +559,13 @@ export default function App() {
                 transition: 'background 400ms ease, backdrop-filter 220ms ease, -webkit-backdrop-filter 220ms ease',
               }}
             />
-            <div className="relative grid grid-cols-4 p-2">
+            <div className="relative grid grid-cols-5 p-2">
               {([
-                { tab: 'ads' as TabValue,      Icon: Coins,        label: 'Earnings', onSelect: () => { setActiveTab('ads'); setAdView('main'); } },
-                { tab: 'cast' as TabValue,     Icon: Frame,        label: 'Cast',     onSelect: () => setActiveTab('cast') },
-                { tab: 'assets' as TabValue,   Icon: Wallet,       label: 'Assets',   onSelect: () => { setActiveTab('assets'); setAssetsView('main'); } },
-                { tab: 'settings' as TabValue, Icon: SettingsIcon, label: 'Settings', onSelect: () => { setActiveTab('settings'); setSettingsView('main'); } },
+                { tab: 'ads' as TabValue,      Icon: Coins,        label: 'Earn',    onSelect: () => { setActiveTab('ads'); setAdView('main'); } },
+                { tab: 'cast' as TabValue,     Icon: Frame,        label: 'Cast',    onSelect: () => setActiveTab('cast') },
+                { tab: 'circle' as TabValue,   Icon: Users,        label: 'Circle',  onSelect: () => { setActiveTab('circle'); setCircleView('main'); setInitialQueueKey(null); } },
+                { tab: 'assets' as TabValue,   Icon: Wallet,       label: 'Assets',  onSelect: () => { setActiveTab('assets'); setAssetsView('main'); } },
+                { tab: 'settings' as TabValue, Icon: SettingsIcon, label: 'Settings',onSelect: () => { setActiveTab('settings'); setSettingsView('main'); } },
               ]).map(({ tab, Icon, label, onSelect }) => {
                 const isActive = activeTab === tab;
                 const itemAccent = tabAccents[tab];

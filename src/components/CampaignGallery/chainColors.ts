@@ -29,17 +29,27 @@ export interface ChainMeta {
   logo: string | null;
 }
 
-const TW = (chain: string) =>
-  `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/${chain}/info/logo.png`;
+// Chain logos are cached locally under public/chains/ (keyed by ChainId),
+// sourced once from Trust Wallet's assets repo. Serving them as static assets
+// removes the runtime dependency on that CDN — an outage would otherwise
+// silently degrade every chain badge to its glyph fallback.
+const LOCAL = (id: string) => `${import.meta.env.BASE_URL}chains/${id}.png`;
 
 export const CHAINS: Record<ChainId, ChainMeta> = {
-  ethereum: { id: 'ethereum', label: 'ETH',  color: '#627EEA', glyph: '◆', logo: TW('ethereum') },
-  base:     { id: 'base',     label: 'BASE', color: '#0052FF', glyph: '▣', logo: TW('base') },
-  arbitrum: { id: 'arbitrum', label: 'ARB',  color: '#28A0F0', glyph: '◆', logo: TW('arbitrum') },
-  bnb:      { id: 'bnb',      label: 'BNB',  color: '#F0B90B', glyph: '⬡', logo: TW('smartchain') },
-  bitcoin:  { id: 'bitcoin',  label: 'BTC',  color: '#F7931A', glyph: '₿', logo: TW('bitcoin') },
-  solana:   { id: 'solana',   label: 'SOL',  color: '#9945FF', glyph: '◎', logo: TW('solana') },
-  polygon:  { id: 'polygon',  label: 'POLY', color: '#8247E5', glyph: '⬢', logo: TW('polygon') },
-  optimism: { id: 'optimism', label: 'OP',   color: '#FF0420', glyph: '◉', logo: TW('optimism') },
+  ethereum: { id: 'ethereum', label: 'ETH',  color: '#627EEA', glyph: '◆', logo: LOCAL('ethereum') },
+  base:     { id: 'base',     label: 'BASE', color: '#0052FF', glyph: '▣', logo: LOCAL('base') },
+  arbitrum: { id: 'arbitrum', label: 'ARB',  color: '#28A0F0', glyph: '◆', logo: LOCAL('arbitrum') },
+  bnb:      { id: 'bnb',      label: 'BNB',  color: '#F0B90B', glyph: '⬡', logo: LOCAL('bnb') },
+  bitcoin:  { id: 'bitcoin',  label: 'BTC',  color: '#F7931A', glyph: '₿', logo: LOCAL('bitcoin') },
+  solana:   { id: 'solana',   label: 'SOL',  color: '#9945FF', glyph: '◎', logo: LOCAL('solana') },
+  polygon:  { id: 'polygon',  label: 'POLY', color: '#8247E5', glyph: '⬢', logo: LOCAL('polygon') },
+  optimism: { id: 'optimism', label: 'OP',   color: '#FF0420', glyph: '◉', logo: LOCAL('optimism') },
   multi:    { id: 'multi',    label: 'MULTI',color: '#9CA3AF', glyph: '⬢', logo: null },
 };
+
+// Map a free-text chain label (e.g. "Base", "arbitrum") onto a known ChainId,
+// defaulting to Base — the chain the tip / subscribe wallet settles on today.
+export function chainIdFromLabel(label: string): ChainId {
+  const id = label.toLowerCase() as ChainId;
+  return id in CHAINS ? id : 'base';
+}

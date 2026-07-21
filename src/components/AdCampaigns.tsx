@@ -32,7 +32,7 @@ import { EinkCasePrompt } from './EinkCasePrompt';
 import { WalletConnectPrompt } from './WalletConnectPrompt';
 import { PullToRefresh } from './PullToRefresh';
 import { useWallets } from '../auth';
-import { FaceIdPrompt } from './FaceIdPrompt';
+import { HoldToCastButton } from './HoldToCastButton';
 import { formatPayout } from './CampaignGallery/formatPayout';
 import { ChainLogo } from './web3/ChainLogo';
 import { TokenLogo } from './web3/TokenLogo';
@@ -61,7 +61,6 @@ export function AdCampaigns({
 }: AdCampaignsProps) {
   const { activeWallet } = useWallets();
   const walletConnected = !!activeWallet;
-  const [showFaceId, setShowFaceId] = useState(false);
   const [bonusPoints, setBonusPoints] = useState(350);
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
   const [isLoading, setIsLoading] = useState(true);
@@ -701,7 +700,15 @@ export function AdCampaigns({
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-[10px] uppercase tracking-wider text-soft-3 mb-1">Reward</div>
+                {/* The network the token reward settles on — named + tinted in
+                    the network's own theme color (falls back to the reward label
+                    only if a legacy commitment lacks the network field). */}
+                <div
+                  className="text-[10px] uppercase tracking-wider mb-1 font-semibold text-soft-3"
+                  style={{ color: activeCommitment.networkColor || undefined }}
+                >
+                  {activeCommitment.network ?? 'Reward'}
+                </div>
                 {(() => {
                   const fmt = formatPayout(activeCommitment.reward, activeCommitment.tokenSymbol ?? 'USDC');
                   return (
@@ -1230,12 +1237,11 @@ export function AdCampaigns({
 
   // Cast Preview View
   if (view === 'cast-preview' && selectedCampaign) {
-    const handleCastToScreen = () => {
-      setShowFaceId(true);
-    };
-
-    const handleFaceIdConfirm = async () => {
-      setShowFaceId(false);
+    // Hold-to-cast commit: the press-and-hold is the confirmation (consistent
+    // with the gallery and the Cast/Circle previews), so it writes NFC straight
+    // away — no separate Face ID signing step.
+    const handleCommitCast = async () => {
+      if (isNfcWriting) return;
       setIsNfcWriting(true);
       await new Promise(resolve => setTimeout(resolve, 2500));
       setIsNfcWriting(false);
@@ -1243,6 +1249,10 @@ export function AdCampaigns({
         campaignId: selectedCampaign.id,
         title: selectedCampaign.title,
         reward: selectedCampaign.reward,
+        tokenSymbol: selectedCampaign.tokenSymbol,
+        // Settlement network — named + tinted on the Campaign Status card.
+        network: selectedCampaign.network,
+        networkColor: selectedCampaign.networkColor,
         duration: selectedCampaign.duration,
         startTime: Date.now(),
         image: selectedCampaign.image
@@ -1393,29 +1403,18 @@ export function AdCampaigns({
             transition={{ duration: 0.45, delay: 0.4 }}
             className="mx-6 mt-7"
           >
-            <button
-              onClick={handleCastToScreen}
-              className="w-full h-14 rounded-xl font-bold text-base flex items-center justify-center gap-2.5 transition-all active:scale-95"
-              style={{ background: 'linear-gradient(135deg, #00FFC2, #00d9a8)', color: '#0a0a0a', boxShadow: '0 0 32px rgba(0,255,194,0.35)' }}
-            >
-              <Nfc className="w-5 h-5" />
-              Cast to Screen
-            </button>
+            <HoldToCastButton
+              gradient="linear-gradient(135deg, #00FFC2, #00d9a8)"
+              accent="#00FFC2"
+              onCommit={handleCommitCast}
+              disabled={isNfcWriting}
+            />
             <p className="text-center text-xs text-soft-3 mt-3">
-              Your e-ink display will show this ad for {selectedCampaign.duration}h
+              Hold to cast — your e-ink display will show this ad for {selectedCampaign.duration}h
             </p>
           </motion.div>
           </div>
         </div>
-
-        {/* Simulated Face ID confirmation */}
-        <FaceIdPrompt
-          open={showFaceId}
-          title="Confirm Cast"
-          subtitle={`Sign to lock in "${selectedCampaign.title}" for ${selectedCampaign.duration}h`}
-          onConfirm={handleFaceIdConfirm}
-          onCancel={() => setShowFaceId(false)}
-        />
 
         {/* iOS-style NFC writing sheet */}
         {isNfcWriting && (

@@ -29,9 +29,19 @@ import { toast } from 'sonner@2.0.3';
 import { ChainLogo } from './web3/ChainLogo';
 import type { ChainId } from './CampaignGallery/chainColors';
 
+type SettingsView =
+  | 'main'
+  | 'currency'
+  | 'language'
+  | 'network'
+  | 'recovery'
+  | 'device-info'
+  | 'tos'
+  | 'privacy';
+
 interface SettingsProps {
-  view: 'main' | 'currency' | 'language' | 'network' | 'recovery' | 'device-info' | 'tos' | 'privacy';
-  setView: (view: 'main' | 'currency' | 'language' | 'network' | 'recovery' | 'device-info' | 'tos' | 'privacy') => void;
+  view: SettingsView;
+  setView: (view: SettingsView) => void;
   currency: string;
   setCurrency: (currency: string) => void;
   language: string;
@@ -796,3 +806,4 @@ export function Settings({ view, setView, currency, setCurrency, language, setLa
     </div>
   );
 }
+

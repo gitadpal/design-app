@@ -1,17 +1,17 @@
-// Public CDN map for the tokens that appear in the mock data. CoinCap serves
-// stable PNGs keyed by lowercased symbol; unknown symbols (PIXP, SXT, AZ, W,
-// ZK, CFG) return null and callers fall back to a tinted initial.
-const COINCAP = (s: string) => `https://assets.coincap.io/assets/icons/${s.toLowerCase()}@2x.png`;
+// Token icons are cached locally under public/tokens/ (keyed by lowercased
+// symbol), sourced once from CoinCap. Serving them as static assets removes the
+// runtime dependency on that CDN — an outage there would otherwise silently
+// degrade every coin to a tinted initial. Unknown symbols return null and
+// callers fall back to that initial (see web3/TokenLogo).
+const LOCAL = (s: string) => `${import.meta.env.BASE_URL}tokens/${s}.png`;
 
-// Symbols verified to exist on the CoinCap icon CDN. Listing them explicitly
-// avoids 404 noise on the fallback path.
+// Symbols with a cached icon under public/tokens/.
 const KNOWN = new Set([
   'btc', 'eth', 'bnb', 'sol', 'usdc', 'usdt', 'arb', 'op', 'aave', 'uni',
-  'ldo', 'pyth', 'tia', 'gmx', 'sky', 'blur', 'dydx', 'pendle', 'eigen',
-  'ena', 'okb',
+  'ldo', 'pyth', 'tia', 'sky', 'dydx', 'pendle', 'eigen', 'ena', 'okb',
 ]);
 
 export function getTokenIconUrl(symbol: string): string | null {
   const key = symbol.toLowerCase().split(' ')[0];
-  return KNOWN.has(key) ? COINCAP(key) : null;
+  return KNOWN.has(key) ? LOCAL(key) : null;
 }

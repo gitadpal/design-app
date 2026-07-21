@@ -7,6 +7,8 @@ import { Badge } from './ui/badge';
 import { Input } from './ui/input';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { Progress } from './ui/progress';
+import { CropStage, type CropStageHandle } from './CropStage';
+import { HoldToCastButton } from './HoldToCastButton';
 import {
   Cast,
   Camera,
@@ -22,15 +24,36 @@ import {
   Building2,
   Landmark,
   ChevronDown,
+  Gem,
+  Box,
+  Wand2,
 } from 'lucide-react';
 import { toast } from 'sonner@2.0.3';
-import { FaceIdPrompt } from './FaceIdPrompt';
 import { EinkCasePrompt } from './EinkCasePrompt';
+import { useDrops } from './Circle/Drops/dropsStore';
+import { DropCard } from './Circle/Drops/DropCard';
+import { DropDetail } from './Circle/Drops/DropDetail';
+import { CreateDrop } from './Circle/Drops/CreateDrop';
+import { DropReveal } from './Circle/Drops/DropReveal';
+import { SealedShop } from './Circle/Drops/SealedShop';
+import { RARITY_ORDER } from './Circle/Drops/rarity';
+import { DROPS_PRISM, DROPS_MINT } from './Circle/constants';
 import phoneCaseImg from 'figma:asset/771d461e7de4d0c40d4ef5fcc5c59768d30ec60e.png';
 import phoneCaseImgDark from '@/assets/iphone-case-black.png';
 import { GALLERY_CAMPAIGNS } from '../data/galleryCampaigns';
 import { CHAINS } from './CampaignGallery/chainColors';
 import { formatPayout } from './CampaignGallery/formatPayout';
+import { getLatestSubPosts } from '../data/circleData';
+import { resolveQueueItem, type ResolvedQueueItem } from './Circle/queueHelpers';
+import { useQueue, dismissFromQueue } from './Circle/queueStore';
+import { useSubscriptions } from './Circle/subsStore';
+import { RibbonTile } from './Circle/RibbonTile';
+import { GalleryVerticalEnd } from 'lucide-react';
+
+// Cast tab accent (rose #f43f5e = rgb 244,63,94) — matches the Cast surface
+// identity used across this page (top-bar glow, category-tab halos, IN CAST
+// stamp). The queue button + its count badge key to this rose (as translucent
+// fills), not the Circle amber.
 
 // Geometry of the welcome-step case PNG (862x1248) — the E-ink screen window as
 // fractions of the full case image. Source coordinates from StepWelcome's
@@ -189,6 +212,20 @@ interface CastProps {
   einkCaseAttached: boolean;
   onViewActiveStatus?: () => void;
   isDark?: boolean;
+  // Cast tab hosts a Circle-queue entry button in its top bar and two amber
+  // ribbon tiles at the top of the Featured grid. Both route through this
+  // callback into the Circle tab's queue-browser view. Null key opens the
+  // browser on the first entry; a specific key preloads on that item.
+  onOpenCircleQueue?: (key: string | null) => void;
+  // An image handed off from the Circle tab to be reviewed in the Cast Preview
+  // screen before it is written to the display. When set, the preview opens on
+  // mount; onConsumePendingCast clears it in the parent so it fires once.
+  // queueKey (present only for cast-queue cards) is dismissed once the cast is
+  // confirmed. onCastBack returns the Cast Preview's Back button to wherever in
+  // the Circle tab the image came from, instead of landing on the Cast tab.
+  pendingCast?: { url: string; title: string; queueKey?: string } | null;
+  onConsumePendingCast?: () => void;
+  onCastBack?: () => void;
 }
 
 const galleryAsset = (filename: string) => `${import.meta.env.BASE_URL}gallery/${filename}`;
@@ -207,6 +244,12 @@ const galleryImage = (id: string, filename: string) => ({
   title: toTitle(filename),
 });
 
+// `Subs` gallery tab — one tile per subscribed creator, showing only that
+// creator's latest poster (not their full back-catalogue). Uses the same 2-col
+// portrait grid shape as the other collections.
+const SUBS_COLLECTION_ID = 'subs';
+const DROPS_COLLECTION_ID = 'drops';
+
 const recentImages = [
   galleryImage('r01', 'landscape_red_autumn_bridge.png'),
   galleryImage('r02', 'animal_orange_tabby_kitten.png'),
@@ -220,7 +263,12 @@ const recentImages = [
   galleryImage('r10', 'city_orange_beijing_landmarks.png'),
 ];
 
-const galleryCollections = [
+const galleryCollections: Array<{
+  id: string;
+  title: string;
+  icon: React.ReactNode;
+  images: Array<{ id: string; url: string; title: string }>;
+}> = [
   {
     id: 'featured',
     title: 'Featured',
@@ -239,6 +287,25 @@ const galleryCollections = [
       galleryImage('f11', 'city_cream_paris_landmarks.png'),
       galleryImage('f12', 'chinese_yellow_river_lanterns.png'),
     ],
+  },
+  {
+    // Subs tab — a shell entry. Its grid is custom-rendered at render time from
+    // getLatestSubPosts() (one tile per sub); kept empty here so the pagination
+    // path stays inert on this collection.
+    id: SUBS_COLLECTION_ID,
+    title: 'Subs',
+    icon: <Gem className="w-4 h-4" />,
+    images: [],
+  },
+  {
+    // Drops tab — sits beside Subs. A shell entry like Subs; its grid is
+    // custom-rendered from the live Drops collection (dropsStore) so a newly
+    // created / bought / revealed drop shows up instantly. Casting a drop to the
+    // case happens right here — the Cast surface is its natural home.
+    id: DROPS_COLLECTION_ID,
+    title: 'Drops',
+    icon: <Box className="w-4 h-4" />,
+    images: [],
   },
   {
     id: 'animals',
@@ -342,24 +409,35 @@ const galleryCollections = [
 ];
 
 const GALLERY_PAGE_SIZE = 6;
-// Fraction of the Recent Casting section that should remain visible when the
-// sticky header pins. Combined with a negative `top` offset of -(1 - this) * H,
-// it keeps the bottom slice of the carousel + dot pager onscreen with the tab
-// bar pinned directly beneath it, while everything above is allowed to scroll
-// out of view.
-const RECENT_VISIBLE_FRACTION = 0.25;
 
-export function ImageCasting({ activeCommitment, currentDisplay, setCurrentDisplay, einkCaseAttached, onViewActiveStatus, isDark = true }: CastProps) {
+export function ImageCasting({ activeCommitment, currentDisplay, setCurrentDisplay, einkCaseAttached, onViewActiveStatus, isDark = true, onOpenCircleQueue, pendingCast, onConsumePendingCast, onCastBack }: CastProps) {
+  // Live cast queue — drives the top-bar count badge and the Featured ribbon
+  // tiles, and stays in sync when a card is tossed or cast.
+  const queueItems = useQueue();
+  // Live subscriptions — the Subs gallery drops a sub the moment it's cancelled.
+  const subs = useSubscriptions();
+  // Live Drops collection for the Drops tab. Sealed capsules lead (they invite
+  // the reveal), then rarest, then newest.
+  const drops = useDrops();
+  const orderedDrops = [...drops].sort((a, b) => {
+    if (a.sealed !== b.sealed) return a.sealed ? -1 : 1;
+    if (RARITY_ORDER[a.rarity] !== RARITY_ORDER[b.rarity]) return RARITY_ORDER[a.rarity] - RARITY_ORDER[b.rarity];
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
+  // Drops sub-flows rendered as overlays over the Cast page, so create / detail /
+  // reveal all stay on the Cast surface (one at a time).
+  const [dropOverlay, setDropOverlay] = useState<{ kind: 'detail' | 'create' | 'reveal' | 'shop'; id?: string } | null>(null);
   // The Recent Casting carousel renders a black case in dark mode (matching the
   // pre-order black case art) and the default white case in light mode. Both
   // PNGs share the same 862×1248 geometry, so the screen-window overlay math is
   // unchanged.
   const caseImg = isDark ? phoneCaseImgDark : phoneCaseImg;
-  const [showFaceId, setShowFaceId] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
   const [progress, setProgress] = useState<number>(0);
   const [showEinkPrompt, setShowEinkPrompt] = useState(false);
   const [previewImage, setPreviewImage] = useState<any>(null);
+  // Crop handle for the Cast Preview — baked into the cast image on confirm.
+  const cropRef = useRef<CropStageHandle>(null);
   const [isNfcWriting, setIsNfcWriting] = useState(false);
   const [centerImageUrl, setCenterImageUrl] = useState<string>(
     galleryCollections[0]?.images[0]?.url ?? ''
@@ -376,18 +454,17 @@ export function ImageCasting({ activeCommitment, currentDisplay, setCurrentDispl
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const tabsScrollRef = useRef<HTMLDivElement | null>(null);
   const tabButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
-  // The Recent Casting block lives inside the sticky header. We measure it so
-  // the wrapper's sticky `top` can be set to -(1 - VISIBLE_FRACTION) * height:
-  // when pinned, only the bottom slice of the carousel remains in view and
-  // everything above scrolls away cleanly.
-  const recentCastingRef = useRef<HTMLDivElement | null>(null);
-  const [recentCastingHeight, setRecentCastingHeight] = useState(0);
   // Tab-bar height is measured live too so the gallery's own scroll container
   // below can be sized as exactly viewport - (visible-when-pinned slice +
   // bottom nav). The visible-when-pinned slice = bottom 1/4 of Recent Casting
   // + the entire tab bar.
   const tabBarRef = useRef<HTMLDivElement | null>(null);
   const [tabBarHeight, setTabBarHeight] = useState(56);
+  // The cast-queue top bar is sticky (pinned above everything). Measure its
+  // height so the Recent Casting sticky header can pin directly beneath it
+  // rather than behind it, and so the gallery scroll area is sized correctly.
+  const topBarRef = useRef<HTMLDivElement | null>(null);
+  const [topBarHeight, setTopBarHeight] = useState(0);
   // Bounded scroll container for the gallery grid — see the JSX below.
   const galleryScrollRef = useRef<HTMLDivElement | null>(null);
   // Horizontal drag offset that drives the entire carousel. The case itself
@@ -406,22 +483,6 @@ export function ImageCasting({ activeCommitment, currentDisplay, setCurrentDispl
     if (url) setCenterImageUrl(url);
   }, [activeRecent]);
 
-  // Keep `recentCastingHeight` in sync with the rendered carousel block so the
-  // sticky-header `top` offset adapts if the layout changes (e.g. font size,
-  // viewport resize, banner appearing/disappearing). useLayoutEffect so the
-  // measurement lands before the first paint — otherwise the sticky wrapper
-  // would briefly use top:0 (offset = -0 * .75) and snap to the viewport top
-  // before the height is known.
-  useLayoutEffect(() => {
-    const node = recentCastingRef.current;
-    if (!node) return;
-    const update = () => setRecentCastingHeight(node.offsetHeight);
-    update();
-    const ro = new ResizeObserver(update);
-    ro.observe(node);
-    return () => ro.disconnect();
-  }, []);
-
   useLayoutEffect(() => {
     const node = tabBarRef.current;
     if (!node) return;
@@ -431,6 +492,19 @@ export function ImageCasting({ activeCommitment, currentDisplay, setCurrentDispl
     ro.observe(node);
     return () => ro.disconnect();
   }, []);
+
+  useLayoutEffect(() => {
+    const node = topBarRef.current;
+    if (!node) {
+      setTopBarHeight(0);
+      return;
+    }
+    const update = () => setTopBarHeight(node.offsetHeight);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(node);
+    return () => ro.disconnect();
+  }, [activeCommitment, onOpenCircleQueue]);
 
   // Load more images for the active collection when the sentinel scrolls into
   // view. Stops once every image in that collection is on screen — no truly
@@ -512,24 +586,55 @@ export function ImageCasting({ activeCommitment, currentDisplay, setCurrentDispl
     setPreviewImage(image);
   };
 
-  const handleConfirmCast = () => {
-    if (!previewImage) return;
-    setShowFaceId(true);
-  };
-
-  const handleFaceIdConfirm = async () => {
-    if (!previewImage) {
-      setShowFaceId(false);
+  // A Circle image (sub poster / queue card / friend gift) was handed off to be
+  // cast. Open the Cast Preview screen with it so the user confirms before it's
+  // written — then clear the hand-off so it fires exactly once.
+  useEffect(() => {
+    if (!pendingCast) return;
+    // Defensive: an active campaign owns the case, so a handed-over Circle image
+    // can't be cast until it completes. App already blocks this at the source;
+    // if a hand-off still slips through, drop it rather than opening the preview.
+    if (activeCommitment) {
+      onConsumePendingCast?.();
       return;
     }
-    setShowFaceId(false);
+    setPreviewImage({
+      id: 'circle-cast',
+      url: pendingCast.url,
+      title: pendingCast.title,
+      source: 'circle',
+      queueKey: pendingCast.queueKey,
+    });
+    onConsumePendingCast?.();
+  }, [pendingCast, onConsumePendingCast, activeCommitment]);
+
+  // Hold-to-cast commit: the press-and-hold is the confirmation (mirrors the
+  // campaign gallery's CastSequence), so it runs the NFC write straight away —
+  // no separate Face ID signing step.
+  const handleCommitCast = async () => {
+    if (!previewImage || isNfcWriting) return;
     setIsNfcWriting(true);
     await new Promise(resolve => setTimeout(resolve, 2500));
     setIsNfcWriting(false);
-    setCurrentDisplay({ type: 'image', data: previewImage });
+    // Bake the user's crop (pan/zoom) into a 528×768 image so the framing they
+    // chose is what lands on the display. Falls back to the original url if the
+    // source can't be read to a canvas.
+    const baked = cropRef.current?.bake() ?? null;
+    const castData = baked ? { ...previewImage, url: baked, cropped: true } : previewImage;
+    setCurrentDisplay({ type: 'image', data: castData });
+    // A cast-queue card is consumed once it's actually cast — drop it from the
+    // queue so the badge and deck reflect the send.
+    if (previewImage.queueKey) dismissFromQueue(previewImage.queueKey);
     toast.success('Image cast to display!');
     setPreviewImage(null);
   };
+
+  // Cast Preview adopts the origin surface's accent: rose for a Cast-tab gallery
+  // cast, amber for a poster handed over from Circle.
+  const castIsCircle = previewImage?.source === 'circle';
+  const castAccent = castIsCircle ? '#f59e0b' : '#f43f5e';
+  const castAccent2 = castIsCircle ? '#fbbf24' : '#fb7185';
+  const castGradient = `linear-gradient(135deg, ${castAccent}, ${castAccent2})`;
 
   const activeCollection =
     galleryCollections.find((c) => c.id === activeCollectionId) ??
@@ -538,21 +643,10 @@ export function ImageCasting({ activeCommitment, currentDisplay, setCurrentDispl
   const galleryVisibleImages = activeCollection.images.slice(0, galleryLoaded);
   const galleryHasMore = galleryLoaded < activeCollection.images.length;
   const galleryDimmed = activeCommitment || !einkCaseAttached;
-  // When pinned, the sticky header keeps only the bottom slice of the Recent
-  // Casting section + the tab bar onscreen. Top offset is the negative of the
-  // portion we want to hide so the wrapper "absorbs" that distance as the page
-  // scrolls past it.
-  const stickyTopOffset = -recentCastingHeight * (1 - RECENT_VISIBLE_FRACTION);
-  // Height of the slice of the sticky header that remains onscreen once it
-  // pins — the visible 1/4 of Recent Casting plus the tab bar. Used to size
-  // the gallery's own inner scroll container so it fills the space between
-  // the pinned header and the bottom nav. The 80px tail matches the
-  // `pb-20` already on `<main>`, which is the reserved clearance for the
-  // fixed bottom nav — without that piece the gallery would otherwise
-  // either overlap the nav or leave a visible empty band above it.
-  const visibleStickyHeightPx =
-    recentCastingHeight * RECENT_VISIBLE_FRACTION + tabBarHeight;
-  const galleryScrollHeight = `calc(100dvh - ${visibleStickyHeightPx + 80}px)`;
+  // The gallery has its own bounded scroll area filling the space between the
+  // pinned chrome (glass header + sticky category tabs) and the bottom nav. The
+  // 80px tail matches the `pb-20` on `<main>` reserved for the fixed nav.
+  const galleryScrollHeight = `calc(100dvh - ${topBarHeight + tabBarHeight + 80}px)`;
 
   const handleSelectCollection = (id: string) => {
     setActiveCollectionId(id);
@@ -628,291 +722,74 @@ export function ImageCasting({ activeCommitment, currentDisplay, setCurrentDispl
 
       {/* Foreground content sits above the backdrop (DOM order — no z so the fixed bottom nav can still paint on top) */}
       <div className="relative">
-      {/* Quick Cast / Active Campaign. When a campaign is in flight the two
-          Quick Cast buttons are swapped for a compact active-campaign card at
-          the SAME h-24 height — the user can't cast anything else anyway, so
-          the slot is repurposed as the live status surface (title, reward,
-          progress, time remaining) instead of two greyed-out CTAs. Heading
-          flips to "Active Campaign" so the slot's purpose is explicit. */}
-      <div className="px-4 mt-4 mb-6">
-        <h3 className="mb-3 text-foreground font-semibold tracking-tight">
-          {activeCommitment ? 'Active Campaign' : 'Quick Cast'}
-        </h3>
-        {activeCommitment ? (() => {
-          // Look up the originating campaign to surface chain + token symbol.
-          // activeCommitment carries the user-facing essentials (title, reward,
-          // image, timing) but not the chain affinity — for the cast card we
-          // want the chain color + ticker too, so we resolve it from the same
-          // gallery dataset that produced the commitment.
-          const campaign = GALLERY_CAMPAIGNS.find((c) => c.id === activeCommitment.campaignId);
-          const chain = campaign ? CHAINS[campaign.chain] : null;
-          const chainColor = chain?.color ?? '#00FFC2';
-          const tokenSymbol = campaign?.tokenSymbol ?? '';
-          // Percentage of the commitment window still remaining. Drives the
-          // whole right-half progress fill — full-width when freshly cast,
-          // ticking down to 0 as the campaign approaches completion.
-          const remainingPct = Math.max(0, 100 - progress);
-          return (
-            <button
-              type="button"
-              onClick={onViewActiveStatus}
-              className={`relative w-full h-24 rounded-xl overflow-hidden border border-glass shadow-lg text-left flex transition-all ${
-                onViewActiveStatus ? 'cursor-pointer active:scale-[0.99]' : ''
-              }`}
-            >
-              {/* LEFT — campaign image as bg with animated IN CAST stamp.
-                  Fixed width so the right-side progress has stable geometry
-                  regardless of viewport width. */}
-              <div className="relative shrink-0 h-full" style={{ width: 132 }}>
-                {activeCommitment.image && (
-                  <ImageWithFallback
-                    src={activeCommitment.image}
-                    alt=""
-                    className="absolute inset-0 w-full h-full object-cover"
-                  />
-                )}
-                {/* Cast-theme rose tint over the campaign image. #f43f5e is
-                    the Cast tab's accent (see App.tsx tabAccents.cast and the
-                    category tab halos elsewhere on this page) — using it here
-                    re-skins the image as a "this is the Cast surface" while
-                    keeping the underlying art legible. A second darker stop
-                    at the bottom adds the legibility floor the IN CAST stamp
-                    needs. */}
-                <div
-                  aria-hidden="true"
-                  className="absolute inset-0"
-                  style={{
-                    background:
-                      'linear-gradient(180deg, rgba(244,63,94,0.55) 0%, rgba(244,63,94,0.70) 100%)',
-                    mixBlendMode: 'multiply',
-                  }}
-                />
-                <div
-                  aria-hidden="true"
-                  className="absolute inset-0"
-                  style={{
-                    background:
-                      'linear-gradient(180deg, rgba(0,0,0,0.10) 0%, rgba(0,0,0,0.35) 100%)',
-                  }}
-                />
-                {/* Scanline shimmer — slow sweep across the image, signalling
-                    that something is actively running. Keeps the card "alive"
-                    even between the discrete pulses of the dot. */}
-                <div
-                  aria-hidden="true"
-                  className="absolute inset-0 pointer-events-none overflow-hidden"
-                >
-                  <div
-                    className="absolute inset-y-0 w-1/2 in-cast-shimmer"
-                    style={{
-                      background:
-                        'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.18) 50%, transparent 100%)',
-                    }}
-                  />
-                </div>
-                {/* IN CAST live indicator — pulsing emerald dot + label */}
-                <div className="relative h-full flex items-center justify-center gap-1.5 px-2">
-                  <span
-                    className="relative flex items-center justify-center"
-                    style={{ width: 10, height: 10 }}
-                  >
-                    <span
-                      className="absolute inset-0 rounded-full animate-ping"
-                      style={{ background: '#00FFC2', opacity: 0.7 }}
-                    />
-                    <span
-                      className="relative rounded-full"
-                      style={{
-                        width: 6,
-                        height: 6,
-                        background: '#00FFC2',
-                        boxShadow: '0 0 8px rgba(0,255,194,0.9)',
-                      }}
-                    />
-                  </span>
-                  <span
-                    className="text-[11px] font-bold tracking-[0.22em] uppercase text-white"
-                    style={{ textShadow: '0 1px 4px rgba(0,0,0,0.6)' }}
-                  >
-                    In Cast
-                  </span>
-                </div>
-              </div>
-
-              {/* RIGHT — chain-themed progress; whole half is the bar.
-                  remainingPct fills from the left in the chain's brand color.
-                  Big percentage sits left, reward + token symbol sits right. */}
-              <div
-                className="relative flex-1 h-full overflow-hidden"
-                style={{ background: 'rgba(20,20,22,0.6)' }}
+      {/* Unified glass header — mirrors the Earnings top bar (CampaignGallery.tsx):
+          the Cast tab's rose accent (#f43f5e) leaks in from the top-left as a
+          radial glow over a dark gradient that dissolves at the bottom via a
+          mask fade. The "Recent Casting" title lives on the LEFT of this bar and
+          the cast-queue entry on the right, and the Recent Casting carousel just
+          below tucks up under the bar's faded edge — so the blur reads as the top
+          of one continuous section rather than a separate bar. The queue button
+          hides while an ad campaign is running, but the bar (and title) stay so
+          the carousel keeps its header. */}
+      <div ref={topBarRef} className="sticky top-0 z-40 px-4 pt-4 pb-5 flex items-center justify-between">
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              background:
+                'radial-gradient(140% 200% at 12.5% 0%, rgba(244,63,94,0.18) 0%, rgba(244,63,94,0.05) 32%, transparent 70%), ' +
+                'linear-gradient(to bottom, rgba(10,10,10,0.50) 0%, rgba(10,10,10,0.26) 60%, rgba(10,10,10,0) 100%)',
+              backdropFilter: 'blur(14px) saturate(1.5)',
+              WebkitBackdropFilter: 'blur(14px) saturate(1.5)',
+              maskImage: 'linear-gradient(to bottom, #000 0%, #000 70%, transparent 100%)',
+              WebkitMaskImage: 'linear-gradient(to bottom, #000 0%, #000 70%, transparent 100%)',
+            }}
+          />
+          <h3 className="relative text-foreground font-semibold tracking-tight">
+            Recent Casting
+          </h3>
+          {!activeCommitment && onOpenCircleQueue && (
+          <button
+            onClick={() => onOpenCircleQueue(null)}
+            className="relative p-2 rounded-full flex items-center justify-center transition active:scale-95 text-white"
+            style={{
+              // Alpha values mirror the Earn history icon exactly (only the
+              // hue differs: rose vs emerald) so the two top-right icons read
+              // as the same control across tabs.
+              background: 'rgba(244,63,94,0.18)',
+              border: '1px solid rgba(244,63,94,0.45)',
+              boxShadow: '0 1px 4px rgba(244,63,94,0.20)',
+            }}
+            aria-label="Open cast queue"
+          >
+            <GalleryVerticalEnd className="w-4 h-4" strokeWidth={1.75} />
+            {queueItems.length > 0 && (
+              <span
+                className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold text-white flex items-center justify-center backdrop-blur-sm"
+                style={{
+                  // Translucent rose to match the icon's glassy fill rather than
+                  // a solid opaque pill.
+                  background: 'rgba(244,63,94,0.55)',
+                  border: '1px solid rgba(244,63,94,0.7)',
+                }}
               >
-                <div
-                  aria-hidden="true"
-                  className="absolute inset-y-0 left-0 pointer-events-none transition-[width] duration-300 ease-linear"
-                  style={{
-                    width: `${remainingPct}%`,
-                    background: `linear-gradient(90deg, ${chainColor}33 0%, ${chainColor}66 100%)`,
-                    boxShadow: `inset -1px 0 0 ${chainColor}cc, 0 0 18px ${chainColor}55`,
-                  }}
-                />
-                <div className="relative h-full px-3 flex items-center justify-between gap-2">
-                  <div className="flex flex-col leading-none">
-                    {(() => {
-                      // Live countdown with seconds always visible — the
-                      // timer ticks every 1s (see useEffect above) so the
-                      // user gets the satisfying "time moving" feel even
-                      // when there are still hours left on the commitment.
-                      // Layout: hours/minutes at full text-xl weight,
-                      // seconds at a smaller size so the trailing ":SS"
-                      // reads as a sub-unit and doesn't make the line
-                      // overflow the card half.
-                      const total = Math.max(0, Math.floor(timeRemaining / 1000));
-                      const h = Math.floor(total / 3600);
-                      const m = Math.floor((total % 3600) / 60);
-                      const s = total % 60;
-                      const ready = total === 0;
-                      const pad = (n: number) => n.toString().padStart(2, '0');
-                      const label = ready ? 'To Claim' : 'Claim In';
-                      return (
-                        <>
-                          <span className="text-[9px] uppercase tracking-[0.18em] text-white/60 mb-1.5">
-                            {label}
-                          </span>
-                          <span className="text-xl font-bold tabular-nums tracking-tight text-white drop-shadow-sm">
-                            {ready ? (
-                              'Ready'
-                            ) : h > 0 ? (
-                              <>
-                                {h}h {pad(m)}m
-                                <span className="text-[60%] font-semibold text-white/80 ml-1">
-                                  {pad(s)}s
-                                </span>
-                              </>
-                            ) : m > 0 ? (
-                              <>
-                                {m}m
-                                <span className="text-[70%] font-semibold text-white/85 ml-1">
-                                  {pad(s)}s
-                                </span>
-                              </>
-                            ) : (
-                              `${s}s`
-                            )}
-                          </span>
-                        </>
-                      );
-                    })()}
-                  </div>
-                  {(() => {
-                    const fmt = formatPayout(activeCommitment.reward, tokenSymbol || 'USDC');
-                    return (
-                      <div className="flex flex-col items-end leading-none">
-                        <span className="text-xl font-bold tabular-nums tracking-tight text-white">
-                          {fmt.value}
-                          {fmt.scale && (
-                            <span
-                              style={{
-                                fontWeight: 900,
-                                marginLeft: 1,
-                                color: chainColor,
-                                textShadow: `0 0 8px ${chainColor}66`,
-                              }}
-                            >
-                              {fmt.scale}
-                            </span>
-                          )}
-                        </span>
-                        <span
-                          className="text-[10px] font-semibold mt-1.5 tracking-wider"
-                          style={{ color: chainColor }}
-                        >
-                          {fmt.prefix}
-                          {fmt.symbol}
-                        </span>
-                      </div>
-                    );
-                  })()}
-                </div>
-              </div>
-            </button>
-          );
-        })() : (
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              className={`h-24 flex flex-col items-center justify-center gap-2 rounded-xl transition-all backdrop-blur-sm ${
-                !einkCaseAttached
-                  ? 'bg-glass-1 text-soft-4 border border-glass cursor-pointer opacity-60'
-                  : 'bg-glass-1 border border-glass text-foreground shadow-lg hover:bg-glass-2 active:scale-95'
-              }`}
-              onClick={handleUploadPhoto}
-            >
-              <Camera className="w-6 h-6" />
-              <span className="text-sm">Take Photo</span>
-            </button>
-            <button
-              className={`h-24 flex flex-col items-center justify-center gap-2 rounded-xl transition-all backdrop-blur-sm ${
-                !einkCaseAttached
-                  ? 'bg-glass-1 text-soft-4 border border-glass cursor-pointer opacity-60'
-                  : 'bg-glass-1 border border-glass text-foreground shadow-lg hover:bg-glass-2 active:scale-95'
-              }`}
-              onClick={handleUploadPhoto}
-            >
-              <Upload className="w-6 h-6" />
-              <span className="text-sm">Upload Image</span>
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Sticky header — Recent Casting carousel + category tab bar travel
-          together. When the user scrolls down, this whole block scrolls with
-          the page until its `top` offset is reached; from then on, only the
-          bottom RECENT_VISIBLE_FRACTION of the carousel (plus the tab bar)
-          stays pinned. The gallery grid below scrolls underneath. */}
+                {queueItems.length}
+              </span>
+            )}
+          </button>
+          )}
+        </div>
+      {/* Recent Casting — cyclic carousel; case stays still, all items move as one
+          strip. Its heading now lives in the glass header above; the block is
+          pulled up (negative marginTop) so the case's faded top edge slides under
+          the header's faded bottom edge, blending the two into one section.
+          `touch-action: pan-y` reserves vertical pans for the page scroller so the
+          carousel's horizontal drag doesn't fight page scrolling; horizontal pans
+          still reach motion's drag handler. */}
       <div
-        className="sticky z-30 w-full"
-        style={{ top: stickyTopOffset, willChange: 'transform' }}
-      >
-        {/* Vertical-gradient backdrop. Instead of applying `bg-scrim` +
-            `backdrop-blur-md` to the entire sticky wrapper (which made the
-            whole Recent Casting block read as its own frosted panel,
-            distinct from Quick Cast above), the bg + blur live on this
-            absolutely-positioned child and are masked so they fade in only
-            toward the bottom of the sticky. Result:
-              - Top portion (most of the carousel) is fully transparent and
-                shares the same atmosphere as Quick Cast and the gallery
-                grid — no visible "section box".
-              - Bottom portion (dot pager → tabs, i.e. the slice that stays
-                onscreen once the header pins) has full scrim + blur, so
-                gallery cards scrolling underneath when stuck still get
-                properly obscured. */}
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background: 'var(--scrim-bg)',
-            backdropFilter: 'blur(12px)',
-            WebkitBackdropFilter: 'blur(12px)',
-            maskImage:
-              'linear-gradient(to bottom, transparent 0%, transparent 50%, black 72%, black 100%)',
-            WebkitMaskImage:
-              'linear-gradient(to bottom, transparent 0%, transparent 50%, black 72%, black 100%)',
-          }}
-        />
-      {/* Recent Casting - cyclic carousel; case stays still; all items move as one strip.
-          `touch-action: pan-y` reserves every vertical pan inside this block
-          for the page's main scroller — the visible bottom slice (carousel
-          tail + dot pager) is meant to act as a "grab handle" for scrolling
-          back to the top, so we don't want the carousel's horizontal drag or
-          any child pointer listener to compete with that gesture. Horizontal
-          pans still reach motion's drag handler because pan-y only excludes
-          the browser's built-in horizontal panning, not JS pointer events. */}
-      <div
-        ref={recentCastingRef}
         className="relative pb-2"
-        style={{ touchAction: 'pan-y' }}
+        style={{ marginTop: 24 - topBarHeight, touchAction: 'pan-y' }}
       >
-        <h3 className="px-4 mb-3 pt-4 text-foreground font-semibold tracking-tight">Recent Casting</h3>
         {(() => {
           const N = recentImages.length;
           const image = recentImages[activeRecent];
@@ -1209,13 +1086,272 @@ export function ImageCasting({ activeCommitment, currentDisplay, setCurrentDispl
         })()}
       </div>
 
-        {/* Category tab bar — sits at the bottom of the sticky header. No
-            top border: the sticky wrapper already supplies one continuous
-            `bg-scrim` + backdrop-blur surface across Recent Casting and the
-            tab strip, so the ~20px of empty scrim between the dot pager
-            (`pb-2`) and the tabs (`py-3`) reads as a soft tonal fade
-            instead of a hard divider line. `overflow-hidden` keeps the
-            scrollable strip clipped to the page width. */}
+      {/* Quick Cast / Active Campaign. Now sits BELOW Recent Casting. When a
+          campaign is in flight the two Quick Cast buttons are swapped for a
+          compact active-campaign card at the SAME h-24 height — the user can't
+          cast anything else anyway, so the slot is repurposed as the live status
+          surface (title, reward, progress, time remaining) instead of two
+          greyed-out CTAs. Heading flips to "Active Campaign" accordingly. */}
+      <div className={`px-4 mb-5 ${activeCommitment ? 'mt-4' : 'mt-5'}`}>
+        {/* No heading in the quick-cast state — the Take Photo / Upload Image
+            buttons are self-explanatory. The heading returns only for the
+            active-campaign state, where it labels a live status surface. */}
+        {activeCommitment && (
+          <h3 className="mb-3 text-foreground font-semibold tracking-tight">
+            Active Campaign
+          </h3>
+        )}
+        {activeCommitment ? (() => {
+          // Look up the originating campaign to surface chain + token symbol.
+          // activeCommitment carries the user-facing essentials (title, reward,
+          // image, timing) but not the chain affinity — for the cast card we
+          // want the chain color + ticker too, so we resolve it from the same
+          // gallery dataset that produced the commitment.
+          const campaign = GALLERY_CAMPAIGNS.find((c) => c.id === activeCommitment.campaignId);
+          const chain = campaign ? CHAINS[campaign.chain] : null;
+          const chainColor = chain?.color ?? '#00FFC2';
+          const tokenSymbol = campaign?.tokenSymbol ?? '';
+          // Percentage of the commitment window still remaining. Drives the
+          // whole right-half progress fill — full-width when freshly cast,
+          // ticking down to 0 as the campaign approaches completion.
+          const remainingPct = Math.max(0, 100 - progress);
+          return (
+            <button
+              type="button"
+              onClick={onViewActiveStatus}
+              className={`relative w-full h-24 rounded-xl overflow-hidden border border-glass shadow-lg text-left flex transition-all ${
+                onViewActiveStatus ? 'cursor-pointer active:scale-[0.99]' : ''
+              }`}
+            >
+              {/* LEFT — campaign image as bg with animated IN CAST stamp.
+                  Fixed width so the right-side progress has stable geometry
+                  regardless of viewport width. */}
+              <div className="relative shrink-0 h-full" style={{ width: 132 }}>
+                {activeCommitment.image && (
+                  <ImageWithFallback
+                    src={activeCommitment.image}
+                    alt=""
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                )}
+                {/* Cast-theme rose tint over the campaign image. #f43f5e is
+                    the Cast tab's accent (see App.tsx tabAccents.cast and the
+                    category tab halos elsewhere on this page) — using it here
+                    re-skins the image as a "this is the Cast surface" while
+                    keeping the underlying art legible. A second darker stop
+                    at the bottom adds the legibility floor the IN CAST stamp
+                    needs. */}
+                <div
+                  aria-hidden="true"
+                  className="absolute inset-0"
+                  style={{
+                    background:
+                      'linear-gradient(180deg, rgba(244,63,94,0.55) 0%, rgba(244,63,94,0.70) 100%)',
+                    mixBlendMode: 'multiply',
+                  }}
+                />
+                <div
+                  aria-hidden="true"
+                  className="absolute inset-0"
+                  style={{
+                    background:
+                      'linear-gradient(180deg, rgba(0,0,0,0.10) 0%, rgba(0,0,0,0.35) 100%)',
+                  }}
+                />
+                {/* Scanline shimmer — slow sweep across the image, signalling
+                    that something is actively running. Keeps the card "alive"
+                    even between the discrete pulses of the dot. */}
+                <div
+                  aria-hidden="true"
+                  className="absolute inset-0 pointer-events-none overflow-hidden"
+                >
+                  <div
+                    className="absolute inset-y-0 w-1/2 in-cast-shimmer"
+                    style={{
+                      background:
+                        'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.18) 50%, transparent 100%)',
+                    }}
+                  />
+                </div>
+                {/* IN CAST live indicator — pulsing emerald dot + label */}
+                <div className="relative h-full flex items-center justify-center gap-1.5 px-2">
+                  <span
+                    className="relative flex items-center justify-center"
+                    style={{ width: 10, height: 10 }}
+                  >
+                    <span
+                      className="absolute inset-0 rounded-full animate-ping"
+                      style={{ background: '#00FFC2', opacity: 0.7 }}
+                    />
+                    <span
+                      className="relative rounded-full"
+                      style={{
+                        width: 6,
+                        height: 6,
+                        background: '#00FFC2',
+                        boxShadow: '0 0 8px rgba(0,255,194,0.9)',
+                      }}
+                    />
+                  </span>
+                  <span
+                    className="text-[11px] font-bold tracking-[0.22em] uppercase text-white"
+                    style={{ textShadow: '0 1px 4px rgba(0,0,0,0.6)' }}
+                  >
+                    In Cast
+                  </span>
+                </div>
+              </div>
+
+              {/* RIGHT — chain-themed progress; whole half is the bar.
+                  remainingPct fills from the left in the chain's brand color.
+                  Big percentage sits left, reward + token symbol sits right. */}
+              <div
+                className="relative flex-1 h-full overflow-hidden"
+                style={{ background: 'rgba(20,20,22,0.6)' }}
+              >
+                <div
+                  aria-hidden="true"
+                  className="absolute inset-y-0 left-0 pointer-events-none transition-[width] duration-300 ease-linear"
+                  style={{
+                    width: `${remainingPct}%`,
+                    background: `linear-gradient(90deg, ${chainColor}33 0%, ${chainColor}66 100%)`,
+                    boxShadow: `inset -1px 0 0 ${chainColor}cc, 0 0 18px ${chainColor}55`,
+                  }}
+                />
+                <div className="relative h-full px-3 flex items-center justify-between gap-2">
+                  <div className="flex flex-col leading-none">
+                    {(() => {
+                      // Live countdown with seconds always visible — the
+                      // timer ticks every 1s (see useEffect above) so the
+                      // user gets the satisfying "time moving" feel even
+                      // when there are still hours left on the commitment.
+                      // Layout: hours/minutes at full text-xl weight,
+                      // seconds at a smaller size so the trailing ":SS"
+                      // reads as a sub-unit and doesn't make the line
+                      // overflow the card half.
+                      const total = Math.max(0, Math.floor(timeRemaining / 1000));
+                      const h = Math.floor(total / 3600);
+                      const m = Math.floor((total % 3600) / 60);
+                      const s = total % 60;
+                      const ready = total === 0;
+                      const pad = (n: number) => n.toString().padStart(2, '0');
+                      const label = ready ? 'To Claim' : 'Claim In';
+                      return (
+                        <>
+                          <span className="text-[9px] uppercase tracking-[0.18em] text-white/60 mb-1.5">
+                            {label}
+                          </span>
+                          <span className="text-xl font-bold tabular-nums tracking-tight text-white drop-shadow-sm">
+                            {ready ? (
+                              'Ready'
+                            ) : h > 0 ? (
+                              <>
+                                {h}h {pad(m)}m
+                                <span className="text-[60%] font-semibold text-white/80 ml-1">
+                                  {pad(s)}s
+                                </span>
+                              </>
+                            ) : m > 0 ? (
+                              <>
+                                {m}m
+                                <span className="text-[70%] font-semibold text-white/85 ml-1">
+                                  {pad(s)}s
+                                </span>
+                              </>
+                            ) : (
+                              `${s}s`
+                            )}
+                          </span>
+                        </>
+                      );
+                    })()}
+                  </div>
+                  {(() => {
+                    const fmt = formatPayout(activeCommitment.reward, tokenSymbol || 'USDC');
+                    return (
+                      <div className="flex flex-col items-end leading-none">
+                        <span className="text-xl font-bold tabular-nums tracking-tight text-white">
+                          {fmt.value}
+                          {fmt.scale && (
+                            <span
+                              style={{
+                                fontWeight: 900,
+                                marginLeft: 1,
+                                color: chainColor,
+                                textShadow: `0 0 8px ${chainColor}66`,
+                              }}
+                            >
+                              {fmt.scale}
+                            </span>
+                          )}
+                        </span>
+                        <span
+                          className="text-[10px] font-semibold mt-1.5 tracking-wider"
+                          style={{ color: chainColor }}
+                        >
+                          {fmt.prefix}
+                          {fmt.symbol}
+                        </span>
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+            </button>
+          );
+        })() : (
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              className={`h-24 flex flex-col items-center justify-center gap-2 rounded-xl transition-all backdrop-blur-sm ${
+                !einkCaseAttached
+                  ? 'bg-glass-1 text-soft-4 border border-glass cursor-pointer opacity-60'
+                  : 'bg-glass-1 border border-glass text-foreground shadow-lg hover:bg-glass-2 active:scale-95'
+              }`}
+              onClick={handleUploadPhoto}
+            >
+              <Camera className="w-6 h-6" />
+              <span className="text-sm">Take Photo</span>
+            </button>
+            <button
+              className={`h-24 flex flex-col items-center justify-center gap-2 rounded-xl transition-all backdrop-blur-sm ${
+                !einkCaseAttached
+                  ? 'bg-glass-1 text-soft-4 border border-glass cursor-pointer opacity-60'
+                  : 'bg-glass-1 border border-glass text-foreground shadow-lg hover:bg-glass-2 active:scale-95'
+              }`}
+              onClick={handleUploadPhoto}
+            >
+              <Upload className="w-6 h-6" />
+              <span className="text-sm">Upload Image</span>
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Category tab bar — sticky, pinned directly beneath the glass header.
+          Recent Casting + Quick Cast scroll up and away behind the header; from
+          then on this strip stays put and the gallery grid below scrolls
+          underneath it. */}
+      <div
+        className="sticky z-30 w-full"
+        style={{ top: topBarHeight, willChange: 'transform' }}
+      >
+        {/* Frosted backdrop for the pinned strip — full scrim + blur so gallery
+            cards scrolling underneath stay obscured. A short fade-in at the very
+            top keeps the seam with the header above soft rather than a hard edge. */}
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: 'var(--scrim-bg)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            maskImage:
+              'linear-gradient(to bottom, transparent 0%, black 35%, black 100%)',
+            WebkitMaskImage:
+              'linear-gradient(to bottom, transparent 0%, black 35%, black 100%)',
+          }}
+        />
+        {/* `overflow-hidden` keeps the scrollable strip clipped to page width. */}
         <div ref={tabBarRef} className="relative w-full overflow-hidden">
           <div
             ref={tabsScrollRef}
@@ -1291,38 +1427,140 @@ export function ImageCasting({ activeCommitment, currentDisplay, setCurrentDispl
           WebkitOverflowScrolling: 'touch',
         }}
       >
-        <div className="grid grid-cols-2 gap-3">
-          {galleryVisibleImages.map((image) => (
-            <Card
-              key={image.id}
-              data-gallery-image={image.url}
-              className={`overflow-hidden cursor-pointer transition-all bg-transparent border ${
-                galleryDimmed
-                  ? 'opacity-50 border-soft-3'
-                  : 'border-soft-2 hover:border-white/40 hover:shadow-lg'
-              }`}
-              onClick={() => handleCastImage(image)}
+        {/* Drops tab header — the two ways a drop enters your collection: make
+            one (Create), or buy a blind box (Sealed boxes). Sits above the grid. */}
+        {activeCollection.id === DROPS_COLLECTION_ID && (
+          <div className="grid grid-cols-2 gap-3 mb-3">
+            <button
+              onClick={() => setDropOverlay({ kind: 'create' })}
+              className="flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-bold text-[#08110f] transition active:scale-[0.98]"
+              style={{ background: DROPS_PRISM, boxShadow: '0 8px 24px rgba(0,255,194,0.22)' }}
             >
-              <div className="relative aspect-[5/7]">
-                <ImageWithFallback
-                  src={image.url}
-                  alt={image.title}
-                  className="w-full h-full object-cover"
+              <Wand2 className="w-4 h-4" />
+              Create
+            </button>
+            <button
+              onClick={() => setDropOverlay({ kind: 'shop' })}
+              className="flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-bold text-foreground border border-white/15 bg-glass-1 transition active:scale-[0.98]"
+            >
+              <Box className="w-4 h-4" style={{ color: DROPS_MINT }} />
+              Sealed boxes
+            </button>
+          </div>
+        )}
+        <div className="grid grid-cols-2 gap-3">
+          {/* Amber ribbon tiles injected at the top of the Featured grid — the
+              two most-recent Circle queue entries. Hidden during an active ad
+              campaign (revenue flows come first). Sub items tap straight into
+              the cast preview flow (like the Subs tab); gift items still open
+              the Circle queue browser preloaded on that item. */}
+          {activeCollection.id === 'featured' && !activeCommitment && onOpenCircleQueue &&
+            (queueItems
+              .slice(0, 2)
+              .map(resolveQueueItem)
+              .filter(Boolean) as NonNullable<ReturnType<typeof resolveQueueItem>>[]
+            ).map((item) => (
+              <RibbonTile
+                key={`ribbon-${item.key}`}
+                item={item}
+                onClick={() =>
+                  item.source === 'sub'
+                    ? handleCastImage({
+                        id: item.key,
+                        url: item.previewUrl,
+                        title: item.subheadline ?? item.attribution,
+                      })
+                    : onOpenCircleQueue(item.key)
+                }
+                dimmed={galleryDimmed}
+              />
+            ))}
+
+          {/* Drops gallery tab — the live collection. Tapping a drop opens its
+              detail overlay (cast / gift / make-real, or cast-to-reveal for a
+              sealed capsule) — all on the Cast surface. */}
+          {activeCollection.id === DROPS_COLLECTION_ID
+            ? orderedDrops.map((drop) => (
+                <DropCard
+                  key={drop.id}
+                  drop={drop}
+                  animated={false}
+                  onClick={() => setDropOverlay({ kind: 'detail', id: drop.id })}
                 />
-                {currentDisplay?.data?.id === image.id && (
-                  <div className="absolute inset-0 border-2 border-[#00FFC2]" />
-                )}
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2">
-                  <div className="text-sm text-foreground truncate font-medium">
-                    {image.title}
+              ))
+          /* Subs gallery tab — one ribbon tile per sub, showing that sub's
+              latest poster. Tapping a tile goes straight into the cast preview
+              flow with that poster (same as the gallery images below), not the
+              Circle queue. */
+          : activeCollection.id === SUBS_COLLECTION_ID
+            ? getLatestSubPosts(subs).map((post) => {
+                const creator = post.creatorHandle.split('#')[0];
+                // Wrap the sub post in a resolved-queue-item shape so RibbonTile
+                // renders it consistently (poster + amber sub ribbon + @handle).
+                const item: ResolvedQueueItem = {
+                  key: `subs-${post.id}`,
+                  source: 'sub',
+                  previewUrl: post.previewUrl,
+                  headline: post.title ?? creator,
+                  attribution: `@${creator}`,
+                  timeLabel: '',
+                  refId: post.id,
+                  arrivedAt: post.publishedAt,
+                };
+                return (
+                  <RibbonTile
+                    key={item.key}
+                    item={item}
+                    onClick={() =>
+                      handleCastImage({
+                        id: item.key,
+                        url: post.previewUrl,
+                        title: post.title ?? `@${creator}`,
+                      })
+                    }
+                    dimmed={galleryDimmed}
+                  />
+                );
+              })
+            : galleryVisibleImages.map((image) => (
+                <Card
+                  key={image.id}
+                  data-gallery-image={image.url}
+                  className={`overflow-hidden cursor-pointer transition-all bg-transparent border ${
+                    galleryDimmed
+                      ? 'opacity-50 border-soft-3'
+                      : 'border-soft-2 hover:border-white/40 hover:shadow-lg'
+                  }`}
+                  onClick={() => handleCastImage(image)}
+                >
+                  <div className="relative aspect-[5/7]">
+                    <ImageWithFallback
+                      src={image.url}
+                      alt={image.title}
+                      className="w-full h-full object-cover"
+                    />
+                    {currentDisplay?.data?.id === image.id && (
+                      <div className="absolute inset-0 border-2 border-[#00FFC2]" />
+                    )}
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2">
+                      <div className="text-sm text-foreground truncate font-medium">
+                        {image.title}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-            </Card>
-          ))}
+                </Card>
+              ))}
         </div>
 
-        {galleryHasMore ? (
+        {activeCollection.id === DROPS_COLLECTION_ID ? (
+          <div className="text-center text-soft-3 text-xs uppercase tracking-wider py-6">
+            {orderedDrops.length === 0 ? 'No drops yet — create one above' : 'End of drops'}
+          </div>
+        ) : activeCollection.id === SUBS_COLLECTION_ID ? (
+          <div className="text-center text-soft-3 text-xs uppercase tracking-wider py-6">
+            End of subs
+          </div>
+        ) : galleryHasMore ? (
           <div
             ref={sentinelRef}
             className="flex items-center justify-center py-6 text-soft-3 text-xs uppercase tracking-wider"
@@ -1341,6 +1579,70 @@ export function ImageCasting({ activeCommitment, currentDisplay, setCurrentDispl
       </div>
 
       <EinkCasePrompt open={showEinkPrompt} onClose={() => setShowEinkPrompt(false)} />
+
+      {/* Drops sub-flows — pushed screens over the Cast page. Only one shows at a
+          time (create ↔ detail ↔ reveal). Sits below the cast Preview (z-[60]) so
+          "Cast to case" closes the overlay and lands cleanly on the preview. */}
+      {dropOverlay?.kind === 'create' && (
+        <div className="fixed inset-0 z-[58] overflow-y-auto" style={{ background: 'var(--backdrop-base)' }}>
+          <CreateDrop
+            onBack={() => setDropOverlay(null)}
+            onCreated={(id) => setDropOverlay({ kind: 'detail', id })}
+          />
+        </div>
+      )}
+      {dropOverlay?.kind === 'shop' && (
+        <div className="fixed inset-0 z-[58] overflow-y-auto" style={{ background: 'var(--backdrop-base)' }}>
+          <SealedShop
+            onBack={() => setDropOverlay(null)}
+            // Return to the Drops grid after a buy so the new sealed capsule shows.
+            onPurchased={() => setDropOverlay(null)}
+          />
+        </div>
+      )}
+      {dropOverlay?.kind === 'detail' && dropOverlay.id && (
+        <div className="fixed inset-0 z-[58] overflow-y-auto" style={{ background: 'var(--backdrop-base)' }}>
+          <DropDetail
+            dropId={dropOverlay.id}
+            currentDisplayId={currentDisplay?.data?.id}
+            castLocked={!!activeCommitment}
+            onBack={() => setDropOverlay(null)}
+            onReveal={() => {
+              // Revealing a sealed drop casts it to the case — blocked while a
+              // campaign owns the display, same as any other cast.
+              if (activeCommitment) {
+                toast.error('Cannot switch - active campaign in progress');
+                return;
+              }
+              setDropOverlay({ kind: 'reveal', id: dropOverlay.id });
+            }}
+            onCastToCase={(image) => {
+              // Route through the Cast preview flow so a drop casts with the same
+              // review + hold-to-cast NFC ritual as any other image (handleCastImage
+              // blocks it if a campaign is active).
+              setDropOverlay(null);
+              handleCastImage(image);
+            }}
+          />
+        </div>
+      )}
+      {dropOverlay?.kind === 'reveal' && dropOverlay.id && (
+        <DropReveal
+          dropId={dropOverlay.id}
+          onDone={() => setDropOverlay({ kind: 'detail', id: dropOverlay.id })}
+          onCancel={() => setDropOverlay({ kind: 'detail', id: dropOverlay.id })}
+          onDisplayOnCase={(image) => {
+            // Defensive: reveal is unreachable while a campaign is active (the
+            // trigger above is blocked), but never overwrite a live campaign.
+            if (activeCommitment) {
+              toast.error('Cannot switch - active campaign in progress');
+              return;
+            }
+            setCurrentDisplay({ type: 'image', data: image });
+            toast.success('Now showing on your case', { description: image.title });
+          }}
+        />
+      )}
 
       {previewImage && (
         <motion.div
@@ -1382,15 +1684,24 @@ export function ImageCasting({ activeCommitment, currentDisplay, setCurrentDispl
             <div className="sticky top-0 z-10 backdrop-blur-sm bg-scrim border-b border-glass">
               <div className="flex items-center justify-between px-4 py-3">
                 <button
-                  onClick={() => setPreviewImage(null)}
+                  onClick={() => {
+                    // Back returns to where the image came from: a Circle-sourced
+                    // cast hops back to its Circle sub-view; a gallery cast just
+                    // closes the preview and stays on the Cast tab.
+                    setPreviewImage(null);
+                    if (previewImage.source === 'circle') onCastBack?.();
+                  }}
                   className="flex items-center gap-1 text-foreground"
                 >
                   <ChevronLeft className="w-5 h-5" />
                   <span className="text-sm">Back</span>
                 </button>
                 <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-lg gradient-cast flex items-center justify-center shadow-sm">
-                    <Frame className="w-4 h-4 text-foreground" />
+                  <div
+                    className="w-7 h-7 rounded-lg flex items-center justify-center shadow-sm"
+                    style={{ background: castGradient }}
+                  >
+                    <Frame className="w-4 h-4 text-[#1A1A1A]" />
                   </div>
                   <h2 className="text-base font-semibold text-foreground">Cast Preview</h2>
                 </div>
@@ -1406,18 +1717,19 @@ export function ImageCasting({ activeCommitment, currentDisplay, setCurrentDispl
               className="flex justify-center pt-6 px-4"
             >
               <div className="relative w-full max-w-[340px]">
+                {/* Frame-only glow (kept off the zoom control below) */}
                 <div
-                  className="absolute inset-0 rounded-2xl blur-2xl opacity-50"
-                  style={{ background: 'linear-gradient(135deg, #00FFC2, #BC13FE)', transform: 'scale(1.06)' }}
+                  aria-hidden="true"
+                  className="absolute left-0 right-0 top-0 rounded-2xl blur-2xl opacity-40"
+                  style={{ background: castGradient, aspectRatio: '11 / 16', transform: 'scale(1.05)' }}
                 />
-                <div
-                  className="relative rounded-2xl p-[2px]"
-                  style={{ background: 'linear-gradient(135deg, #00FFC2, #BC13FE)' }}
-                >
-                  <ImageWithFallback
+                <div className="relative">
+                  <CropStage
+                    key={previewImage.url}
+                    ref={cropRef}
                     src={previewImage.url}
-                    alt={previewImage.title}
-                    className="w-full aspect-[11/16] object-cover rounded-2xl block"
+                    accent={castAccent}
+                    ringGradient={castGradient}
                   />
                 </div>
               </div>
@@ -1431,7 +1743,9 @@ export function ImageCasting({ activeCommitment, currentDisplay, setCurrentDispl
               className="text-center mt-5 px-6"
             >
               <h1 className="text-xl font-bold text-foreground drop-shadow-sm">{previewImage.title}</h1>
-              <p className="text-sm text-soft-3 mt-1.5">From your gallery</p>
+              <p className="text-sm text-soft-3 mt-1.5">
+                {previewImage.source === 'circle' ? 'From your Circle' : 'From your gallery'}
+              </p>
             </motion.div>
 
             {/* Cast button */}
@@ -1441,28 +1755,17 @@ export function ImageCasting({ activeCommitment, currentDisplay, setCurrentDispl
               transition={{ duration: 0.4, delay: 0.25 }}
               className="mx-6 mt-7 pb-10"
             >
-              <button
-                onClick={handleConfirmCast}
+              <HoldToCastButton
+                gradient={castGradient}
+                accent={castAccent}
+                onCommit={handleCommitCast}
                 disabled={isNfcWriting}
-                className="w-full h-14 rounded-xl font-bold text-base flex items-center justify-center gap-2.5 transition-all active:scale-95 gradient-cast text-foreground shadow-lg disabled:opacity-60"
-              >
-                <Nfc className="w-5 h-5" />
-                Cast to Screen
-              </button>
+              />
               <p className="text-center text-xs text-soft-3 mt-3">
-                Tap to send this image to your e-ink display
+                Drag &amp; zoom to frame it, then hold to cast to your e-ink display
               </p>
             </motion.div>
           </div>
-
-          {/* Simulated Face ID confirmation */}
-          <FaceIdPrompt
-            open={showFaceId}
-            title="Confirm Cast"
-            subtitle={previewImage ? `Sign to cast "${previewImage.title}" to your e-ink display` : 'Sign to confirm'}
-            onConfirm={handleFaceIdConfirm}
-            onCancel={() => setShowFaceId(false)}
-          />
 
           {/* NFC writing sheet */}
           {isNfcWriting && (
@@ -1484,16 +1787,16 @@ export function ImageCasting({ activeCommitment, currentDisplay, setCurrentDispl
                     <motion.div
                       key={i}
                       className="absolute inset-0 rounded-full border-2"
-                      style={{ borderColor: '#00FFC2' }}
+                      style={{ borderColor: castAccent }}
                       animate={{ scale: [1, 1.6 + i * 0.3], opacity: [0.7, 0] }}
                       transition={{ duration: 1.6, delay: i * 0.4, repeat: Infinity, ease: 'easeOut' }}
                     />
                   ))}
                   <div
                     className="absolute inset-0 rounded-full flex items-center justify-center"
-                    style={{ background: 'rgba(0,255,194,0.12)', border: '2px solid rgba(0,255,194,0.4)' }}
+                    style={{ background: `${castAccent}1f`, border: `2px solid ${castAccent}66` }}
                   >
-                    <Nfc className="w-10 h-10" style={{ color: '#00FFC2' }} />
+                    <Nfc className="w-10 h-10" style={{ color: castAccent }} />
                   </div>
                 </div>
                 <h3 className="text-xl font-semibold text-foreground mb-2">Ready to Write NFC</h3>
@@ -1501,9 +1804,13 @@ export function ImageCasting({ activeCommitment, currentDisplay, setCurrentDispl
                   Hold your phone close to the<br />E-ink case to cast the image
                 </p>
                 <div className="mt-6 flex items-center justify-center gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-[#00FFC2] animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <div className="w-1.5 h-1.5 rounded-full bg-[#00FFC2] animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <div className="w-1.5 h-1.5 rounded-full bg-[#00FFC2] animate-bounce" style={{ animationDelay: '300ms' }} />
+                  {[0, 150, 300].map((delay) => (
+                    <div
+                      key={delay}
+                      className="w-1.5 h-1.5 rounded-full animate-bounce"
+                      style={{ background: castAccent, animationDelay: `${delay}ms` }}
+                    />
+                  ))}
                 </div>
               </motion.div>
             </motion.div>

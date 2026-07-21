@@ -55,6 +55,24 @@
   --glass-bg-strong: rgba(255, 255, 255, 0.86);
   --glass-border: rgba(26, 26, 26, 0.10);
   --scrim-bg: rgba(255, 255, 255, 0.55);
+  /* Circle subscription deck — the fanned "stack of posters" tile. Dark mode
+     frames each sheet in amber over near-black dims + deep shadows so the deck
+     recedes into the page; bright mode softens to a light veil + gentle shadow
+     so the same deck reads as airy paper stacked on white. */
+  --deck-front-bg: #ECECEF;
+  --deck-front-shadow: 0 6px 16px rgba(26, 26, 26, 0.14);
+  --deck-sheet-shadow: 0 3px 9px rgba(26, 26, 26, 0.10);
+  --deck-sheet-dim: rgba(255, 255, 255, 0.55);
+  /* Subscription-detail hero — the blurred latest-poster wash behind the title
+     block. Bright mode lifts the poster and washes it to white so the dark
+     title text stays legible; dark mode darkens it into the page base. */
+  --hero-img-filter: blur(26px) saturate(1.25) brightness(1.12);
+  --hero-scrim: linear-gradient(180deg, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0.62) 58%, #ffffff 100%);
+  /* Add-friend preview card base, layered under the sampled avatar-hue tint. */
+  --tint-card-base: rgba(255, 255, 255, 0.82);
+  /* Circle-queue deck card — the mount that frames each e-ink preview. Dark is
+     a warm near-black; bright is a frosted white so its theme-aware text reads. */
+  --queue-card-bg: rgba(255, 255, 255, 0.82);
   /* On-surface variants of the Prism brand colors. The pure brand neons
      (#00FFC2 / #BC13FE) are tuned for dark surfaces; on white cards they glare
      and lose legibility. Use these darker variants for body text on light. */
@@ -96,6 +114,15 @@
   --glass-bg-strong: rgba(255, 255, 255, 0.14);
   --glass-border: rgba(255, 255, 255, 0.18);
   --scrim-bg: rgba(0, 0, 0, 0.22);
+  /* Circle subscription deck / hero / preview-card — original dark recipe. */
+  --deck-front-bg: #111111;
+  --deck-front-shadow: 0 3px 12px rgba(0, 0, 0, 0.55);
+  --deck-sheet-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+  --deck-sheet-dim: rgba(0, 0, 0, 0.55);
+  --hero-img-filter: blur(26px) saturate(1.3) brightness(0.72);
+  --hero-scrim: linear-gradient(180deg, rgba(10, 10, 10, 0.20) 0%, rgba(10, 10, 10, 0.58) 58%, #0b0b0d 100%);
+  --tint-card-base: rgba(18, 18, 20, 0.72);
+  --queue-card-bg: rgba(16, 14, 10, 0.85);
   /* Dark surfaces — full brand neons are legible at full brightness. */
   --mint-on-surface: #00FFC2;
   --violet-on-surface: #BC13FE;

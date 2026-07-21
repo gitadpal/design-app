@@ -44,9 +44,11 @@ import { usePrivy, useWallets } from '../auth';
 import { PullToRefresh } from './PullToRefresh';
 import { TokenLogo } from './web3/TokenLogo';
 
+type AssetsView = 'main' | 'all-assets' | 'all-activity';
+
 interface AssetsProps {
-  view: 'main' | 'all-assets' | 'all-activity';
-  setView: (view: 'main' | 'all-assets' | 'all-activity') => void;
+  view: AssetsView;
+  setView: (view: AssetsView) => void;
 }
 
 export function Assets({ view, setView }: AssetsProps) {
@@ -319,8 +321,6 @@ export function Assets({ view, setView }: AssetsProps) {
       </div>
     </div>
   );
-
-
 
   // All Assets View
   if (view === 'all-assets') {
