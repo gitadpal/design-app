@@ -3,11 +3,11 @@ import { motion } from 'motion/react';
 import { ChevronLeft, Send, Check, CheckCheck, Pencil, X } from 'lucide-react';
 import { ImageWithFallback } from '../figma/ImageWithFallback';
 import {
-  CIRCLE_ME,
   seedTint,
   type Gift,
 } from '../../data/circleData';
 import { CIRCLE_ACCENT, CIRCLE_ACCENT_BADGE } from './constants';
+import { isMyHandle } from './meHandleStore';
 import { useRemark, setRemark } from './remarksStore';
 import { findFriend } from './friendsStore';
 import { useGiftsWithFriend } from './giftsStore';
@@ -377,7 +377,7 @@ export function FriendHistory({ friendHandle, onBack, onSendGift, onCastImage, c
             <GiftBubble
               key={gift.id}
               gift={gift}
-              incoming={gift.toHandle === CIRCLE_ME.handle}
+              incoming={isMyHandle(gift.toHandle)}
               castLocked={castLocked}
               onCast={() => onCastImage(gift.previewUrl, `Gift · ${displayName}`)}
             />

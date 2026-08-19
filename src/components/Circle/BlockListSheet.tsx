@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Ban, Plus } from 'lucide-react';
 import { ImageWithFallback } from '../figma/ImageWithFallback';
-import { CIRCLE_ME, avatarForHandle, seedTint } from '../../data/circleData';
+import { avatarForHandle, seedTint } from '../../data/circleData';
 import { CIRCLE_ACCENT } from './constants';
+import { isMyHandle } from './meHandleStore';
 import { useBlockedHandles, blockHandle, unblockHandle, isBlocked } from './blockStore';
 import { toast } from 'sonner@2.0.3';
 
@@ -23,7 +24,7 @@ export function BlockListSheet({ open, onClose }: BlockListSheetProps) {
   const [entry, setEntry] = useState('');
   const trimmed = entry.trim().toLowerCase();
   const valid = HANDLE_RE.test(trimmed);
-  const isSelf = trimmed === CIRCLE_ME.handle;
+  const isSelf = isMyHandle(trimmed);
   const already = valid && isBlocked(trimmed);
 
   const close = () => {

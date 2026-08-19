@@ -1,13 +1,14 @@
 import { useState } from 'react';
-import { ChevronLeft, ChevronRight, Copy, QrCode, Users } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Copy, Pencil, QrCode, Users } from 'lucide-react';
 import { Switch } from '../ui/switch';
-import { CIRCLE_ME } from '../../data/circleData';
 import { CIRCLE_ACCENT } from './constants';
 import { CHAINS } from '../CampaignGallery/chainColors';
 import { HandleQrSheet } from './HandleQrSheet';
+import { EditHandleSheet } from './EditHandleSheet';
 import { WalletSheet } from './WalletSheet';
 import { BlockListSheet } from './BlockListSheet';
 import { useWallet, shortAddress } from './walletStore';
+import { useMyHandle } from './meHandleStore';
 import { useBlockedHandles } from './blockStore';
 import { toast } from 'sonner@2.0.3';
 
@@ -27,13 +28,15 @@ export function CircleSettings({ onBack }: CircleSettingsProps) {
   const [notifSubs, setNotifSubs] = useState(true);
   const [giftPolicy, setGiftPolicy] = useState<GiftPolicy>('friends');
   const [qrOpen, setQrOpen] = useState(false);
+  const [editHandleOpen, setEditHandleOpen] = useState(false);
   const [walletOpen, setWalletOpen] = useState(false);
   const [blockOpen, setBlockOpen] = useState(false);
   const wallet = useWallet();
+  const handle = useMyHandle();
   const blocked = useBlockedHandles();
 
   const handleCopy = () => {
-    navigator.clipboard?.writeText(CIRCLE_ME.handle);
+    navigator.clipboard?.writeText(handle);
     toast.success('Handle copied');
   };
 
@@ -62,9 +65,10 @@ export function CircleSettings({ onBack }: CircleSettingsProps) {
       <Section title="Identity">
         <Row
           label="Your handle"
-          detail={CIRCLE_ME.handle}
+          detail={handle}
           trailing={
             <div className="flex items-center gap-1.5">
+              <IconChip icon={<Pencil className="w-3.5 h-3.5" />} label="Edit" onClick={() => setEditHandleOpen(true)} />
               <IconChip icon={<QrCode className="w-3.5 h-3.5" />} label="QR" onClick={() => setQrOpen(true)} />
               <IconChip icon={<Copy className="w-3.5 h-3.5" />} label="Copy" onClick={handleCopy} />
             </div>
@@ -131,6 +135,7 @@ export function CircleSettings({ onBack }: CircleSettingsProps) {
       </Section>
 
       <HandleQrSheet open={qrOpen} onClose={() => setQrOpen(false)} />
+      <EditHandleSheet open={editHandleOpen} onClose={() => setEditHandleOpen(false)} />
       <WalletSheet open={walletOpen} onClose={() => setWalletOpen(false)} />
       <BlockListSheet open={blockOpen} onClose={() => setBlockOpen(false)} />
     </div>

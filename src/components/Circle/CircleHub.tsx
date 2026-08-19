@@ -4,7 +4,6 @@ import { Card } from '../ui/card';
 import { CirclePlus, QrCode, Copy, UserCog, MoreHorizontal, ChevronRight, Camera, Compass } from 'lucide-react';
 import { ImageWithFallback } from '../figma/ImageWithFallback';
 import {
-  CIRCLE_ME,
   getSubCovers,
   type Friend,
   type Subscription,
@@ -14,6 +13,7 @@ import { useRemarks } from './remarksStore';
 import { useFriends } from './friendsStore';
 import { useSubscriptions } from './subsStore';
 import { useMyAvatar, setMyAvatar } from './meAvatarStore';
+import { useMyHandle } from './meHandleStore';
 import { warmAvatarColors } from './avatarColor';
 import { HandleQrSheet } from './HandleQrSheet';
 import { toast } from 'sonner@2.0.3';
@@ -281,6 +281,7 @@ function SubTile({
 
 export function CircleHub({ onOpenAddFriend, onOpenFriend, onOpenSubscription, onOpenExplore, onOpenSettings, onOpenFriendList }: CircleHubProps) {
   const friends = useFriends();
+  const handle = useMyHandle();
   const [qrOpen, setQrOpen] = useState(false);
 
   // Current user's own avatar, tap-to-upload. A hidden file input is triggered
@@ -384,11 +385,11 @@ export function CircleHub({ onOpenAddFriend, onOpenFriend, onOpenSubscription, o
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-1.5 min-w-0">
                   <div className="text-base font-semibold tracking-tight text-foreground tabular-nums truncate">
-                    {CIRCLE_ME.handle}
+                    {handle}
                   </div>
                   <button
                     onClick={() => {
-                      navigator.clipboard?.writeText(CIRCLE_ME.handle);
+                      navigator.clipboard?.writeText(handle);
                       toast.success('Handle copied');
                     }}
                     className="w-7 h-7 flex-shrink-0 flex items-center justify-center rounded-md text-soft-3 hover:text-amber-300 hover:bg-white/5 transition"

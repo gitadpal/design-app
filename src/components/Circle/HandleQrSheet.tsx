@@ -1,16 +1,17 @@
 import { motion, AnimatePresence } from 'motion/react';
 import { QRCodeSVG } from 'qrcode.react';
 import { X, Copy } from 'lucide-react';
-import { CIRCLE_ME } from '../../data/circleData';
 import { CIRCLE_ACCENT } from './constants';
+import { useMyHandle } from './meHandleStore';
 import { toast } from 'sonner@2.0.3';
 
 // Bottom sheet showing the current user's handle as a scannable QR. A friend
 // scans it (or copies the handle) to add you to their Circle — the mirror of
 // the Add-friend "paste handle" flow.
 export function HandleQrSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const handle = useMyHandle();
   const copy = () => {
-    navigator.clipboard?.writeText(CIRCLE_ME.handle);
+    navigator.clipboard?.writeText(handle);
     toast.success('Handle copied');
   };
 
@@ -58,7 +59,7 @@ export function HandleQrSheet({ open, onClose }: { open: boolean; onClose: () =>
                 }}
               >
                 <QRCodeSVG
-                  value={CIRCLE_ME.handle}
+                  value={handle}
                   size={200}
                   level="M"
                   marginSize={2}
@@ -69,7 +70,7 @@ export function HandleQrSheet({ open, onClose }: { open: boolean; onClose: () =>
             </div>
 
             <div className="mt-5 text-center font-mono text-base font-semibold text-foreground tabular-nums">
-              {CIRCLE_ME.handle}
+              {handle}
             </div>
             <p className="text-center text-xs text-soft-3 mt-1">
               Have a friend scan this to add you to their Circle.

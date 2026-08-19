@@ -9,6 +9,7 @@ import {
   type Gift,
 } from '../../data/circleData';
 import { CIRCLE_ACCENT } from './constants';
+import { useMyHandle } from './meHandleStore';
 import { chainIdFromLabel } from '../CampaignGallery/chainColors';
 import { AssetGlyph } from '../web3/AssetGlyph';
 import { TokenPickerModal } from './TokenPickerModal';
@@ -25,6 +26,7 @@ interface TipComposerProps {
 export function TipComposer({ friendHandle, onClose, onSent }: TipComposerProps) {
   const remark = useRemark(friendHandle);
   const displayName = remark;
+  const myHandle = useMyHandle();
   const [token, setToken] = useState<TipToken>(TIP_TOKENS[0]);
   const [amount, setAmount] = useState('');
   const [note, setNote] = useState('');
@@ -44,7 +46,7 @@ export function TipComposer({ friendHandle, onClose, onSent }: TipComposerProps)
     const withCrypto = attachCrypto && hasAmount;
     const gift: Gift = {
       id: 'g-' + Date.now(),
-      fromHandle: CIRCLE_ME.handle,
+      fromHandle: myHandle,
       toHandle: friendHandle,
       previewUrl: pickedImage,
       tokenSymbol: withCrypto ? token.symbol : undefined,
